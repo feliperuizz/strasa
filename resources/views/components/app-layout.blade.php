@@ -91,12 +91,12 @@
 <body class="h-[100dvh] bg-ink-900 text-slate-200 antialiased font-sans">
 <div class="flex h-[100dvh]" x-data="{ sidebar: window.innerWidth >= 1024 }">
 
-    {{-- Mobile Overlay --}}
-    <div x-show="sidebar" class="fixed inset-0 z-20 bg-black/50 lg:hidden backdrop-blur-sm" @click="sidebar = false" x-cloak></div>
+    {{-- Mobile Overlay (Desativado, Sidebar agora é apenas Desktop) --}}
+    <!-- div x-show="sidebar" class="fixed inset-0 z-20 bg-black/50 lg:hidden backdrop-blur-sm" @click="sidebar = false" x-cloak></div -->
 
     {{-- ============================ SIDEBAR ============================ --}}
     <aside x-show="sidebar" x-cloak
-           class="fixed inset-y-0 left-0 z-30 w-64 shrink-0 overflow-y-auto border-r border-ink-600 bg-ink-800 lg:static lg:block">
+           class="hidden lg:block fixed inset-y-0 left-0 z-30 w-64 shrink-0 overflow-y-auto border-r border-ink-600 bg-ink-800 lg:static">
         <div class="flex items-center justify-center px-4 py-4 border-b border-ink-600">
             <img src="{{ asset('strasalogo.png') }}" alt="{{ config('app.name') }}" class="h-8 w-auto object-contain">
         </div>
@@ -170,7 +170,7 @@
     {{-- ============================ CONTEÚDO ============================ --}}
     <div class="flex min-w-0 flex-1 flex-col relative transition-all duration-300" style="{{ $activeClient?->background_style }}">
         <header class="flex items-center gap-3 border-b border-ink-600/70 bg-ink-800/80 px-4 py-3 backdrop-blur-md sticky top-0 z-20">
-            <button @click="sidebar = !sidebar" class="rounded p-1.5 text-slate-400 hover:bg-ink-700 hover:text-white">☰</button>
+            <button @click="sidebar = !sidebar" class="hidden lg:block rounded p-1.5 text-slate-400 hover:bg-ink-700 hover:text-white">☰</button>
             <div class="min-w-0 flex-1 flex items-center justify-between">
                 <div class="min-w-0">{{ $header ?? '' }}</div>
                 
@@ -220,7 +220,7 @@
 
         <x-flash />
 
-        <main class="flex-1 overflow-auto">
+        <main class="flex-1 overflow-auto pb-24 lg:pb-0">
             {{ $slot }}
         </main>
     </div>
@@ -507,5 +507,32 @@
     });
 </script>
 @stack('scripts')
+
+{{-- ============================ MOBILE BOTTOM NAVIGATION ============================ --}}
+<nav class="lg:hidden fixed bottom-0 inset-x-0 z-50 backdrop-blur-xl bg-ink-900/80 border-t border-white/10" style="padding-bottom: env(safe-area-inset-bottom);">
+    <div class="flex items-center justify-around px-2 py-2">
+        @php
+            $navItems = [
+                ['route' => 'dashboard', 'label' => 'Início', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>'],
+                ['route' => 'my-tasks', 'label' => 'Tarefas', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>'],
+                ['route' => 'clients.index', 'label' => 'Clientes', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>'],
+            ];
+            if(auth()->user()->isAdmin()) {
+                $navItems[] = ['route' => 'team.index', 'label' => 'Equipe', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>'];
+            }
+        @endphp
+
+        @foreach($navItems as $item)
+            @php
+                $isActive = request()->routeIs(Str::before($item['route'], '.').'.*') || request()->routeIs($item['route']);
+            @endphp
+            <a href="{{ route($item['route']) }}" class="flex flex-col items-center justify-center w-16 h-12 {{ $isActive ? 'bg-brand-500/20 rounded-xl' : '' }}">
+                <svg class="w-5 h-5 mb-0.5 {{ $isActive ? 'text-brand-400' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
+                <span class="text-[10px] font-medium {{ $isActive ? 'text-brand-400' : 'text-slate-400' }}">{{ $item['label'] }}</span>
+            </a>
+        @endforeach
+    </div>
+</nav>
+
 </body>
 </html>
