@@ -524,7 +524,7 @@
 
         @foreach($navItems as $item)
             @php
-                $isActive = request()->routeIs(Str::before($item['route'], '.').'.*') || request()->routeIs($item['route']);
+                $isActive = request()->routeIs(\Illuminate\Support\Str::before($item['route'], '.').'.*') || request()->routeIs($item['route']);
             @endphp
             <a href="{{ route($item['route']) }}" class="flex flex-col items-center justify-center w-16 h-12 {{ $isActive ? 'bg-brand-500/20 rounded-xl' : '' }}">
                 <svg class="w-5 h-5 mb-0.5 {{ $isActive ? 'text-brand-400' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>

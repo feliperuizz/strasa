@@ -22,28 +22,32 @@ class DashboardController extends Controller
 
         $phraseContent = "Bora pra cima! Mais um dia de conquistas.";
 
-        if ($hour >= 5 && $hour < 12 && session('greeted_morning') !== $dateStr) {
-            $phrase = \App\Models\Phrase::where('type', 'morning')->inRandomOrder()->first();
-            if ($phrase) {
-                $phraseContent = $phrase->content;
-                session(['greeted_morning' => $dateStr]);
-            }
-        } elseif ($hour >= 18 && session('greeted_evening') !== $dateStr) {
-            $phrase = \App\Models\Phrase::where('type', 'evening')->inRandomOrder()->first();
-            if ($phrase) {
-                $phraseContent = $phrase->content;
-                session(['greeted_evening' => $dateStr]);
-            }
-        } else {
-            $count = \App\Models\Phrase::where('type', 'daily')->count();
-            if ($count > 0) {
-                $phrase = \App\Models\Phrase::where('type', 'daily')->orderBy('id')->skip($now->dayOfYear % $count)->first();
+        try {
+            if ($hour >= 5 && $hour < 12 && session('greeted_morning') !== $dateStr) {
+                $phrase = \App\Models\Phrase::where('type', 'morning')->inRandomOrder()->first();
                 if ($phrase) {
                     $phraseContent = $phrase->content;
+                    session(['greeted_morning' => $dateStr]);
+                }
+            } elseif ($hour >= 18 && session('greeted_evening') !== $dateStr) {
+                $phrase = \App\Models\Phrase::where('type', 'evening')->inRandomOrder()->first();
+                if ($phrase) {
+                    $phraseContent = $phrase->content;
+                    session(['greeted_evening' => $dateStr]);
+                }
+            } else {
+                $count = \App\Models\Phrase::where('type', 'daily')->count();
+                if ($count > 0) {
+                    $phrase = \App\Models\Phrase::where('type', 'daily')->orderBy('id')->skip($now->dayOfYear % $count)->first();
+                    if ($phrase) {
+                        $phraseContent = $phrase->content;
+                    }
                 }
             }
+        } catch (\Exception $e) {
+            // Em caso de falha no banco (ex: tabela não existe), cai aqui silenciosamente
+            \Log::error("Erro ao buscar frase do dia: " . $e->getMessage());
         }
-        \Log::info("DEBUG_PHRASE: Hour=$hour, Count=$count, Offset=" . ($now->dayOfYear % max(1, $count)) . ", PhraseFound=" . ($phrase ? 'YES' : 'NO') . ", FinalContent: $phraseContent");
 
         if ($user->isAdmin()) {
             return $this->adminDashboard($request, $phraseContent);
