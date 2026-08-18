@@ -37,8 +37,10 @@ class DashboardController extends Controller
         } else {
             $count = \App\Models\Phrase::where('type', 'daily')->count();
             if ($count > 0) {
-                $phrase = \App\Models\Phrase::where('type', 'daily')->skip($now->dayOfYear % $count)->first();
-                if ($phrase) $phraseContent = $phrase->content;
+                $phrase = \App\Models\Phrase::where('type', 'daily')->orderBy('id')->skip($now->dayOfYear % $count)->first();
+                if ($phrase) {
+                    $phraseContent = $phrase->content;
+                }
             }
         }
 
