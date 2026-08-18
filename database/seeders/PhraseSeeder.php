@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Phrase;
+use Illuminate\Support\Facades\DB;
 
 class PhraseSeeder extends Seeder
 {
@@ -12,52 +13,67 @@ class PhraseSeeder extends Seeder
      */
     public function run(): void
     {
-        $phrases = [
-            // MORNING
-            ['type' => 'morning', 'content' => 'Bom dia flor do dia! O café já tá pronto ou vai enrolar mais?'],
-            ['type' => 'morning', 'content' => 'Tava dormindo até tarde, né? Vamo acordar que o boleto não se paga sozinho!'],
-            ['type' => 'morning', 'content' => 'Bom dia! O sol já nasceu lá na fazendinha, bora trabalhar!'],
-            ['type' => 'morning', 'content' => 'Vamo que vamo! Mais um dia pra gente brilhar (ou tentar sobreviver).'],
-            ['type' => 'morning', 'content' => 'Bom dia pra quem acordou com a energia lá em cima! Pra você que não, bom dia também.'],
-            ['type' => 'morning', 'content' => 'Acorda menina! Já bebeu sua água e pegou seu café hoje?'],
-            ['type' => 'morning', 'content' => 'Bom dia! Já separou aquele sorriso falso pra reunião de hoje?'],
-            ['type' => 'morning', 'content' => 'Dormiu bem? Espero que sim, porque o dia de hoje promete! Bora!'],
-            ['type' => 'morning', 'content' => 'Olha quem acordou! Seja bem-vindo ao maravilhoso mundo corporativo.'],
-            ['type' => 'morning', 'content' => 'Bom dia! Respira fundo, toma um café duplo e foca nas entregas.'],
-            
-            // EVENING
-            ['type' => 'evening', 'content' => 'Trabalhando até agora? Vai chover!'],
-            ['type' => 'evening', 'content' => 'Já deu a hora, fecha esse notebook e vai viver um pouco!'],
-            ['type' => 'evening', 'content' => 'Se você continuar trabalhando a essa hora, eu vou começar a cobrar hora extra.'],
-            ['type' => 'evening', 'content' => 'Opa, horário nobre! A empresa agradece sua dedicação, mas sua cama tá com saudades.'],
-            ['type' => 'evening', 'content' => 'Ninguém merece trabalhar depois das 18h. Bora descansar que amanhã tem mais.'],
-            ['type' => 'evening', 'content' => 'O expediente acabou, chefe! Vai ver uma série e esquecer dos problemas.'],
-            ['type' => 'evening', 'content' => 'Tá pagando promessa? Desliga isso aí e vai jantar!'],
-            ['type' => 'evening', 'content' => 'Nessa hora da noite a produtividade já foi pro espaço. Vai descansar!'],
-            ['type' => 'evening', 'content' => 'Chega de tela por hoje! Amanhã com a mente fresca as coisas fluem melhor.'],
-            ['type' => 'evening', 'content' => 'Você é dono da empresa? Se não for, desliga o PC agora!'],
+        // Limpa a tabela antes de popular novamente
+        DB::table('phrases')->truncate();
 
-            // DAILY
-            ['type' => 'daily', 'content' => 'Não deixe para amanhã o café que você pode tomar hoje.'],
-            ['type' => 'daily', 'content' => 'A única maneira de fazer um ótimo trabalho é amar o que você faz (e ser bem pago por isso).'],
-            ['type' => 'daily', 'content' => 'Acredite no seu potencial. Ou pelo menos finja até conseguir.'],
-            ['type' => 'daily', 'content' => 'Se o plano A não funcionar, o alfabeto tem mais 25 letras. Fica a dica.'],
-            ['type' => 'daily', 'content' => 'Foco, força e fésse café não esfriar!'],
-            ['type' => 'daily', 'content' => 'Organize suas tarefas antes que elas organizem a sua sanidade.'],
-            ['type' => 'daily', 'content' => 'Sabe aquela tarefa que você tá procrastinando? É, vai ter que fazer ela agora.'],
-            ['type' => 'daily', 'content' => 'Reunião que poderia ser um email: a gente vê por aqui.'],
-            ['type' => 'daily', 'content' => 'Seja a pessoa que você precisava ter no seu time.'],
-            ['type' => 'daily', 'content' => 'Não sabendo que era impossível, foi lá e descobriu que era mesmo. Brincadeira, você consegue!'],
-            ['type' => 'daily', 'content' => 'O sucesso é a soma de pequenos esforços repetidos dia sim, dia também.'],
-            ['type' => 'daily', 'content' => 'Respire fundo. Feche abas desnecessárias (inclusive as da mente).'],
-            ['type' => 'daily', 'content' => 'Produtividade não é fazer muito, é fazer o que realmente importa.'],
-            ['type' => 'daily', 'content' => 'Que o seu Wi-Fi seja forte e o seu código sem bugs.'],
-            ['type' => 'daily', 'content' => 'Lembre-se: O CTRL+Z é o melhor amigo do homem moderno.'],
-            ['type' => 'daily', 'content' => 'Se tudo estiver dando errado, lembre-se que pelo menos você não é um bug em produção.'],
-            ['type' => 'daily', 'content' => 'Aproveite as pequenas vitórias do dia, tipo conseguir centralizar uma div de primeira.'],
-            ['type' => 'daily', 'content' => 'Sua melhor versão é aquela que já tomou o café da tarde.'],
-            ['type' => 'daily', 'content' => 'Transforme o estresse em foco. E se não der, transforme em intervalo.'],
-            ['type' => 'daily', 'content' => 'Mais um dia lindo para ignorar os problemas e focar na entrega urgente!'],
+        $phrases = [
+            // MORNING (Manhã)
+            ['type' => 'morning', 'content' => 'Bom dia! Já checou o TikTok hoje ou vai deixar a concorrência viralizar primeiro?'],
+            ['type' => 'morning', 'content' => 'Acorda menina! O café tá quente e o cliente já tá no WhatsApp pedindo "aquela alteraçãozinha".'],
+            ['type' => 'morning', 'content' => 'Bom dia flor do dia! Bora roteirizar aquele Reels que vai bater 1 milhão de views?'],
+            ['type' => 'morning', 'content' => 'Vamo que vamo! A pauta não se aprova sozinha e o engajamento não cai do céu.'],
+            ['type' => 'morning', 'content' => 'Dormiu bem? Espero que sim, porque o dia de hoje tem três criativos atrasados pra salvar!'],
+            ['type' => 'morning', 'content' => 'Bom dia! Respira fundo, toma um café duplo e se prepara pra ler "aumenta o logo".'],
+            ['type' => 'morning', 'content' => 'Acorda pra cuspir engajamento! Bora fazer esse feed ficar impecável.'],
+            ['type' => 'morning', 'content' => 'Bom dia! O sol nasceu para todos, mas o alcance orgânico a gente tem que suar pra conseguir.'],
+            ['type' => 'morning', 'content' => 'Bom dia pra quem acordou pronto pra entregar a arte de primeira (sonhar não custa nada).'],
+            ['type' => 'morning', 'content' => 'Levanta, sacode a poeira e abre o Canva/Photoshop. Mais um dia salvando a imagem da marca alheia!'],
+            
+            // EVENING (Fim de Tarde / Noite)
+            ['type' => 'evening', 'content' => 'Trabalhando até agora? O algoritmo já foi dormir, vai você também!'],
+            ['type' => 'evening', 'content' => 'Exportando vídeo a essa hora? Desliga esse Premiere e vai viver a vida!'],
+            ['type' => 'evening', 'content' => 'Já deu a hora! Pode fechar esse Photoshop e ir maratonar uma série.'],
+            ['type' => 'evening', 'content' => 'Opa, horário nobre! A agência agradece, mas o alcance do seu cérebro já tá no mínimo.'],
+            ['type' => 'evening', 'content' => 'Ninguém merece aprovar arte depois das 18h. Salva tudo e bora pra casa!'],
+            ['type' => 'evening', 'content' => 'Se você continuar mexendo nesse layout a essa hora, vai acabar estragando. Vai descansar!'],
+            ['type' => 'evening', 'content' => 'O expediente acabou, marqueteiro! Deixa a criatividade recarregar pra amanhã.'],
+            ['type' => 'evening', 'content' => 'Tá pagando promessa? O tráfego pago trabalha 24h, mas você não precisa.'],
+            ['type' => 'evening', 'content' => 'Chega de telinha por hoje. Vai dar um descanso pros olhos e pra mente.'],
+            ['type' => 'evening', 'content' => 'Você não é o Zuckerberg pra ficar online até essa hora. Desliga isso aí!'],
+
+            // DAILY (Diárias - Motivacionais, Zueiras, Rotina de Agência)
+            ['type' => 'daily', 'content' => 'Não deixe para amanhã o Reels que você pode gravar e editar hoje.'],
+            ['type' => 'daily', 'content' => 'Acredite no seu potencial! Se aquele áudio do "Bora Bill" viralizou, a sua ideia também pode.'],
+            ['type' => 'daily', 'content' => '"Aumenta o logo e coloca mais cor." Respire fundo, conte até 10 e sorria.'],
+            ['type' => 'daily', 'content' => 'Sabe aquele bloqueio criativo? Ele passa rapidinho com um café forte e um pix caindo na conta.'],
+            ['type' => 'daily', 'content' => 'O sucesso é a soma de um Copy matador, uma Arte bonita e um Tráfego bem segmentado.'],
+            ['type' => 'daily', 'content' => 'Que o seu Wi-Fi seja forte e suas exportações no Premiere sejam rápidas.'],
+            ['type' => 'daily', 'content' => 'Seja o tipo de profissional que o algoritmo do Instagram amaria entregar 100%.'],
+            ['type' => 'daily', 'content' => 'Aproveite as pequenas vitórias do dia, tipo: o cliente aprovar a arte de primeira, sem refação.'],
+            ['type' => 'daily', 'content' => 'Mais um dia lindo para ignorar os problemas e focar na pauta que tá atrasada!'],
+            ['type' => 'daily', 'content' => 'Organize seus criativos antes que eles organizem a sua sanidade mental.'],
+            ['type' => 'daily', 'content' => 'O cliente tem sempre razão? Não, mas a gente faz ele achar que sim. Bora produzir!'],
+            ['type' => 'daily', 'content' => 'Reunião de briefing que poderia ser um áudio no WhatsApp: a gente vê por aqui.'],
+            ['type' => 'daily', 'content' => 'Se tudo estiver dando errado, lembre-se: pelo menos você não mandou a arte com erro de português pro ar.'],
+            ['type' => 'daily', 'content' => 'Lembre-se: O CTRL+Z  é o melhor amigo do designer contemporâneo.'],
+            ['type' => 'daily', 'content' => 'Copiar é feio. O nome chique para isso é "Fazer Benchmarking". Fica a dica!'],
+            ['type' => 'daily', 'content' => 'Nenhuma tempestade dura pra sempre. E nenhuma refação dura mais que 5 rodadas (eu espero).'],
+            ['type' => 'daily', 'content' => 'Confie no processo. Mas na dúvida, coloque uma musiquinha em alta no fundo que ajuda.'],
+            ['type' => 'daily', 'content' => 'Toda grande marca começou com um post flopado. O segredo é a consistência.'],
+            ['type' => 'daily', 'content' => 'Seu melhor trabalho ainda está por vir (provavelmente depois que você tomar mais café).'],
+            ['type' => 'daily', 'content' => 'Crie com o coração. Edite com a cabeça. Aprove com o cliente (e não discuta o gosto dele).'],
+
+            // DESMOTIVACIONAIS (Engraçadas)
+            ['type' => 'daily', 'content' => 'O "não" você já tem. Agora bora atrás da humilhação com o cliente!'],
+            ['type' => 'daily', 'content' => 'Lembre-se: o seu esforço de hoje é a garantia das férias do dono da agência amanhã.'],
+            ['type' => 'daily', 'content' => 'Não deixe que nada te desanime. O boleto vence independente do seu bloqueio criativo.'],
+            ['type' => 'daily', 'content' => 'Não sabendo que era impossível, foi lá e descobriu por que ninguém faz.'],
+            ['type' => 'daily', 'content' => 'Tudo pode piorar. Se ainda não piorou, é porque o cliente ainda não visualizou a arte.'],
+            ['type' => 'daily', 'content' => 'Trabalhe com o que você ama e você nunca mais vai amar nada na vida.'],
+            ['type' => 'daily', 'content' => 'Nunca desista dos seus sonhos. Vai dormir que amanhã tem mais refação pra entregar.'],
+            ['type' => 'daily', 'content' => 'O cansaço passa, mas a vergonha do post flopado fica pra sempre na timeline.'],
+            ['type' => 'daily', 'content' => 'Sabe aquela luz no fim do túnel? Pode ser o trem das demandas urgentes chegando.'],
+            ['type' => 'daily', 'content' => 'Esforce-se hoje para amanhã ganhar como recompensa mais trabalho ainda!'],
         ];
 
         foreach ($phrases as $phrase) {
