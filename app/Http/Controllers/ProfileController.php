@@ -57,6 +57,16 @@ class ProfileController extends Controller
             $user->avatar_disk = $disk;
         }
 
+        if ($request->has('notification_settings')) {
+            $settings = $request->input('notification_settings', []);
+            $user->notification_settings = [
+                'daily_enabled' => !empty($settings['daily_enabled']),
+                'daily_time' => $settings['daily_time'] ?? '08:00',
+                'publish_enabled' => !empty($settings['publish_enabled']),
+                'publish_time' => $settings['publish_time'] ?? '10:00',
+            ];
+        }
+
         $user->save();
 
         return redirect()->route('profile.edit')->with('status', 'Perfil atualizado com sucesso!');
@@ -74,5 +84,17 @@ class ProfileController extends Controller
         ]);
 
         return response()->json(['status' => 'success']);
+    }
+
+    public function subscribeToPush(Request $request)
+    {
+        $endpoint = $request->endpoint;
+        $token = $request->keys['auth'] ?? null;
+        $key = $request->keys['p256dh'] ?? null;
+        $user = $request->user();
+        
+        $user->updatePushSubscription($endpoint, $key, $token);
+        
+        return response()->json(['success' => true], 200);
     }
 }

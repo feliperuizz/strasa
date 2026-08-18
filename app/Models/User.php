@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
+use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasPushSubscriptions;
 
     public const ROLE_ADMIN = 'admin';      // administrador
     public const ROLE_MEMBER = 'member';    // colaborador
@@ -31,6 +32,7 @@ class User extends Authenticatable
         'avatar_disk',
         'password',
         'sidebar_client_order',
+        'notification_settings',
     ];
 
     protected $hidden = [
@@ -44,6 +46,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'sidebar_client_order' => 'array',
+            'notification_settings' => 'array',
         ];
     }
 

@@ -49,6 +49,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('profile', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
     Route::post('profile/sidebar-order', [\App\Http\Controllers\ProfileController::class, 'updateSidebarOrder'])->name('profile.sidebar-order');
+    Route::post('push-subscriptions', [\App\Http\Controllers\ProfileController::class, 'subscribeToPush'])->name('push.subscribe');
 
     /* Clientes ----------------------------------------------------------- */
     Route::resource('clients', ClientController::class);

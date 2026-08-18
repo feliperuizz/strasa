@@ -22,7 +22,14 @@
                         @csrf @method('PATCH')
                         <input name="name" value="{{ $column->name }}" class="w-full rounded bg-ink-900 px-2 py-1 text-sm border border-ink-600" />
                         <input name="color" type="color" value="{{ $column->color }}" class="h-7 w-full rounded bg-ink-900 border border-ink-600" />
-                        <button class="w-full rounded bg-brand-600 py-1 text-xs font-medium text-white hover:bg-brand-500">Salvar</button>
+                        
+                        <label class="flex items-center gap-2 mt-2">
+                            <input type="hidden" name="is_publish_column" value="0">
+                            <input type="checkbox" name="is_publish_column" value="1" {{ $column->is_publish_column ? 'checked' : '' }} class="rounded border-ink-600 bg-ink-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-ink-800">
+                            <span class="text-[11px] leading-tight text-slate-400">Notificar Postagens desta coluna hoje</span>
+                        </label>
+
+                        <button class="w-full rounded bg-brand-600 py-1 text-xs font-medium text-white hover:bg-brand-500 mt-2">Salvar</button>
                     </form>
                     <form method="POST" action="{{ route('columns.destroy', $column) }}"
                           onsubmit="return confirm('Remover esta coluna?')" class="mt-2">

@@ -21,3 +21,6 @@ Schedule::command('queue:work --stop-when-empty --max-time=55 --tries=3')
 
 // Limpeza de jobs em lote antigos (opcional, mantém o banco enxuto).
 Schedule::command('queue:prune-batches --hours=48')->daily();
+
+// Disparo de notificações Push Agendadas (Resumo Diário e Postagens)
+Schedule::command('notifications:send-scheduled')->everyMinute();

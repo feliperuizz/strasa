@@ -86,6 +86,24 @@
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#111111">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Service Worker Registration for PWA / WebPush -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
     <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="h-[100dvh] bg-ink-900 text-slate-200 antialiased font-sans">

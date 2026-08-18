@@ -68,6 +68,54 @@
                 <input type="password" name="password_confirmation" class="w-full rounded-lg border border-ink-600 bg-ink-900/50 py-2 px-3 text-slate-200 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500">
             </div>
 
+            <hr class="border-ink-700">
+
+            {{-- Notificações (PWA / Push) --}}
+            <div x-data="notificationsSetup()">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-white">Notificações no Dispositivo (Push)</h3>
+                    <button type="button" @click="subscribe()" :disabled="subscribing" 
+                            class="rounded bg-ink-700 px-3 py-1.5 text-xs font-semibold text-brand-400 hover:bg-ink-600 border border-ink-600 transition disabled:opacity-50">
+                        <span x-text="subscribing ? 'Ativando...' : (isSubscribed ? 'Renovar Permissão' : 'Ativar neste Aparelho')"></span>
+                    </button>
+                </div>
+                <p class="text-sm text-slate-400 mb-6">Permita que o Strasa envie notificações para o seu celular ou computador. No iPhone, você precisa adicionar este site à Tela de Início primeiro.</p>
+
+                <div class="space-y-4 bg-ink-900/30 p-4 rounded-lg border border-ink-700/50">
+                    @php $settings = $user->notification_settings ?? []; @endphp
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300">Resumo do Dia</label>
+                            <p class="text-xs text-slate-500">Notificar quantidade de tarefas que você tem para hoje.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="time" name="notification_settings[daily_time]" value="{{ $settings['daily_time'] ?? '08:00' }}" class="rounded bg-ink-900 border border-ink-600 text-slate-300 text-sm px-2 py-1 focus:ring-brand-500">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="notification_settings[daily_enabled]" value="1" {{ !empty($settings['daily_enabled']) ? 'checked' : '' }} class="sr-only peer">
+                                <div class="w-9 h-5 bg-ink-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr class="border-ink-700/50">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300">Postagens e Agendamentos</label>
+                            <p class="text-xs text-slate-500">Notificar publicações sob sua responsabilidade hoje.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="time" name="notification_settings[publish_time]" value="{{ $settings['publish_time'] ?? '10:00' }}" class="rounded bg-ink-900 border border-ink-600 text-slate-300 text-sm px-2 py-1 focus:ring-brand-500">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="notification_settings[publish_enabled]" value="1" {{ !empty($settings['publish_enabled']) ? 'checked' : '' }} class="sr-only peer">
+                                <div class="w-9 h-5 bg-ink-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="pt-4 flex justify-end">
                 <button type="submit" class="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-ink-800 transition">
                     Salvar Alterações
@@ -75,4 +123,75 @@
             </div>
         </form>
     </div>
+
+    @push('scripts')
+    <script>
+        function notificationsSetup() {
+            return {
+                isSubscribed: false,
+                subscribing: false,
+                
+                init() {
+                    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                        console.warn('Push messaging is not supported.');
+                        return;
+                    }
+                    
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.pushManager.getSubscription().then(subscription => {
+                            this.isSubscribed = !(subscription === null);
+                        });
+                    });
+                },
+                
+                subscribe() {
+                    this.subscribing = true;
+                    
+                    navigator.serviceWorker.ready.then(registration => {
+                        const applicationServerKey = this.urlB64ToUint8Array('{{ config('webpush.vapid.public_key') }}');
+                        
+                        registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: applicationServerKey
+                        })
+                        .then(subscription => {
+                            return fetch('{{ route('push.subscribe') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify(subscription)
+                            });
+                        })
+                        .then(response => {
+                            if (!response.ok) throw new Error('Bad status code from server.');
+                            this.isSubscribed = true;
+                            alert('Notificações ativadas neste dispositivo com sucesso!');
+                        })
+                        .catch(err => {
+                            console.error('Failed to subscribe the user: ', err);
+                            alert('Erro ao ativar notificações. Verifique as permissões do navegador.');
+                        })
+                        .finally(() => {
+                            this.subscribing = false;
+                        });
+                    });
+                },
+                
+                urlB64ToUint8Array(base64String) {
+                    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+                    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                    const rawData = window.atob(base64);
+                    const outputArray = new Uint8Array(rawData.length);
+                    for (let i = 0; i < rawData.length; ++i) {
+                        outputArray[i] = rawData.charCodeAt(i);
+                    }
+                    return outputArray;
+                }
+            }
+        }
+    </script>
+    @endpush
 </x-app-layout>
