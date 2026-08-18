@@ -128,6 +128,91 @@
         @if($task->exists)
         <hr class="my-6 border-[#2a2b2d]">
 
+        {{-- Checklist --}}
+        <div class="mb-6" x-data="{
+            newItem: '',
+            adding: false,
+            items: {{ json_encode($task->items ?? []) }},
+            async addItem() {
+                if(!this.newItem.trim()) return;
+                this.adding = true;
+                try {
+                    const res = await fetch('{{ route('items.store', $task) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ description: this.newItem })
+                    });
+                    const data = await res.json();
+                    if(res.ok) {
+                        this.items.push(data.item);
+                        this.newItem = '';
+                    }
+                } finally {
+                    this.adding = false;
+                }
+            },
+            async toggleItem(item) {
+                item.is_completed = !item.is_completed;
+                fetch('/items/' + item.id, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ is_completed: item.is_completed })
+                });
+            },
+            async deleteItem(item) {
+                if(!confirm('Excluir item?')) return;
+                this.items = this.items.filter(i => i.id !== item.id);
+                fetch('/items/' + item.id, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    }
+                });
+            },
+            get progress() {
+                if(this.items.length === 0) return 0;
+                return Math.round((this.items.filter(i => i.is_completed).length / this.items.length) * 100);
+            }
+        }">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="font-semibold text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    Checklist
+                </h3>
+                <span class="text-xs font-semibold text-slate-400" x-text="progress + '%'"></span>
+            </div>
+            
+            <div class="h-1.5 w-full bg-ink-800 rounded-full mb-4 overflow-hidden" x-show="items.length > 0">
+                <div class="h-full bg-brand-500 transition-all duration-500" :style="'width: ' + progress + '%'"></div>
+            </div>
+
+            <div class="space-y-2 mb-3">
+                <template x-for="item in items" :key="item.id">
+                    <div class="flex items-start gap-2 group">
+                        <input type="checkbox" :checked="item.is_completed" @change="toggleItem(item)" class="mt-1 rounded border-ink-600 bg-ink-800 text-brand-500 focus:ring-brand-500 cursor-pointer">
+                        <span class="flex-1 text-sm transition pt-0.5" :class="item.is_completed ? 'text-slate-500 line-through' : 'text-slate-200'" x-text="item.description"></span>
+                        <button type="button" @click="deleteItem(item)" class="text-xs text-rose-500 opacity-0 group-hover:opacity-100 transition px-2">Excluir</button>
+                    </div>
+                </template>
+            </div>
+
+            <form @submit.prevent="addItem" class="flex gap-2">
+                <input type="text" x-model="newItem" placeholder="Adicionar item..." class="flex-1 rounded border border-[#2a2b2d] bg-[#2a2b2d] px-3 py-1.5 text-sm text-white focus:border-brand-500 focus:outline-none">
+                <button type="submit" :disabled="adding" class="rounded bg-[#2a2b2d] border border-ink-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50">Adicionar</button>
+            </form>
+        </div>
+
+        <hr class="my-6 border-[#2a2b2d]">
+
         {{-- Comentários (Simples) --}}
         <div>
             <h3 class="mb-4 font-semibold text-white">Comentários</h3>

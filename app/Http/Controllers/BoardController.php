@@ -29,7 +29,7 @@ class BoardController extends Controller
         // Tarefas com filtros, já com relações para os cards (evita N+1).
         $tasks = Task::query()
             ->where('project_id', $project->id)
-            ->with(['assignee', 'tags', 'attachments'])
+            ->with(['assignee', 'tags', 'attachments', 'items'])
             ->when($request->filled('assignee'), fn ($q) => $q->where('assignee_id', $request->integer('assignee')))
             ->when($request->filled('from'), fn ($q) => $q->whereDate('publish_date', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('publish_date', '<=', $request->date('to')))
@@ -62,7 +62,7 @@ class BoardController extends Controller
 
         $tasks = Task::query()
             ->where('project_id', $project->id)
-            ->with(['assignee', 'tags', 'attachments'])
+            ->with(['assignee', 'tags', 'attachments', 'items'])
             ->when($request->filled('assignee'), fn ($q) => $q->where('assignee_id', $request->integer('assignee')))
             ->when($request->filled('from'), fn ($q) => $q->whereDate('publish_date', '>=', $request->date('from')))
             ->when($request->filled('to'), fn ($q) => $q->whereDate('publish_date', '<=', $request->date('to')))

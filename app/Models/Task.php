@@ -98,6 +98,11 @@ class Task extends Model
         return $this->belongsToMany(Tag::class, 'task_tag');
     }
 
+    public function items(): HasMany
+    {
+        return $this->hasMany(TaskItem::class)->orderBy('position');
+    }
+
     /* --------------------------------------------------------------------- */
     /* Scopes / Helpers                                                      */
     /* --------------------------------------------------------------------- */

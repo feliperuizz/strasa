@@ -81,6 +81,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
     Route::post('tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
 
+    /* Itens de Checklist ------------------------------------------------- */
+    Route::post('tasks/{task}/items', [\App\Http\Controllers\TaskItemController::class, 'store'])->name('items.store');
+    Route::patch('items/{item}', [\App\Http\Controllers\TaskItemController::class, 'update'])->name('items.update');
+    Route::delete('items/{item}', [\App\Http\Controllers\TaskItemController::class, 'destroy'])->name('items.destroy');
+
     /* Comentários -------------------------------------------------------- */
     Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store'])->name('comments.store');
     Route::patch('comments/{comment}', [TaskCommentController::class, 'update'])->name('comments.update');

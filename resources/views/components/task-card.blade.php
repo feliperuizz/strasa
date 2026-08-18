@@ -31,6 +31,12 @@
 
         <div class="mt-3 flex items-center justify-between">
             <div class="flex flex-wrap items-center gap-1.5">
+                @if($task->items->count() > 0)
+                    <span class="text-[10px] text-slate-400 font-medium bg-ink-800 px-1.5 py-0.5 rounded-md border border-ink-600 flex items-center gap-1" title="Checklist">
+                        <svg class="w-3 h-3 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        {{ $task->items->where('is_completed', true)->count() }}/{{ $task->items->count() }}
+                    </span>
+                @endif
                 @if($task->tags->isNotEmpty())
                     @foreach($task->tags as $tag)
                         <span class="rounded px-1.5 py-0.5 text-[10px] font-medium"
