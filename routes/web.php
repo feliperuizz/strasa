@@ -106,7 +106,4 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroy'])->name('team.invitations.destroy');
     Route::patch('team/members/{user}', [TeamController::class, 'updateMember'])->name('team.members.update');
     Route::delete('team/members/{user}', [TeamController::class, 'removeMember'])->name('team.members.destroy');
-
-    /* Deploy Express ----------------------------------------------------- */
-    Route::get('admin/atualizar-sistema', \App\Http\Controllers\DeployController::class)->name('system.deploy');
 });

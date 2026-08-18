@@ -201,9 +201,6 @@
                         <div class="px-3 py-2 text-xs text-slate-400">{{ auth()->user()->roleLabel() }}</div>
                         <a href="{{ route('profile.edit') }}" class="block px-3 py-2 hover:bg-ink-600">Meu Perfil</a>
                         <a href="{{ route('team.index') }}" class="block px-3 py-2 hover:bg-ink-600">Time</a>
-                        @if(auth()->user()->isAdmin())
-                            <a href="{{ route('system.deploy') }}" class="block px-3 py-2 text-emerald-400 hover:bg-ink-600 font-medium">🚀 Sincronizar (Deploy)</a>
-                        @endif
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <button class="block w-full px-3 py-2 text-left text-rose-400 hover:bg-ink-600">Sair</button>
                         </form>
