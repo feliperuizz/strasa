@@ -1,0 +1,7 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/$USER/strasa
+    - /bin/cp -R * $DEPLOYPATH
+    - /usr/local/bin/php $DEPLOYPATH/artisan migrate --force || /bin/php $DEPLOYPATH/artisan migrate --force || true
+    - /usr/local/bin/php $DEPLOYPATH/artisan view:clear || /bin/php $DEPLOYPATH/artisan view:clear || true
