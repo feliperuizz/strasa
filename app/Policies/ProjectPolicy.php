@@ -29,6 +29,6 @@ class ProjectPolicy
 
     public function delete(User $user, Project $project): bool
     {
-        return $this->sameCompany($user, $project);
+        return $this->sameCompany($user, $project) && $user->isAdmin();
     }
 }
