@@ -87,7 +87,7 @@
         </div>
     </x-slot>
 
-    <div class="flex h-[calc(100dvh-4rem)] flex-col">
+    <div class="flex h-[calc(100dvh-4rem)] flex-col" id="kanban-wrapper">
 
         {{-- Toolbar do Quadro (Add task etc) --}}
         <div class="px-4 pt-4 pb-2 flex items-center gap-4">
@@ -141,34 +141,35 @@
                 });
             }
 
-            // Drag to scroll no Kanban (clique no espaço vazio)
+            // Drag to scroll no Kanban (clique no espaço vazio, incluindo no topo)
             const scrollContainer = document.getElementById('kanban-scroll-container');
+            const wrapper = document.getElementById('kanban-wrapper');
             let isDown = false;
             let startX;
             let scrollLeft;
 
-            scrollContainer.addEventListener('mousedown', (e) => {
-                // Evita conflito com clique nos cards, botões, ou drag de colunas
-                if (e.target.closest('.kanban-list') || e.target.closest('button') || e.target.closest('input') || e.target.closest('.column-drag-handle')) {
+            wrapper.addEventListener('mousedown', (e) => {
+                // Evita conflito com clique nos cards, botões, links ou drag de colunas
+                if (e.target.closest('.kanban-list') || e.target.closest('button') || e.target.closest('a') || e.target.closest('input') || e.target.closest('.column-drag-handle')) {
                     return;
                 }
                 isDown = true;
-                scrollContainer.style.cursor = 'grabbing';
+                wrapper.style.cursor = 'grabbing';
                 startX = e.pageX - scrollContainer.offsetLeft;
                 scrollLeft = scrollContainer.scrollLeft;
             });
 
-            scrollContainer.addEventListener('mouseleave', () => {
+            wrapper.addEventListener('mouseleave', () => {
                 isDown = false;
-                scrollContainer.style.cursor = '';
+                wrapper.style.cursor = '';
             });
 
-            scrollContainer.addEventListener('mouseup', () => {
+            wrapper.addEventListener('mouseup', () => {
                 isDown = false;
-                scrollContainer.style.cursor = '';
+                wrapper.style.cursor = '';
             });
 
-            scrollContainer.addEventListener('mousemove', (e) => {
+            wrapper.addEventListener('mousemove', (e) => {
                 if (!isDown) return;
                 e.preventDefault();
                 const x = e.pageX - scrollContainer.offsetLeft;
