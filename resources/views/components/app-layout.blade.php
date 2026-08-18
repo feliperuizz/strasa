@@ -233,6 +233,70 @@
 </div>
 
 <script>
+    // Sistema inteligente de persistência e restauração de scroll (Kanban horizontal e vertical)
+    (function() {
+        const scrollKey = 'strasa_scroll_pos_' + window.location.pathname;
+
+        window.saveScrollPositions = function() {
+            try {
+                const pos = {};
+                const kanban = document.getElementById('kanban-scroll-container') || document.querySelector('.overflow-x-auto');
+                if (kanban) {
+                    pos.kanbanLeft = kanban.scrollLeft;
+                    pos.kanbanTop = kanban.scrollTop;
+                }
+                const main = document.querySelector('main');
+                if (main) {
+                    pos.mainTop = main.scrollTop;
+                    pos.mainLeft = main.scrollLeft;
+                }
+                pos.winX = window.scrollX;
+                pos.winY = window.scrollY;
+
+                sessionStorage.setItem(scrollKey, JSON.stringify(pos));
+            } catch (e) {}
+        };
+
+        window.restoreScrollPositions = function() {
+            try {
+                const raw = sessionStorage.getItem(scrollKey);
+                if (!raw) return;
+                const pos = JSON.parse(raw);
+
+                if (pos.kanbanLeft !== undefined) {
+                    const kanban = document.getElementById('kanban-scroll-container') || document.querySelector('.overflow-x-auto');
+                    if (kanban) {
+                        kanban.scrollLeft = pos.kanbanLeft;
+                        if (pos.kanbanTop !== undefined) kanban.scrollTop = pos.kanbanTop;
+                    }
+                }
+                if (pos.mainTop !== undefined) {
+                    const main = document.querySelector('main');
+                    if (main) {
+                        main.scrollTop = pos.mainTop;
+                        if (pos.mainLeft !== undefined) main.scrollLeft = pos.mainLeft;
+                    }
+                }
+                if (pos.winX !== undefined || pos.winY !== undefined) {
+                    window.scrollTo(pos.winX || 0, pos.winY || 0);
+                }
+            } catch (e) {}
+        };
+
+        window.addEventListener('beforeunload', window.saveScrollPositions);
+        document.addEventListener('DOMContentLoaded', window.restoreScrollPositions);
+        window.addEventListener('load', () => {
+            window.restoreScrollPositions();
+            setTimeout(window.restoreScrollPositions, 50);
+            setTimeout(window.restoreScrollPositions, 150);
+            setTimeout(window.restoreScrollPositions, 300);
+        });
+        document.addEventListener('alpine:init', () => {
+            setTimeout(window.restoreScrollPositions, 50);
+            setTimeout(window.restoreScrollPositions, 200);
+        });
+    })();
+
     window.completeTask = function(btn, taskId, e) {
         if (e) {
             e.preventDefault();
@@ -256,7 +320,7 @@
                 if(columns.length > 0 && card) {
                     columns[columns.length - 1].appendChild(card);
                 } else if (card) {
-                    // Se não, talvez seja em my-tasks (remove visualmente ou dá refresh)
+                    if (window.saveScrollPositions) window.saveScrollPositions();
                     setTimeout(() => window.location.reload(), 300);
                 }
             } else {
@@ -313,6 +377,7 @@
                 },
                 closeModal() {
                     this.isOpen = false;
+                    if (window.saveScrollPositions) window.saveScrollPositions();
                     setTimeout(() => window.location.reload(), 150);
                 }
             }));

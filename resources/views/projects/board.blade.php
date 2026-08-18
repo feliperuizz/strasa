@@ -93,7 +93,7 @@
         </div>
 
         {{-- Scroll horizontal para colunas --}}
-        <div class="flex-1 overflow-x-auto overflow-y-hidden p-4">
+        <div class="flex-1 overflow-x-auto overflow-y-hidden p-4" id="kanban-scroll-container">
             <div class="flex h-full items-stretch gap-4" id="kanban-board">
                 @foreach($columns as $column)
                     <x-kanban-column :column="$column" :tasks="$tasksByColumn->get($column->id, collect())" :project="$project" />
@@ -330,7 +330,10 @@
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ column_id: columnId })
-                }).then(() => window.location.reload());
+                }).then(() => {
+                    if (window.saveScrollPositions) window.saveScrollPositions();
+                    window.location.reload();
+                });
             },
 
             deleteTask() {
@@ -341,7 +344,10 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                             'Accept': 'application/json'
                         }
-                    }).then(() => window.location.reload());
+                    }).then(() => {
+                        if (window.saveScrollPositions) window.saveScrollPositions();
+                        window.location.reload();
+                    });
                 }
                 this.open = false;
             }

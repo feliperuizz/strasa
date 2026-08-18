@@ -197,7 +197,10 @@
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ column_id: columnId })
-                }).then(() => window.location.reload());
+                }).then(() => {
+                    if (window.saveScrollPositions) window.saveScrollPositions();
+                    window.location.reload();
+                });
             },
 
             deleteTask() {
@@ -208,7 +211,10 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                             'Accept': 'application/json'
                         }
-                    }).then(() => window.location.reload());
+                    }).then(() => {
+                        if (window.saveScrollPositions) window.saveScrollPositions();
+                        window.location.reload();
+                    });
                 }
                 this.open = false;
             }
