@@ -509,8 +509,8 @@
 @stack('scripts')
 
 {{-- ============================ MOBILE BOTTOM NAVIGATION ============================ --}}
-<nav class="lg:hidden fixed bottom-0 inset-x-0 z-50 backdrop-blur-xl bg-ink-900/80 border-t border-white/10" style="padding-bottom: env(safe-area-inset-bottom);">
-    <div class="flex items-center justify-around px-2 py-2">
+<nav class="lg:hidden fixed bottom-6 inset-x-4 z-50">
+    <div class="flex items-center justify-around px-2 py-2 backdrop-blur-2xl bg-[#1c1c1e]/90 border border-white/10 rounded-full shadow-2xl">
         @php
             $navItems = [
                 ['route' => 'dashboard', 'label' => 'Início', 'icon' => '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>'],
@@ -526,8 +526,8 @@
             @php
                 $isActive = request()->routeIs(\Illuminate\Support\Str::before($item['route'], '.').'.*') || request()->routeIs($item['route']);
             @endphp
-            <a href="{{ route($item['route']) }}" class="flex flex-col items-center justify-center w-16 h-12 {{ $isActive ? 'bg-brand-500/20 rounded-xl' : '' }}">
-                <svg class="w-5 h-5 mb-0.5 {{ $isActive ? 'text-brand-400' : 'text-slate-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
+            <a href="{{ route($item['route']) }}" class="flex flex-col items-center justify-center w-16 h-14 transition-colors {{ $isActive ? 'bg-[#323234] rounded-full' : '' }}">
+                <svg class="w-6 h-6 mb-0.5 {{ $isActive ? 'text-brand-400' : 'text-slate-300' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">{!! $item['icon'] !!}</svg>
                 <span class="text-[10px] font-medium {{ $isActive ? 'text-brand-400' : 'text-slate-400' }}">{{ $item['label'] }}</span>
             </a>
         @endforeach

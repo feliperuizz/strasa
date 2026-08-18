@@ -62,7 +62,5 @@
     </div>
 
     @push('scripts')
-    <script>
-
     @endpush
 </x-app-layout>
