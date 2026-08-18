@@ -202,23 +202,24 @@
             <div id="attachments-container" x-init="initTaskViewer($el)" class="space-y-6">
                 {{-- Renderizar Pastas --}}
                 @foreach($task->folders as $folder)
-                    <div class="rounded-lg border border-[#2a2b2d] bg-[#1e1e1e]/50 overflow-hidden" x-data="{ editing: false, folderName: '{{ $folder->name }}' }">
-                        <div class="flex items-center justify-between bg-[#2a2b2d] px-3 py-2">
+                    <div class="rounded-lg border border-[#2a2b2d] bg-[#1e1e1e]/50 overflow-hidden mb-3" x-data="{ open: false, editing: false, folderName: '{{ $folder->name }}' }">
+                        <div class="flex items-center justify-between bg-[#2a2b2d] px-3 py-2 cursor-pointer hover:bg-[#343538] transition" @click="if(!editing) open = !open">
                             <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-brand-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                 <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
-                                <span x-show="!editing" class="font-medium text-sm text-slate-200">{{ $folder->name }}</span>
+                                <span x-show="!editing" class="font-medium text-sm text-slate-200">{{ $folder->name }} <span class="text-xs text-slate-500 ml-1">({{ $folder->attachments->count() }})</span></span>
                                 <form x-show="editing" style="display:none;" @submit.prevent="renameFolder('{{ route('folders.update', $folder) }}', $event, folderName); editing = false" class="flex items-center gap-2">
-                                    <input type="text" x-model="folderName" class="h-6 rounded border-0 bg-[#1e1e1e] px-2 text-xs text-white focus:ring-1 focus:ring-brand-500">
-                                    <button type="submit" class="text-xs text-brand-400 font-medium">Salvar</button>
+                                    <input type="text" x-model="folderName" class="h-6 rounded border-0 bg-[#1e1e1e] px-2 text-xs text-white focus:ring-1 focus:ring-brand-500" @click.stop>
+                                    <button type="submit" class="text-xs text-brand-400 font-medium" @click.stop>Salvar</button>
                                 </form>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button type="button" @click="editing = !editing" class="text-xs text-slate-500 hover:text-white">Editar</button>
-                                <button type="button" @click="deleteFolder('{{ route('folders.destroy', $folder) }}')" class="text-xs text-rose-500 hover:text-rose-400">Excluir</button>
+                                <button type="button" @click.stop="editing = !editing" class="text-xs text-slate-500 hover:text-white">Editar</button>
+                                <button type="button" @click.stop="deleteFolder('{{ route('folders.destroy', $folder) }}')" class="text-xs text-rose-500 hover:text-rose-400">Excluir</button>
                             </div>
                         </div>
                         
-                        <div class="p-3">
+                        <div x-show="open" style="display: none;" class="p-3 border-t border-[#2a2b2d]">
                             <form @submit.prevent="uploadAttachment($event)" action="{{ route('attachments.store', $task) }}" class="mb-3 flex items-center gap-2">
                                 @csrf
                                 <input type="hidden" name="folder_id" value="{{ $folder->id }}">
