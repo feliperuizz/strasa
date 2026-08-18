@@ -57,6 +57,36 @@ class TeamController extends Controller
 
         return back()->with('status', 'Membro adicionado com sucesso!');
     }
+    public function updateMember(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($user->company_id === $request->user()->company_id, 403);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required', 'email', 'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'password' => ['nullable', 'string', 'min:8'],
+            'role' => ['required', Rule::in(array_keys(User::ROLES))],
+        ]);
+
+        $updateData = [
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'role' => $data['role'],
+        ];
+
+        if (!empty($data['password'])) {
+            $updateData['password'] = \Illuminate\Support\Facades\Hash::make($data['password']);
+        }
+
+        $user->update($updateData);
+
+        return back()->with('status', 'Membro atualizado com sucesso!');
+    }
+
     public function removeMember(Request $request, User $user): RedirectResponse
     {
         abort_unless($request->user()->isAdmin(), 403);

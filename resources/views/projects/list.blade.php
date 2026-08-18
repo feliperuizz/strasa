@@ -1,9 +1,16 @@
 <x-app-layout title="{{ $project->name }} · {{ $project->client->name }}" :client="$client">
     <x-slot name="header">
         <div class="flex items-center gap-3">
-            <h1 class="text-xl font-bold text-white tracking-wide">{{ $project->client->name }}</h1>
-            
-            {{-- Estrela de Favorito --}}
+            <div class="flex items-center gap-2">
+                <a href="{{ route('clients.show', $project->client) }}" class="text-xl font-bold text-slate-400 hover:text-white tracking-wide transition">{{ $project->client->name }}</a>
+                <span class="text-slate-600">/</span>
+                <h1 class="text-xl font-bold text-white tracking-wide">{{ $project->name }}</h1>
+                @can('update', $project)
+                    <a href="{{ route('projects.edit', $project) }}" class="ml-2 text-slate-500 hover:text-brand-400" title="Editar Projeto">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </a>
+                @endcan
+            </div>
             <div x-data="{ 
                 isFavorite: {{ auth()->user()->favoriteProjects()->where('project_id', $project->id)->exists() ? 'true' : 'false' }},
                 toggle() {
