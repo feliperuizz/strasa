@@ -40,7 +40,12 @@
             </div>
             <div class="relative z-10 flex items-center gap-2">
                 @if($task->publish_date)
-                    <span class="text-[11px] text-slate-400">{{ $task->publish_date->format('d/m') }}</span>
+                    <span class="text-[11px] text-slate-400" title="Publicação: {{ $task->publish_date->format('d/m/Y') }} {{ $task->publish_time ? \Carbon\Carbon::parse($task->publish_time)->format('H:i') : '' }}">
+                        {{ $task->publish_date->format('d/m') }}
+                        @if($task->publish_time)
+                            <span class="opacity-75 ml-0.5">{{ \Carbon\Carbon::parse($task->publish_time)->format('H:i') }}</span>
+                        @endif
+                    </span>
                 @endif
                 <x-avatar :user="$task->assignee" :size="6" />
             </div>

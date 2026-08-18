@@ -86,7 +86,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::patch('comments/{comment}', [TaskCommentController::class, 'update'])->name('comments.update');
     Route::delete('comments/{comment}', [TaskCommentController::class, 'destroy'])->name('comments.destroy');
 
-    /* Anexos (S3/R2) ----------------------------------------------------- */
+    /* Anexos (S3/R2) e Pastas -------------------------------------------- */
+    Route::post('tasks/{task}/folders', [\App\Http\Controllers\TaskFolderController::class, 'store'])->name('folders.store');
+    Route::patch('folders/{folder}', [\App\Http\Controllers\TaskFolderController::class, 'update'])->name('folders.update');
+    Route::delete('folders/{folder}', [\App\Http\Controllers\TaskFolderController::class, 'destroy'])->name('folders.destroy');
+
     Route::post('tasks/{task}/attachments', [TaskAttachmentController::class, 'store'])->name('attachments.store');
     Route::delete('attachments/{attachment}', [TaskAttachmentController::class, 'destroy'])->name('attachments.destroy');
     Route::get('attachments/{attachment}/download', [TaskAttachmentController::class, 'download'])->name('attachments.download');

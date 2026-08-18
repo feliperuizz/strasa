@@ -437,6 +437,26 @@
                     fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json' }, body: new URLSearchParams({ '_method': 'DELETE' }) })
                     .then(res => res.json()).then(data => element.remove());
                 },
+                createFolder(event) {
+                    const form = event.target; const formData = new FormData(form);
+                    fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
+                    .then(res => res.json()).then(data => {
+                        this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                    });
+                },
+                renameFolder(url, event, name) {
+                    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json' }, body: new URLSearchParams({ '_method': 'PATCH', 'name': name }) })
+                    .then(res => res.json()).then(data => {
+                        this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                    });
+                },
+                deleteFolder(url) {
+                    if(!confirm('Tem certeza que deseja excluir esta pasta? Os arquivos nela não serão apagados, ficarão soltos.')) return;
+                    fetch(url, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'), 'Accept': 'application/json' }, body: new URLSearchParams({ '_method': 'DELETE' }) })
+                    .then(res => res.json()).then(data => {
+                        this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                    });
+                },
                 postComment(event) {
                     const form = event.target; const formData = new FormData(form);
                     fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })

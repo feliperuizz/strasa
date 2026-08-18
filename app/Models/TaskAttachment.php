@@ -12,7 +12,7 @@ class TaskAttachment extends Model
     use BelongsToCompany;
 
     protected $fillable = [
-        'company_id', 'task_id', 'uploaded_by',
+        'company_id', 'task_id', 'folder_id', 'uploaded_by',
         'disk', 'path', 'original_name', 'mime_type', 'size', 'is_image',
     ];
 
@@ -27,6 +27,11 @@ class TaskAttachment extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);
+    }
+
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(TaskFolder::class, 'folder_id');
     }
 
     public function uploader(): BelongsTo

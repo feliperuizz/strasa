@@ -23,10 +23,12 @@ class TaskAttachmentController extends Controller
         $request->validate([
             'files' => ['required', 'array'],
             'files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,pdf,mp4'],
+            'folder_id' => ['nullable', 'integer', 'exists:task_folders,id'],
         ]);
 
         $disk = config('filesystems.attachments_disk');
         $folder = "company-{$task->company_id}/tasks/{$task->id}";
+        $folderId = $request->input('folder_id');
 
         foreach ($request->file('files') as $file) {
             // Nome único no bucket, preservando a extensão original.
@@ -35,6 +37,7 @@ class TaskAttachmentController extends Controller
 
             $task->attachments()->create([
                 'company_id' => $task->company_id,
+                'folder_id' => $folderId,
                 'uploaded_by' => $request->user()->id,
                 'disk' => $disk,
                 'path' => $path,

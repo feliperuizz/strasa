@@ -29,7 +29,7 @@ class Task extends Model
         'company_id', 'client_id', 'project_id', 'column_id',
         'assignee_id', 'created_by',
         'title', 'description', 'content_type',
-        'publish_date', 'position', 'is_published', 'published_at', 'rejection_reason',
+        'publish_date', 'publish_time', 'position', 'is_published', 'published_at', 'rejection_reason',
     ];
 
     protected function casts(): array
@@ -37,6 +37,7 @@ class Task extends Model
         return [
             'social_networks' => 'array',
             'publish_date' => 'date',
+            // publish_time is treated as a string 'H:i:s' by default
             'is_published' => 'boolean',
             'published_at' => 'datetime',
             'position' => 'integer',
@@ -80,6 +81,11 @@ class Task extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(TaskAttachment::class)->latest();
+    }
+
+    public function folders(): HasMany
+    {
+        return $this->hasMany(TaskFolder::class)->oldest('name');
     }
 
     public function activities(): HasMany
