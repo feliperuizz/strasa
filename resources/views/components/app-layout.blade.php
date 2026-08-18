@@ -233,7 +233,7 @@
 </div>
 
 <script>
-    // Sistema inteligente de persistência e restauração de scroll (Kanban horizontal e vertical)
+    // Sistema inteligente e à prova de falhas de persistência e restauração de scroll
     (function() {
         const scrollKey = 'strasa_scroll_pos_' + window.location.pathname;
 
@@ -250,51 +250,59 @@
                     pos.mainTop = main.scrollTop;
                     pos.mainLeft = main.scrollLeft;
                 }
-                pos.winX = window.scrollX;
-                pos.winY = window.scrollY;
+                pos.winX = window.scrollX || window.pageXOffset || 0;
+                pos.winY = window.scrollY || window.pageYOffset || 0;
 
-                sessionStorage.setItem(scrollKey, JSON.stringify(pos));
+                localStorage.setItem(scrollKey, JSON.stringify(pos));
             } catch (e) {}
         };
 
         window.restoreScrollPositions = function() {
             try {
-                const raw = sessionStorage.getItem(scrollKey);
+                const raw = localStorage.getItem(scrollKey);
                 if (!raw) return;
                 const pos = JSON.parse(raw);
 
-                if (pos.kanbanLeft !== undefined) {
-                    const kanban = document.getElementById('kanban-scroll-container') || document.querySelector('.overflow-x-auto');
-                    if (kanban) {
-                        kanban.scrollLeft = pos.kanbanLeft;
-                        if (pos.kanbanTop !== undefined) kanban.scrollTop = pos.kanbanTop;
-                    }
+                const kanban = document.getElementById('kanban-scroll-container') || document.querySelector('.overflow-x-auto');
+                if (kanban && pos.kanbanLeft !== undefined && pos.kanbanLeft > 0) {
+                    kanban.scrollLeft = pos.kanbanLeft;
                 }
-                if (pos.mainTop !== undefined) {
-                    const main = document.querySelector('main');
-                    if (main) {
-                        main.scrollTop = pos.mainTop;
-                        if (pos.mainLeft !== undefined) main.scrollLeft = pos.mainLeft;
-                    }
+                const main = document.querySelector('main');
+                if (main && pos.mainTop !== undefined && pos.mainTop > 0) {
+                    main.scrollTop = pos.mainTop;
                 }
-                if (pos.winX !== undefined || pos.winY !== undefined) {
+                if (pos.winX || pos.winY) {
                     window.scrollTo(pos.winX || 0, pos.winY || 0);
                 }
             } catch (e) {}
         };
 
+        // Salva continuamente enquanto o usuário rola horizontalmente ou verticalmente (captura profunda)
+        document.addEventListener('scroll', function(e) {
+            window.saveScrollPositions();
+        }, { capture: true, passive: true });
+
+        // Salva antes de descarregar a página
         window.addEventListener('beforeunload', window.saveScrollPositions);
-        document.addEventListener('DOMContentLoaded', window.restoreScrollPositions);
-        window.addEventListener('load', () => {
+
+        // Restauração com retentativas inteligentes para aguardar o cálculo do layout das colunas
+        function applyScrollWithRetry(attempts) {
             window.restoreScrollPositions();
-            setTimeout(window.restoreScrollPositions, 50);
-            setTimeout(window.restoreScrollPositions, 150);
-            setTimeout(window.restoreScrollPositions, 300);
-        });
-        document.addEventListener('alpine:init', () => {
-            setTimeout(window.restoreScrollPositions, 50);
-            setTimeout(window.restoreScrollPositions, 200);
-        });
+            if (attempts > 0) {
+                requestAnimationFrame(() => {
+                    setTimeout(() => applyScrollWithRetry(attempts - 1), 60);
+                });
+            }
+        }
+
+        // Executa restauração nos momentos críticos de montagem do DOM
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            applyScrollWithRetry(12);
+        } else {
+            document.addEventListener('DOMContentLoaded', () => applyScrollWithRetry(12));
+        }
+        window.addEventListener('load', () => applyScrollWithRetry(12));
+        document.addEventListener('alpine:init', () => applyScrollWithRetry(12));
     })();
 
     window.completeTask = function(btn, taskId, e) {
