@@ -12,12 +12,16 @@ class DeployController extends Controller
     {
         abort_unless($request->user()->isAdmin(), 403);
 
+        ini_set('memory_limit', '512M');
+        set_time_limit(120);
+
         $output = "";
 
         try {
             $output .= "=== Git Pull ===\n";
-            // Em ambiente local isso pode falhar (depende do git no Windows), mas vai funcionar na VPS
-            $output .= shell_exec('git pull origin main 2>&1') ?? "Git pull finalizado sem output.\n";
+            $cmdOutput = [];
+            exec('git pull origin main 2>&1', $cmdOutput);
+            $output .= implode("\n", $cmdOutput) . "\n";
 
             $output .= "\n=== Migrate ===\n";
             Artisan::call('migrate', ['--force' => true]);

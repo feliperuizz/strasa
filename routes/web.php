@@ -108,5 +108,5 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('team/members/{user}', [TeamController::class, 'removeMember'])->name('team.members.destroy');
 
     /* Deploy Express ----------------------------------------------------- */
-    Route::get('system/deploy', \App\Http\Controllers\DeployController::class)->name('system.deploy');
+    Route::get('admin/atualizar-sistema', \App\Http\Controllers\DeployController::class)->name('system.deploy');
 });
