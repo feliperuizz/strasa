@@ -14,14 +14,42 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        if ($user->isAdmin()) {
-            return $this->adminDashboard($request);
+        // Lógica de Frases
+        $tz = 'America/Sao_Paulo';
+        $now = now()->timezone($tz);
+        $hour = $now->hour;
+        $dateStr = $now->toDateString();
+
+        $phraseContent = "Bora pra cima! Mais um dia de conquistas.";
+
+        if ($hour >= 5 && $hour < 12 && session('greeted_morning') !== $dateStr) {
+            $phrase = \App\Models\Phrase::where('type', 'morning')->inRandomOrder()->first();
+            if ($phrase) {
+                $phraseContent = $phrase->content;
+                session(['greeted_morning' => $dateStr]);
+            }
+        } elseif ($hour >= 18 && session('greeted_evening') !== $dateStr) {
+            $phrase = \App\Models\Phrase::where('type', 'evening')->inRandomOrder()->first();
+            if ($phrase) {
+                $phraseContent = $phrase->content;
+                session(['greeted_evening' => $dateStr]);
+            }
+        } else {
+            $count = \App\Models\Phrase::where('type', 'daily')->count();
+            if ($count > 0) {
+                $phrase = \App\Models\Phrase::where('type', 'daily')->skip($now->dayOfYear % $count)->first();
+                if ($phrase) $phraseContent = $phrase->content;
+            }
         }
 
-        return $this->memberDashboard($request);
+        if ($user->isAdmin()) {
+            return $this->adminDashboard($request, $phraseContent);
+        }
+
+        return $this->memberDashboard($request, $phraseContent);
     }
 
-    private function adminDashboard(Request $request)
+    private function adminDashboard(Request $request, $phraseContent)
     {
         $companyId = $request->user()->company_id;
         $today = now()->toDateString();
@@ -114,10 +142,11 @@ class DashboardController extends Controller
             'chartData' => $chartData,
             'lateTasks' => $lateTasks,
             'upcoming' => $upcoming,
+            'phraseContent' => $phraseContent,
         ]);
     }
 
-    private function memberDashboard(Request $request)
+    private function memberDashboard(Request $request, $phraseContent)
     {
         $user = $request->user();
         $today = now()->toDateString();
@@ -204,6 +233,7 @@ class DashboardController extends Controller
             'myProjects' => $myProjects,
             'myRecentlyCompleted' => $myRecentlyCompleted,
             'chartData' => $chartData,
+            'phraseContent' => $phraseContent,
         ]);
     }
 }

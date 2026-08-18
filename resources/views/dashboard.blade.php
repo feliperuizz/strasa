@@ -31,6 +31,19 @@
 
     <div class="p-4 sm:p-6 space-y-6">
 
+        {{-- Painel de Frase do Dia (BorderBeam) --}}
+        <x-border-beam-panel class="mb-2" :idleSpeed="30" :hoverSpeed="200" :thickness="2">
+            <div class="flex items-center gap-4 text-white">
+                <div class="h-10 w-10 shrink-0 rounded-full bg-brand-500/20 text-brand-400 grid place-items-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div>
+                    <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-0.5">Mensagem do Dia</h3>
+                    <p class="text-sm sm:text-base font-medium italic text-slate-200">"{{ $phraseContent }}"</p>
+                </div>
+            </div>
+        </x-border-beam-panel>
+
         @if($isAdmin)
             {{-- ========================================================================= --}}
             {{--                               ADMIN DASHBOARD                             --}}
