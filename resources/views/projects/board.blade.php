@@ -184,8 +184,9 @@
                     group: 'shared',
                     animation: 150,
                     ghostClass: 'opacity-50',
-                    delay: 50,
+                    delay: 150,
                     delayOnTouchOnly: true,
+                    fallbackTolerance: 5,
                     // Sinaliza que um arraste está em andamento para o card NÃO abrir o
                     // modal por engano com o clique sintético que segue o mouseup.
                     onStart: function () {

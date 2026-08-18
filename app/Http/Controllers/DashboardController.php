@@ -43,6 +43,7 @@ class DashboardController extends Controller
                 }
             }
         }
+        \Log::info("DEBUG_PHRASE: Hour=$hour, Count=$count, Offset=" . ($now->dayOfYear % max(1, $count)) . ", PhraseFound=" . ($phrase ? 'YES' : 'NO') . ", FinalContent: $phraseContent");
 
         if ($user->isAdmin()) {
             return $this->adminDashboard($request, $phraseContent);

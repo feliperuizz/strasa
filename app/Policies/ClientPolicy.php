@@ -30,7 +30,7 @@ class ClientPolicy
 
     public function update(User $user, Client $client): bool
     {
-        return $this->sameCompany($user, $client) && $user->isManager();
+        return $this->sameCompany($user, $client);
     }
 
     public function delete(User $user, Client $client): bool
