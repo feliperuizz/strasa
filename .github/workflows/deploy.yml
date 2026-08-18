@@ -1,0 +1,25 @@
+name: Deploy para VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Executar comandos na VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
+          script: |
+            cd /home/cons1766/public_html/strasa
+            git pull origin main
+            php artisan migrate --force
+            php artisan view:clear
+            php artisan config:clear
+            php artisan cache:clear
