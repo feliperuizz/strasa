@@ -2,6 +2,11 @@
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-2">
+                @if($client->logo_url)
+                    <img src="{{ $client->logo_url }}" alt="{{ $client->name }}" class="h-6 w-6 rounded-md object-cover ring-1 ring-ink-600">
+                @else
+                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $client->color ?? '#64748b' }}">{{ substr($client->name, 0, 2) }}</span>
+                @endif
                 <a href="{{ route('clients.show', $client) }}" class="text-sm font-semibold text-slate-200 hover:text-white">{{ $client->name }}</a>
                 <span class="text-slate-500">/</span>
                 <div class="relative" x-data="{ menu: false }">

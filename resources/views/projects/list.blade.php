@@ -2,7 +2,12 @@
     <x-slot name="header">
         <div class="flex items-center gap-3">
             <div class="flex items-center gap-2">
-                <a href="{{ route('clients.show', $project->client) }}" class="text-xl font-bold text-slate-400 hover:text-white tracking-wide transition">{{ $project->client->name }}</a>
+                @if($project->client->logo_url)
+                    <img src="{{ $project->client->logo_url }}" alt="{{ $project->client->name }}" class="h-6 w-6 rounded-md object-cover ring-1 ring-ink-600">
+                @else
+                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $project->client->color ?? '#64748b' }}">{{ substr($project->client->name, 0, 2) }}</span>
+                @endif
+                <a href="{{ route('clients.show', $project->client) }}" class="text-xl font-bold text-slate-400 hover:text-white tracking-wide transition ml-1">{{ $project->client->name }}</a>
                 <span class="text-slate-600">/</span>
                 <h1 class="text-xl font-bold text-white tracking-wide">{{ $project->name }}</h1>
                 @can('update', $project)
