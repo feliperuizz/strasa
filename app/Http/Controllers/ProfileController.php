@@ -61,4 +61,18 @@ class ProfileController extends Controller
 
         return redirect()->route('profile.edit')->with('status', 'Perfil atualizado com sucesso!');
     }
+
+    public function updateSidebarOrder(Request $request)
+    {
+        $data = $request->validate([
+            'order' => ['required', 'array'],
+            'order.*' => ['integer'],
+        ]);
+
+        $request->user()->update([
+            'sidebar_client_order' => $data['order'],
+        ]);
+
+        return response()->json(['status' => 'success']);
+    }
 }

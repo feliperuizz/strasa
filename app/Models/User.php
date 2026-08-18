@@ -30,6 +30,7 @@ class User extends Authenticatable
         'avatar_path',
         'avatar_disk',
         'password',
+        'sidebar_client_order',
     ];
 
     protected $hidden = [
@@ -42,6 +43,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'sidebar_client_order' => 'array',
         ];
     }
 

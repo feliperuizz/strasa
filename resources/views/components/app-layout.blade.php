@@ -133,9 +133,11 @@
             @endcan
         </div>
 
-        <div class="px-2 pb-6 space-y-0.5">
+        <div class="px-2 pb-6 space-y-0.5" id="sidebar-client-list">
             @forelse($sidebarClients as $client)
-                <div x-data="{ open: {{ request()->is('clients/'.$client->id.'*') || $client->projects->contains('id', request()->route('project')?->id) ? 'true' : 'false' }} }">
+                <div x-data="{ open: {{ request()->is('clients/'.$client->id.'*') || $client->projects->contains('id', request()->route('project')?->id) ? 'true' : 'false' }} }"
+                     data-client-id="{{ $client->id }}"
+                     class="sidebar-client-item">
                     <button @click="open = !open"
                             class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-slate-300 hover:bg-ink-700">
                         <span class="text-slate-500" x-text="open ? '▾' : '▸'"></span>
@@ -507,6 +509,36 @@
     });
 </script>
 @stack('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const sidebarList = document.getElementById('sidebar-client-list');
+        if (sidebarList && typeof Sortable !== 'undefined') {
+            new Sortable(sidebarList, {
+                animation: 150,
+                delay: 150,
+                delayOnTouchOnly: true,
+                onEnd: function (evt) {
+                    let order = [];
+                    sidebarList.querySelectorAll('.sidebar-client-item').forEach(el => {
+                        if(el.dataset.clientId) {
+                            order.push(el.dataset.clientId);
+                        }
+                    });
+                    
+                    fetch('{{ route('profile.sidebar-order') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ order: order })
+                    });
+                }
+            });
+        }
+    });
+</script>
 
 {{-- ============================ MOBILE BOTTOM NAVIGATION ============================ --}}
 <nav class="lg:hidden fixed bottom-6 inset-x-4 z-50">

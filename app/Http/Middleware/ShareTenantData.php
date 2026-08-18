@@ -33,6 +33,14 @@ class ShareTenantData
             ->orderBy('name')
             ->get();
 
+        $order = $user->sidebar_client_order;
+        if (is_array($order) && !empty($order)) {
+            $sidebarClients = $sidebarClients->sortBy(function($client) use ($order) {
+                $pos = array_search($client->id, $order);
+                return $pos !== false ? $pos : 99999;
+            })->values();
+        }
+
         View::share('currentCompany', $user->company);
         View::share('sidebarClients', $sidebarClients);
 
