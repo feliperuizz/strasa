@@ -1,15 +1,15 @@
 <x-app-layout title="{{ $project->name }} · {{ $project->client->name }}" :client="$client">
     <x-slot name="header">
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div class="flex flex-wrap items-center gap-2">
                 @if($project->client->logo_url)
                     <img src="{{ $project->client->logo_url }}" alt="{{ $project->client->name }}" class="h-6 w-6 rounded-md object-cover ring-1 ring-ink-600">
                 @else
                     <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $project->client->color ?? '#64748b' }}">{{ substr($project->client->name, 0, 2) }}</span>
                 @endif
-                <a href="{{ route('clients.show', $project->client) }}" class="text-xl font-bold text-slate-400 hover:text-white tracking-wide transition ml-1">{{ $project->client->name }}</a>
+                <a href="{{ route('clients.show', $project->client) }}" class="text-base sm:text-xl font-bold text-slate-400 hover:text-white tracking-wide transition ml-1">{{ $project->client->name }}</a>
                 <span class="text-slate-600">/</span>
-                <h1 class="text-xl font-bold text-white tracking-wide">{{ $project->name }}</h1>
+                <h1 class="text-base sm:text-xl font-bold text-white tracking-wide">{{ $project->name }}</h1>
                 @can('update', $project)
                     <a href="{{ route('projects.edit', $project) }}" class="ml-2 text-slate-500 hover:text-brand-400" title="Editar Projeto">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>

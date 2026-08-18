@@ -197,10 +197,10 @@
                 </div>
             </div>
             <div class="flex items-center gap-3" x-data="{ menu:false }">
-                <x-avatar :user="auth()->user()" />
                 <div class="relative">
-                    <button @click="menu=!menu" class="text-sm text-slate-300 hover:text-white">
-                        {{ auth()->user()->name }} ▾
+                    <button @click="menu=!menu" class="flex items-center gap-2 text-sm text-slate-300 hover:text-white focus:outline-none">
+                        <x-avatar :user="auth()->user()" />
+                        <span class="hidden sm:inline">{{ auth()->user()->name }} ▾</span>
                     </button>
                     <div x-show="menu" x-cloak @click.outside="menu=false"
                          class="absolute right-0 mt-2 w-44 rounded-lg border border-ink-600 bg-ink-700 py-1 text-sm shadow-xl z-40">
