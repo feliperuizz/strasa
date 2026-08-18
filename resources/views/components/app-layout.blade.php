@@ -114,10 +114,16 @@
                 <svg class="w-4 h-4 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                 Clientes
             </x-nav-link>
-            <x-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')">
-                <svg class="w-4 h-4 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                Equipe
-            </x-nav-link>
+            @if(auth()->user()->isAdmin())
+                <x-nav-link :href="route('team.index')" :active="request()->routeIs('team.*')">
+                    <svg class="w-4 h-4 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    Equipe
+                </x-nav-link>
+                <x-nav-link :href="route('financial.index')" :active="request()->routeIs('financial.*')">
+                    <svg class="w-4 h-4 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Financeiro
+                </x-nav-link>
+            @endif
         </nav>
 
         <div class="px-4 pt-4 pb-1 flex items-center justify-between">
@@ -200,7 +206,10 @@
                          class="absolute right-0 mt-2 w-44 rounded-lg border border-ink-600 bg-ink-700 py-1 text-sm shadow-xl z-40">
                         <div class="px-3 py-2 text-xs text-slate-400">{{ auth()->user()->roleLabel() }}</div>
                         <a href="{{ route('profile.edit') }}" class="block px-3 py-2 hover:bg-ink-600">Meu Perfil</a>
-                        <a href="{{ route('team.index') }}" class="block px-3 py-2 hover:bg-ink-600">Time</a>
+                        @if(auth()->user()->isAdmin())
+                            <a href="{{ route('team.index') }}" class="block px-3 py-2 hover:bg-ink-600">Time</a>
+                            <a href="{{ route('financial.index') }}" class="block px-3 py-2 hover:bg-ink-600">Financeiro</a>
+                        @endif
                         <form method="POST" action="{{ route('logout') }}">@csrf
                             <button class="block w-full px-3 py-2 text-left text-rose-400 hover:bg-ink-600">Sair</button>
                         </form>

@@ -8,6 +8,7 @@ use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ColumnController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FinancialController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskAttachmentController;
 use App\Http\Controllers\TaskCommentController;
@@ -111,4 +112,11 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroy'])->name('team.invitations.destroy');
     Route::patch('team/members/{user}', [TeamController::class, 'updateMember'])->name('team.members.update');
     Route::delete('team/members/{user}', [TeamController::class, 'removeMember'])->name('team.members.destroy');
+
+    /* Financeiro (Apenas Admins) ----------------------------------------- */
+    Route::get('financial', [FinancialController::class, 'index'])->name('financial.index');
+    Route::post('financial', [FinancialController::class, 'store'])->name('financial.store');
+    Route::patch('financial/{payment}', [FinancialController::class, 'update'])->name('financial.update');
+    Route::post('financial/{payment}/mark-paid', [FinancialController::class, 'markPaid'])->name('financial.mark-paid');
+    Route::delete('financial/{payment}', [FinancialController::class, 'destroy'])->name('financial.destroy');
 });

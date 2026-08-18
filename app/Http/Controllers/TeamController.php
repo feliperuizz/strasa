@@ -18,6 +18,8 @@ class TeamController extends Controller
 {
     public function index(Request $request)
     {
+        abort_unless($request->user()->isAdmin(), 403);
+
         $companyId = $request->user()->company_id;
 
         $members = User::where('company_id', $companyId)

@@ -47,6 +47,11 @@ class Client extends Model
         return $this->hasMany(Task::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
     /* Scopes ------------------------------------------------------------- */
 
     public function scopeActive(Builder $query): Builder

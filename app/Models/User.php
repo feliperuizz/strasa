@@ -73,6 +73,11 @@ class User extends Authenticatable
         return $this->role === self::ROLE_ADMIN;
     }
 
+    public function isMember(): bool
+    {
+        return in_array($this->role, [self::ROLE_MEMBER, 'colaborador'], true);
+    }
+
     public function isManager(): bool
     {
         return $this->isAdmin();
@@ -80,6 +85,10 @@ class User extends Authenticatable
 
     public function roleLabel(): string
     {
+        if ($this->role === 'colaborador' || $this->role === self::ROLE_MEMBER) {
+            return 'Colaborador';
+        }
+
         return self::ROLES[$this->role] ?? $this->role;
     }
 

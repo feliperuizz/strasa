@@ -19,16 +19,16 @@ class ProjectPolicy
 
     public function create(User $user): bool
     {
-        return $user->isManager();
+        return $user->company_id !== null;
     }
 
     public function update(User $user, Project $project): bool
     {
-        return $this->sameCompany($user, $project) && $user->isManager();
+        return $this->sameCompany($user, $project);
     }
 
     public function delete(User $user, Project $project): bool
     {
-        return $this->sameCompany($user, $project) && $user->isManager();
+        return $this->sameCompany($user, $project);
     }
 }

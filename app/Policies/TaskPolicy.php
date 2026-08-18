@@ -28,10 +28,9 @@ class TaskPolicy
         return $this->sameCompany($user, $task);
     }
 
-    /** Excluir: gestor/admin ou quem criou a tarefa. */
+    /** Excluir: qualquer membro da mesma empresa. */
     public function delete(User $user, Task $task): bool
     {
-        return $this->sameCompany($user, $task)
-            && ($user->isManager() || $user->id === $task->created_by);
+        return $this->sameCompany($user, $task);
     }
 }
