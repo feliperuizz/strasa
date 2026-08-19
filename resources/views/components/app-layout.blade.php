@@ -86,9 +86,9 @@
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#111111">
-    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="apple-touch-icon" href="{{ asset('icon-192.png') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -96,7 +96,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                navigator.serviceWorker.register('{{ asset("sw.js") }}').then(function(registration) {
                     console.log('ServiceWorker registration successful with scope: ', registration.scope);
                 }, function(err) {
                     console.log('ServiceWorker registration failed: ', err);
