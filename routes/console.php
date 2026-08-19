@@ -24,3 +24,9 @@ Schedule::command('queue:prune-batches --hours=48')->daily();
 
 // Disparo de notificações Push Agendadas (Resumo Diário e Postagens)
 Schedule::command('notifications:send-scheduled')->everyMinute();
+
+// Lembrete de 5 minutos antes da publicação
+Schedule::command('notifications:publish-reminders')->everyMinute();
+
+// E-mail de Briefing Diário (Todo dia às 09:00)
+Schedule::command('emails:daily-briefing')->dailyAt('09:00');

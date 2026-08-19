@@ -113,6 +113,36 @@
                             </label>
                         </div>
                     </div>
+
+                    <hr class="border-ink-700/50">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300">Lembrete de Publicação (5 min)</label>
+                            <p class="text-xs text-slate-500">Notificar 5 minutos antes do horário marcado no quadro.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="notification_settings[publish_time_reminder_enabled]" value="1" {{ !empty($settings['publish_time_reminder_enabled']) ? 'checked' : '' }} class="sr-only peer">
+                                <div class="w-9 h-5 bg-ink-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr class="border-ink-700/50">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300">E-mail de Briefing Diário</label>
+                            <p class="text-xs text-slate-500">Receber um resumo das suas tarefas todos os dias às 09:00.</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="notification_settings[daily_briefing_email_enabled]" value="1" {{ !empty($settings['daily_briefing_email_enabled']) ? 'checked' : '' }} class="sr-only peer">
+                                <div class="w-9 h-5 bg-ink-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
