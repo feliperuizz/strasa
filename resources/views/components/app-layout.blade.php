@@ -111,7 +111,7 @@
             --text-secondary: 71 85 105; /* #475569 */
             --text-tertiary: 100 116 139; /* #64748b */
         }
-        html.dark {
+        .dark {
             /* Tema Escuro (Padrão) */
             --ink-900: 30 30 30; /* #1e1e1e */
             --ink-800: 42 43 45; /* #2a2b2d */
@@ -264,7 +264,7 @@
     </aside>
 
     {{-- ============================ CONTEÚDO ============================ --}}
-    <div class="flex min-w-0 flex-1 flex-col relative transition-all duration-300" style="{{ $activeClient?->background_style }}">
+    <div class="flex min-w-0 flex-1 flex-col relative transition-all duration-300 {{ !empty($activeClient?->background_style) ? 'dark' : '' }}" style="{{ $activeClient?->background_style }}">
         <header class="flex items-center gap-3 border-b border-ink-600/70 bg-ink-800/80 px-4 py-3 backdrop-blur-md sticky top-0 z-20">
             <button @click="sidebar = !sidebar" class="hidden lg:block rounded p-1.5 text-slate-400 hover:bg-ink-700 hover:text-slate-200">☰</button>
             <div class="min-w-0 flex-1 flex items-center justify-between">
