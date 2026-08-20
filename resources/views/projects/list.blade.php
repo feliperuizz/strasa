@@ -7,9 +7,9 @@
                 @else
                     <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $project->client->color ?? '#64748b' }}">{{ substr($project->client->name, 0, 2) }}</span>
                 @endif
-                <a href="{{ route('clients.show', $project->client) }}" class="text-xl font-bold text-slate-400 hover:text-white tracking-wide transition ml-1">{{ $project->client->name }}</a>
+                <a href="{{ route('clients.show', $project->client) }}" class="text-xl font-bold text-slate-400 hover:text-slate-200 tracking-wide transition ml-1">{{ $project->client->name }}</a>
                 <span class="text-slate-600">/</span>
-                <h1 class="text-xl font-bold text-white tracking-wide">{{ $project->name }}</h1>
+                <h1 class="text-xl font-bold text-slate-200 tracking-wide">{{ $project->name }}</h1>
                 @can('update', $project)
                     <a href="{{ route('projects.edit', $project) }}" class="ml-2 text-slate-500 hover:text-brand-400" title="Editar Projeto">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
@@ -38,7 +38,7 @@
 
             {{-- Botão Minhas Notas --}}
             <div>
-                <button @click="$dispatch('open-notes')" class="flex items-center gap-1.5 rounded-md border border-ink-600 bg-ink-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-ink-700 hover:text-white transition">
+                <button @click="$dispatch('open-notes')" class="flex items-center gap-1.5 rounded-md border border-ink-600 bg-ink-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-ink-700 hover:text-slate-200 transition">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                     Minhas Notas
                 </button>
@@ -89,7 +89,7 @@
         </div>
         <div class="flex items-center gap-4 mt-3 border-b border-ink-600 pb-0.5">
             <a href="{{ route('projects.board', $project) }}" class="text-sm text-slate-400 hover:text-slate-200 pb-2">Quadro</a>
-            <span class="text-sm font-semibold text-white border-b-2 border-white pb-2 cursor-pointer">Lista</span>
+            <span class="text-sm font-semibold text-slate-200 border-b-2 border-white pb-2 cursor-pointer">Lista</span>
             <a href="{{ route('projects.calendar', $project) }}" class="text-sm text-slate-400 hover:text-slate-200 pb-2">Calendário</a>
             <span class="text-sm text-slate-400 hover:text-slate-200 pb-2 cursor-pointer">＋</span>
         </div>
@@ -98,7 +98,7 @@
     <div class="flex h-[calc(100vh-4rem)] flex-col">
 
         <div class="px-4 pt-4 pb-2 flex items-center gap-4">
-            <button type="button" @click="$dispatch('open-task-modal', '{{ route('tasks.create', $project) }}')" class="inline-flex items-center gap-1 rounded bg-[#2a2b2d] px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition">
+            <button type="button" @click="$dispatch('open-task-modal', '{{ route('tasks.create', $project) }}')" class="inline-flex items-center gap-1 rounded bg-ink-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Adicionar tarefa
             </button>
@@ -255,7 +255,7 @@
         <div class="px-3 py-1.5 text-xs font-semibold uppercase text-slate-500">Mover para:</div>
         <template x-for="col in columns" :key="col.id">
             <button @click="moveTask(col.id)"
-                    class="block w-full px-4 py-1.5 text-left text-sm text-slate-300 hover:bg-ink-700 hover:text-white"
+                    class="block w-full px-4 py-1.5 text-left text-sm text-slate-300 hover:bg-ink-700 hover:text-slate-200"
                     :class="{'opacity-50 cursor-not-allowed': col.id == currentColumn}">
                 <span x-text="col.name"></span>
             </button>
@@ -338,10 +338,10 @@
                             {{-- Header --}}
                             <div class="flex items-center justify-between border-b border-ink-700 px-6 py-4">
                                 <div class="flex items-center gap-2">
-                                    <h2 class="text-lg font-bold text-white">Minhas Notas</h2>
+                                    <h2 class="text-lg font-bold text-slate-200">Minhas Notas</h2>
                                     <span class="text-xs text-brand-400 font-medium" x-show="saveStatus" x-text="saveStatus"></span>
                                 </div>
-                                <button @click="open = false" class="rounded p-1 text-slate-400 hover:bg-ink-700 hover:text-white" title="Fechar">
+                                <button @click="open = false" class="rounded p-1 text-slate-400 hover:bg-ink-700 hover:text-slate-200" title="Fechar">
                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
@@ -352,7 +352,7 @@
                                     <p class="text-sm text-slate-400">Estas notas são privadas. Apenas você pode vê-las neste quadro.</p>
                                 </div>
                                 <input type="hidden" x-ref="hiddenNotesInput" value="{{ $myNote?->content ?? '' }}">
-                                <div class="flex-1 border border-ink-600 rounded flex flex-col min-h-0 bg-ink-900 text-white">
+                                <div class="flex-1 border border-ink-600 rounded flex flex-col min-h-0 bg-ink-900 text-slate-200">
                                     <div x-ref="notesEditor" class="flex-1 h-full overflow-y-auto">{!! $myNote?->content ?? '' !!}</div>
                                 </div>
                             </div>

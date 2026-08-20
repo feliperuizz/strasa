@@ -5,14 +5,14 @@
                 @if($client->logo_url)
                     <img src="{{ $client->logo_url }}" class="h-8 w-8 rounded object-cover ring-1 ring-white/10" alt="">
                 @else
-                    <span class="grid h-8 w-8 place-items-center rounded text-xs font-bold text-white shadow-sm" style="{{ $client->background_style ?: ('background: ' . ($client->color ?? '#'.substr(md5($client->name),0,6))) }}">{{ \Illuminate\Support\Str::substr($client->name,0,1) }}</span>
+                    <span class="grid h-8 w-8 place-items-center rounded text-xs font-bold text-slate-200 shadow-sm" style="{{ $client->background_style ?: ('background: ' . ($client->color ?? '#'.substr(md5($client->name),0,6))) }}">{{ \Illuminate\Support\Str::substr($client->name,0,1) }}</span>
                 @endif
-                <h1 class="text-base font-semibold text-white">{{ $client->name }}</h1>
+                <h1 class="text-base font-semibold text-slate-200">{{ $client->name }}</h1>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{{ route('clients.calendar', $client) }}" class="rounded-lg bg-ink-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-ink-600">Calendário</a>
+                <a href="{{ route('clients.calendar', $client) }}" class="rounded-lg bg-ink-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-ink-600">Calendário</a>
                 @can('update', $client)
-                    <a href="{{ route('clients.edit', $client) }}" class="rounded-lg border border-ink-600 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ink-700 hover:text-white">Editar</a>
+                    <a href="{{ route('clients.edit', $client) }}" class="rounded-lg border border-ink-600 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ink-700 hover:text-slate-200">Editar</a>
                 @endcan
             </div>
         </div>
@@ -20,7 +20,7 @@
 
     <div class="p-4 sm:p-6">
         <div class="mb-6 flex items-center justify-between">
-            <h2 class="text-lg font-medium text-white">Projetos</h2>
+            <h2 class="text-lg font-medium text-slate-200">Projetos</h2>
             @can('create', \App\Models\Project::class)
                 <a href="{{ route('projects.create', $client) }}" class="rounded bg-brand-600 px-2 py-1 text-xs font-medium text-white hover:bg-brand-500">＋ Novo projeto</a>
             @endcan

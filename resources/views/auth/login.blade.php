@@ -1,5 +1,5 @@
 <x-guest-layout title="Entrar">
-    <h1 class="mb-1 text-xl font-semibold text-white">Entrar</h1>
+    <h1 class="mb-1 text-xl font-semibold text-slate-200">Entrar</h1>
     <p class="mb-5 text-sm text-slate-400">Acesse o painel de conteúdo da sua agência.</p>
 
     @if($errors->any())

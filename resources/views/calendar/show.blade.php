@@ -7,16 +7,16 @@
                 @else
                     <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $client->color ?? '#64748b' }}">{{ substr($client->name, 0, 2) }}</span>
                 @endif
-                <a href="{{ route('clients.show', $client) }}" class="text-sm font-semibold text-slate-200 hover:text-white">{{ $client->name }}</a>
+                <a href="{{ route('clients.show', $client) }}" class="text-sm font-semibold text-slate-200 hover:text-slate-200">{{ $client->name }}</a>
                 <span class="text-slate-500">/</span>
                 <div class="relative" x-data="{ menu: false }">
-                    <button @click="menu = !menu" class="text-sm text-slate-400 hover:text-white flex items-center gap-1">
+                    <button @click="menu = !menu" class="text-sm text-slate-400 hover:text-slate-200 flex items-center gap-1">
                         {{ $project ? $project->name : 'Todos os projetos' }} ▾
                     </button>
                     <div x-show="menu" @click.outside="menu=false" x-cloak class="absolute left-0 mt-2 w-48 rounded-lg border border-ink-600 bg-ink-700 py-1 shadow-xl z-10">
-                        <a href="{{ route('clients.calendar', $client) }}" class="block px-3 py-1.5 text-sm {{ !$project ? 'bg-ink-600 text-white' : 'text-slate-300 hover:bg-ink-600' }}">Todos os projetos</a>
+                        <a href="{{ route('clients.calendar', $client) }}" class="block px-3 py-1.5 text-sm {{ !$project ? 'bg-ink-600 text-slate-200' : 'text-slate-300 hover:bg-ink-600' }}">Todos os projetos</a>
                         @foreach($projects as $p)
-                            <a href="{{ route('projects.calendar', $p) }}" class="block px-3 py-1.5 text-sm {{ $project && $project->id === $p->id ? 'bg-ink-600 text-white' : 'text-slate-300 hover:bg-ink-600' }}">{{ $p->name }}</a>
+                            <a href="{{ route('projects.calendar', $p) }}" class="block px-3 py-1.5 text-sm {{ $project && $project->id === $p->id ? 'bg-ink-600 text-slate-200' : 'text-slate-300 hover:bg-ink-600' }}">{{ $p->name }}</a>
                         @endforeach
                     </div>
                 </div>
@@ -24,7 +24,7 @@
                 <span class="text-sm text-slate-400">Calendário</span>
             </div>
             @if($project)
-                <a href="{{ route('projects.board', $project) }}" class="rounded bg-ink-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ink-600 hover:text-white">Ver Quadro</a>
+                <a href="{{ route('projects.board', $project) }}" class="rounded bg-ink-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ink-600 hover:text-slate-200">Ver Quadro</a>
             @endif
         </div>
     </x-slot>
@@ -32,10 +32,10 @@
     <div class="flex h-full flex-col p-4 sm:p-6" x-data="calendar()">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
             <div class="flex items-center gap-2">
-                <button @click="prevMonth" class="rounded border border-ink-600 bg-ink-800 px-2 py-1 text-slate-400 hover:text-white">◀</button>
-                <div class="w-32 text-center text-sm font-semibold text-white" x-text="monthName + ' ' + year"></div>
-                <button @click="nextMonth" class="rounded border border-ink-600 bg-ink-800 px-2 py-1 text-slate-400 hover:text-white">▶</button>
-                <button @click="today" class="ml-2 rounded border border-ink-600 bg-ink-800 px-3 py-1 text-sm text-slate-400 hover:text-white">Hoje</button>
+                <button @click="prevMonth" class="rounded border border-ink-600 bg-ink-800 px-2 py-1 text-slate-400 hover:text-slate-200">◀</button>
+                <div class="w-32 text-center text-sm font-semibold text-slate-200" x-text="monthName + ' ' + year"></div>
+                <button @click="nextMonth" class="rounded border border-ink-600 bg-ink-800 px-2 py-1 text-slate-400 hover:text-slate-200">▶</button>
+                <button @click="today" class="ml-2 rounded border border-ink-600 bg-ink-800 px-3 py-1 text-sm text-slate-400 hover:text-slate-200">Hoje</button>
             </div>
             
             <div class="flex items-center gap-2">

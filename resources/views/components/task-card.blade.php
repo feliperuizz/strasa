@@ -5,7 +5,7 @@
 <div data-id="{{ $task->id }}"
      @click.stop="window.__kanbanDragging || $dispatch('open-task-modal', '{{ route('tasks.show', $task) }}')"
      @contextmenu.prevent.stop="$dispatch('open-context-menu', { taskId: {{ $task->id }}, currentColumn: {{ $task->column_id }}, event: $event, url: '{{ route('tasks.destroy', $task) }}' })"
-     class="task-card group relative cursor-grab rounded-xl border border-ink-600 bg-[#2a2b2d] p-0 shadow-sm transition-colors hover:border-slate-500 active:cursor-grabbing select-none">
+     class="task-card group relative cursor-grab rounded-xl border border-ink-600 bg-ink-800 p-0 shadow-sm transition-colors hover:border-slate-500 active:cursor-grabbing select-none">
 
     @if($cover)
         <img src="{{ $cover->url }}" alt="" loading="lazy" draggable="false"

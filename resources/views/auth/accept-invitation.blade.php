@@ -1,5 +1,5 @@
 <x-guest-layout title="Aceitar convite">
-    <h1 class="mb-1 text-xl font-semibold text-white">Você foi convidado</h1>
+    <h1 class="mb-1 text-xl font-semibold text-slate-200">Você foi convidado</h1>
     <p class="mb-5 text-sm text-slate-400">
         Entre para <span class="font-medium text-slate-200">{{ $invitation->company->name }}</span>
         como <span class="font-medium text-slate-200">{{ \App\Models\User::ROLES[$invitation->role] ?? $invitation->role }}</span>.

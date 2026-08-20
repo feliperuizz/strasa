@@ -3,8 +3,8 @@
 <a {{ $attributes->merge(['class' =>
     'flex items-center gap-2 rounded-md px-3 py-2 font-medium transition '.
     ($active
-        ? 'bg-ink-700 text-white'
-        : 'text-slate-300 hover:bg-ink-700 hover:text-white')
+        ? 'bg-ink-700 text-slate-200'
+        : 'text-slate-300 hover:bg-ink-700 hover:text-slate-200')
 ]) }}>
     {{ $slot }}
 </a>

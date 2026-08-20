@@ -16,7 +16,7 @@
     <div class="w-full max-w-md">
         <div class="mb-6 flex items-center justify-center gap-2">
             <div class="grid h-9 w-9 place-items-center rounded-lg bg-brand-500 font-bold text-white">S</div>
-            <span class="text-lg font-semibold text-white">{{ config('app.name') }}</span>
+            <span class="text-lg font-semibold text-slate-200">{{ config('app.name') }}</span>
         </div>
         <div class="rounded-2xl border border-ink-600 bg-ink-800 p-6 shadow-xl">
             {{ $slot }}

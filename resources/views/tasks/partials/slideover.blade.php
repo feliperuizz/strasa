@@ -3,10 +3,10 @@
         '{{ $task->exists ? 'PATCH' : 'POST' }}',
         {{ $task->exists ? 'true' : 'false' }}
     )" 
-    class="flex h-full flex-col bg-[#1e1e1e] text-slate-200">
+    class="flex h-full flex-col bg-ink-900 text-slate-200">
 
     {{-- Header --}}
-    <div class="flex items-center justify-between border-b border-[#2a2b2d] px-6 py-4">
+    <div class="flex items-center justify-between border-b border-ink-800 px-6 py-4">
         <div class="flex items-center gap-3">
             @if($task->exists)
                 <button type="button" @click="completeTaskAndClose({{ $task->id }})" class="group flex h-6 w-6 items-center justify-center rounded-full border border-slate-500 hover:border-emerald-400 hover:bg-emerald-900/30" title="Concluir tarefa">
@@ -27,7 +27,7 @@
                 </form>
             @endif
 
-            <button @click="closeModal()" class="rounded p-1 text-slate-400 hover:bg-[#2a2b2d] hover:text-white" title="Fechar">
+            <button @click="closeModal()" class="rounded p-1 text-slate-400 hover:bg-ink-800 hover:text-slate-200" title="Fechar">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
@@ -46,14 +46,14 @@
                 <div>
                     <input type="text" name="title" value="{{ $task->title }}" placeholder="Escreva o nome da tarefa"
                            @input="updateTitle($event)"
-                           class="w-full border-0 bg-transparent p-0 text-2xl font-bold text-white focus:ring-0 placeholder:text-slate-500">
+                           class="w-full border-0 bg-transparent p-0 text-2xl font-bold text-slate-200 focus:ring-0 placeholder:text-slate-500">
                 </div>
 
                 {{-- Metadados rápidos --}}
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Responsável</label>
-                        <select name="assignee_id" @change="save()" class="w-full rounded border-0 bg-[#2a2b2d] py-1.5 pl-3 text-sm text-white focus:ring-1 focus:ring-brand-500">
+                        <select name="assignee_id" @change="save()" class="w-full rounded border-0 bg-ink-800 py-1.5 pl-3 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500">
                             <option value="">Sem responsável</option>
                             @foreach($members as $m)
                                 <option value="{{ $m->id }}" {{ $task->assignee_id == $m->id ? 'selected' : '' }}>{{ $m->name }}</option>
@@ -64,9 +64,9 @@
                         <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Publicação</label>
                         <div class="flex items-center gap-2">
                             <input type="date" name="publish_date" value="{{ optional($task->publish_date)->format('Y-m-d') }}" @change="save()"
-                                   class="w-full rounded border-0 bg-[#2a2b2d] py-1.5 pl-3 text-sm text-white focus:ring-1 focus:ring-brand-500 [color-scheme:dark]">
+                                   class="w-full rounded border-0 bg-ink-800 py-1.5 pl-3 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500 [color-scheme:dark]">
                             <input type="time" name="publish_time" value="{{ $task->publish_time ? \Carbon\Carbon::parse($task->publish_time)->format('H:i') : '' }}" @change="save()"
-                                   class="w-24 rounded border-0 bg-[#2a2b2d] py-1.5 px-2 text-sm text-white focus:ring-1 focus:ring-brand-500 [color-scheme:dark]" title="Horário">
+                                   class="w-24 rounded border-0 bg-ink-800 py-1.5 px-2 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500 [color-scheme:dark]" title="Horário">
                         </div>
                     </div>
                 </div>
@@ -76,7 +76,7 @@
                     <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Flags / Tags</label>
                     <div class="flex flex-wrap items-center gap-2 mb-2" id="tags-container">
                         @foreach($task->tags as $tag)
-                            <div class="inline-flex items-center gap-1 rounded bg-[#2a2b2d] px-2 py-1 text-xs text-slate-300 border border-ink-600">
+                            <div class="inline-flex items-center gap-1 rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 border border-ink-600">
                                 <span class="w-2 h-2 rounded-full" style="background: {{ $tag->color }}"></span>
                                 {{ $tag->name }}
                                 <input type="hidden" name="tags[]" value="{{ $tag->name }}|{{ $tag->color }}">
@@ -88,8 +88,8 @@
                     <div x-data="{ open: false, tagText: '', tagColor: '#ef4444' }" class="relative">
                         <button type="button" @click="open = !open" class="text-xs text-brand-400 hover:text-brand-300 transition font-medium">＋ Adicionar flag</button>
                         
-                        <div x-show="open" @click.outside="open = false" style="display: none;" class="absolute left-0 mt-2 w-56 rounded-lg border border-[#2a2b2d] bg-[#1e1e1e] p-3 shadow-xl z-50">
-                            <input type="text" x-model="tagText" placeholder="Nome da flag..." @keydown.enter.prevent="$refs.addBtn.click()" class="w-full rounded bg-[#2a2b2d] px-2 py-1.5 text-xs border border-[#2a2b2d] focus:border-brand-500 focus:ring-0 mb-3 text-white">
+                        <div x-show="open" @click.outside="open = false" style="display: none;" class="absolute left-0 mt-2 w-56 rounded-lg border border-ink-800 bg-ink-900 p-3 shadow-xl z-50">
+                            <input type="text" x-model="tagText" placeholder="Nome da flag..." @keydown.enter.prevent="$refs.addBtn.click()" class="w-full rounded bg-ink-800 px-2 py-1.5 text-xs border border-ink-800 focus:border-brand-500 focus:ring-0 mb-3 text-slate-200">
                             
                             <div class="flex flex-wrap gap-1.5 mb-3">
                                 <template x-for="color in ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8']">
@@ -100,7 +100,7 @@
                             <button type="button" x-ref="addBtn" @click="
                                 if(tagText.trim() === '') return;
                                 const div = document.createElement('div');
-                                div.className = 'inline-flex items-center gap-1 rounded bg-[#2a2b2d] px-2 py-1 text-xs text-slate-300 border border-ink-600';
+                                div.className = 'inline-flex items-center gap-1 rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 border border-ink-600';
                                 div.innerHTML = `
                                     <span class=\'w-2 h-2 rounded-full\' style=\'background: ${tagColor}\'></span>
                                     ${tagText}
@@ -147,7 +147,7 @@
         </form>
 
         @if($task->exists)
-        <hr class="my-6 border-[#2a2b2d]">
+        <hr class="my-6 border-ink-800">
 
         {{-- Checklist --}}
         <div class="mb-6" x-data="{
@@ -205,7 +205,7 @@
             }
         }">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="font-semibold text-white flex items-center gap-2">
+                <h3 class="font-semibold text-slate-200 flex items-center gap-2">
                     <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                     Checklist
                 </h3>
@@ -227,22 +227,22 @@
             </div>
 
             <form @submit.prevent="addItem" class="flex gap-2">
-                <input type="text" x-model="newItem" placeholder="Adicionar item..." class="flex-1 rounded border border-[#2a2b2d] bg-[#2a2b2d] px-3 py-1.5 text-sm text-white focus:border-brand-500 focus:outline-none">
-                <button type="submit" :disabled="adding" class="rounded bg-[#2a2b2d] border border-ink-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50">Adicionar</button>
+                <input type="text" x-model="newItem" placeholder="Adicionar item..." class="flex-1 rounded border border-ink-800 bg-ink-800 px-3 py-1.5 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
+                <button type="submit" :disabled="adding" class="rounded bg-ink-800 border border-ink-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50">Adicionar</button>
             </form>
         </div>
 
-        <hr class="my-6 border-[#2a2b2d]">
+        <hr class="my-6 border-ink-800">
 
         {{-- Comentários (Simples) --}}
         <div>
-            <h3 class="mb-4 font-semibold text-white">Comentários</h3>
+            <h3 class="mb-4 font-semibold text-slate-200">Comentários</h3>
             
             <form @submit.prevent="postComment($event)" action="{{ route('comments.store', $task) }}" class="flex gap-3 mb-6">
                 @csrf
                 <div class="flex-1">
                     <textarea name="body" required rows="2" placeholder="Fazer uma pergunta ou atualização..."
-                              class="w-full rounded-lg border border-[#2a2b2d] bg-[#2a2b2d] px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"></textarea>
+                              class="w-full rounded-lg border border-ink-800 bg-ink-800 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none"></textarea>
                     <div class="mt-2 text-right">
                         <button type="submit" class="rounded bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-brand-500" :disabled="commenting">Comentar</button>
                     </div>
@@ -252,7 +252,7 @@
             <div class="space-y-4" id="comments-container">
                 @foreach($task->comments->sortByDesc('created_at') as $comment)
                     <div class="flex gap-3" x-data="{ editing: false, body: {{ json_encode($comment->body) }} }">
-                        <div class="h-8 w-8 shrink-0 rounded-full bg-[#2a2b2d] flex items-center justify-center font-bold text-xs">{{ substr($comment->user->name, 0, 1) }}</div>
+                        <div class="h-8 w-8 shrink-0 rounded-full bg-ink-800 flex items-center justify-center font-bold text-xs">{{ substr($comment->user->name, 0, 1) }}</div>
                         <div class="flex-1">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
@@ -273,9 +273,9 @@
                             
                             <div x-show="editing" style="display: none;" class="mt-2">
                                 <form @submit.prevent="updateComment('{{ route('comments.update', $comment) }}', $event, body); editing = false" class="flex flex-col gap-2">
-                                    <textarea x-model="body" required rows="2" class="w-full rounded-lg border border-[#2a2b2d] bg-[#2a2b2d] px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"></textarea>
+                                    <textarea x-model="body" required rows="2" class="w-full rounded-lg border border-ink-800 bg-ink-800 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none"></textarea>
                                     <div class="flex justify-end gap-2">
-                                        <button type="button" @click="editing = false; body = {{ json_encode($comment->body) }}" class="text-xs text-slate-400 hover:text-white">Cancelar</button>
+                                        <button type="button" @click="editing = false; body = {{ json_encode($comment->body) }}" class="text-xs text-slate-400 hover:text-slate-200">Cancelar</button>
                                         <button type="submit" class="rounded bg-brand-600 px-3 py-1 text-xs font-semibold text-white hover:bg-brand-500">Salvar</button>
                                     </div>
                                 </form>
@@ -286,51 +286,51 @@
             </div>
         </div>
 
-        <hr class="my-6 border-[#2a2b2d]">
+        <hr class="my-6 border-ink-800">
 
         {{-- Anexos --}}
         {{-- Anexos e Pastas --}}
         <div x-data="{ creatingFolder: false, newFolderName: '' }">
             <div class="mb-4 flex items-center justify-between">
-                <h3 class="font-semibold text-white">Anexos</h3>
+                <h3 class="font-semibold text-slate-200">Anexos</h3>
                 <button type="button" @click="creatingFolder = !creatingFolder" class="text-xs text-brand-400 hover:text-brand-300 font-medium transition">＋ Nova Pasta</button>
             </div>
             
-            <div x-show="creatingFolder" style="display: none;" class="mb-4 rounded-lg bg-[#2a2b2d] p-3 border border-ink-600">
+            <div x-show="creatingFolder" style="display: none;" class="mb-4 rounded-lg bg-ink-800 p-3 border border-ink-600">
                 <form @submit.prevent="createFolder($event); creatingFolder = false; newFolderName = ''" action="{{ route('folders.store', $task) }}" class="flex items-center gap-2">
                     @csrf
-                    <input type="text" name="name" x-model="newFolderName" placeholder="Nome da pasta..." required class="flex-1 rounded border-0 bg-[#1e1e1e] px-3 py-1.5 text-sm text-white focus:ring-1 focus:ring-brand-500">
+                    <input type="text" name="name" x-model="newFolderName" placeholder="Nome da pasta..." required class="flex-1 rounded border-0 bg-ink-900 px-3 py-1.5 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500">
                     <button type="submit" class="rounded bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500">Criar</button>
-                    <button type="button" @click="creatingFolder = false" class="text-xs text-slate-400 hover:text-white">Cancelar</button>
+                    <button type="button" @click="creatingFolder = false" class="text-xs text-slate-400 hover:text-slate-200">Cancelar</button>
                 </form>
             </div>
 
             <div id="attachments-container" x-init="initTaskViewer($el)" class="space-y-6">
                 {{-- Renderizar Pastas --}}
                 @foreach($task->folders as $folder)
-                    <div class="rounded-lg border border-[#2a2b2d] bg-[#1e1e1e]/50 overflow-hidden mb-3" x-data="{ open: false, editing: false, folderName: '{{ $folder->name }}' }">
-                        <div class="flex items-center justify-between bg-[#2a2b2d] px-3 py-2 cursor-pointer hover:bg-[#343538] transition" @click="if(!editing) open = !open">
+                    <div class="rounded-lg border border-ink-800 bg-ink-900/50 overflow-hidden mb-3" x-data="{ open: false, editing: false, folderName: '{{ $folder->name }}' }">
+                        <div class="flex items-center justify-between bg-ink-800 px-3 py-2 cursor-pointer hover:bg-[#343538] transition" @click="if(!editing) open = !open">
                             <div class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-brand-400 transition-transform duration-200" :class="open ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                                 <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
                                 <span x-show="!editing" class="font-medium text-sm text-slate-200">{{ $folder->name }} <span class="text-xs text-slate-500 ml-1">({{ $folder->attachments->count() }})</span></span>
                                 <form x-show="editing" style="display:none;" @submit.prevent="renameFolder('{{ route('folders.update', $folder) }}', $event, folderName); editing = false" class="flex items-center gap-2">
-                                    <input type="text" x-model="folderName" class="h-6 rounded border-0 bg-[#1e1e1e] px-2 text-xs text-white focus:ring-1 focus:ring-brand-500" @click.stop>
+                                    <input type="text" x-model="folderName" class="h-6 rounded border-0 bg-ink-900 px-2 text-xs text-slate-200 focus:ring-1 focus:ring-brand-500" @click.stop>
                                     <button type="submit" class="text-xs text-brand-400 font-medium" @click.stop>Salvar</button>
                                 </form>
                             </div>
                             <div class="flex items-center gap-2">
-                                <button type="button" @click.stop="editing = !editing" class="text-xs text-slate-500 hover:text-white">Editar</button>
+                                <button type="button" @click.stop="editing = !editing" class="text-xs text-slate-500 hover:text-slate-200">Editar</button>
                                 <button type="button" @click.stop="deleteFolder('{{ route('folders.destroy', $folder) }}')" class="text-xs text-rose-500 hover:text-rose-400">Excluir</button>
                             </div>
                         </div>
                         
-                        <div x-show="open" style="display: none;" class="p-3 border-t border-[#2a2b2d]">
+                        <div x-show="open" style="display: none;" class="p-3 border-t border-ink-800">
                             <form @submit.prevent="uploadAttachment($event)" action="{{ route('attachments.store', $task) }}" class="mb-3 flex items-center gap-2">
                                 @csrf
                                 <input type="hidden" name="folder_id" value="{{ $folder->id }}">
-                                <input type="file" name="files[]" multiple required class="text-[11px] text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-[#2a2b2d] file:px-2 file:py-1 file:text-[11px] file:text-white hover:file:bg-slate-600">
-                                <button type="submit" class="rounded bg-[#2a2b2d] px-2 py-1 text-[11px] font-medium text-white hover:bg-slate-600" :disabled="uploading">Enviar</button>
+                                <input type="file" name="files[]" multiple required class="text-[11px] text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-800 file:px-2 file:py-1 file:text-[11px] file:text-slate-200 hover:file:bg-slate-600">
+                                <button type="submit" class="rounded bg-ink-800 px-2 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-600" :disabled="uploading">Enviar</button>
                             </form>
                             
                             <div class="grid grid-cols-2 gap-3">
@@ -353,8 +353,8 @@
                     @endif
                     <form @submit.prevent="uploadAttachment($event)" action="{{ route('attachments.store', $task) }}" class="mb-3 flex items-center gap-2">
                         @csrf
-                        <input type="file" name="files[]" multiple required class="text-xs text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-[#2a2b2d] file:px-3 file:py-1.5 file:text-xs file:text-white hover:file:bg-slate-600">
-                        <button type="submit" class="rounded bg-[#2a2b2d] px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-600" :disabled="uploading">
+                        <input type="file" name="files[]" multiple required class="text-xs text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-800 file:px-3 file:py-1.5 file:text-xs file:text-slate-200 hover:file:bg-slate-600">
+                        <button type="submit" class="rounded bg-ink-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-600" :disabled="uploading">
                             <span x-show="!uploading">Enviar</span>
                             <span x-show="uploading">Enviando...</span>
                         </button>
@@ -369,7 +369,7 @@
             </div>
         </div>
         @else
-        <div class="mt-6 flex items-center justify-center rounded-lg border border-dashed border-[#2a2b2d] p-8">
+        <div class="mt-6 flex items-center justify-center rounded-lg border border-dashed border-ink-800 p-8">
             <p class="text-center text-sm text-slate-500">A tarefa será salva automaticamente ao digitar o título. Os anexos serão liberados após o salvamento.</p>
         </div>
         @endif

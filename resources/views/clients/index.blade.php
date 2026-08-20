@@ -1,7 +1,7 @@
 <x-app-layout title="Clientes">
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h1 class="text-base font-semibold text-white">Clientes</h1>
+            <h1 class="text-base font-semibold text-slate-200">Clientes</h1>
             @can('create', \App\Models\Client::class)
                 <a href="{{ route('clients.create') }}" class="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500">＋ Novo cliente</a>
             @endcan
@@ -25,7 +25,7 @@
                             @if($client->logo_url)
                                 <img src="{{ $client->logo_url }}" class="h-10 w-10 rounded-lg object-cover ring-1 ring-white/10" alt="">
                             @else
-                                <span class="grid h-10 w-10 place-items-center rounded-lg text-sm font-bold text-white shadow-sm" style="{{ $client->background_style ?: ('background: ' . ($client->color ?? '#'.substr(md5($client->name),0,6))) }}">
+                                <span class="grid h-10 w-10 place-items-center rounded-lg text-sm font-bold text-slate-200 shadow-sm" style="{{ $client->background_style ?: ('background: ' . ($client->color ?? '#'.substr(md5($client->name),0,6))) }}">
                                     {{ \Illuminate\Support\Str::substr($client->name,0,1) }}
                                 </span>
                             @endif

@@ -1,9 +1,9 @@
 <x-app-layout title="Editar Tarefa">
     <x-slot name="header">
         <div class="flex items-center gap-2">
-            <a href="{{ route('tasks.show', $task) }}" class="text-sm text-slate-400 hover:text-white">{{ $task->title }}</a>
+            <a href="{{ route('tasks.show', $task) }}" class="text-sm text-slate-400 hover:text-slate-200">{{ $task->title }}</a>
             <span class="text-slate-600">/</span>
-            <h1 class="text-base font-semibold text-white">Editar Tarefa</h1>
+            <h1 class="text-base font-semibold text-slate-200">Editar Tarefa</h1>
         </div>
     </x-slot>
 
@@ -16,7 +16,7 @@
                     <div class="space-y-4">
                         <div>
                             <input name="title" value="{{ old('title', $task->title) }}" required autofocus
-                                   class="w-full bg-transparent px-0 py-2 text-xl font-semibold text-white placeholder-slate-500 border-0 border-b border-transparent focus:border-brand-500 focus:ring-0">
+                                   class="w-full bg-transparent px-0 py-2 text-xl font-semibold text-slate-200 placeholder-slate-500 border-0 border-b border-transparent focus:border-brand-500 focus:ring-0">
                             @error('title') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
                         </div>
 
@@ -43,7 +43,7 @@
                             x-init="initQuill()">
                             <label class="mb-1 block text-sm font-medium text-slate-300">Descrição</label>
                             <input type="hidden" name="description" x-ref="hiddenInput" value="{{ old('description', $task->description) }}">
-                            <div x-ref="editor" class="w-full rounded-lg bg-ink-900 text-white border border-ink-600">{!! old('description', $task->description) !!}</div>
+                            <div x-ref="editor" class="w-full rounded-lg bg-ink-900 text-slate-200 border border-ink-600">{!! old('description', $task->description) !!}</div>
                             @error('description') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -55,7 +55,7 @@
                     
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-300">Coluna</label>
-                        <select name="column_id" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                        <select name="column_id" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                             @foreach($task->project->columns()->orderBy('position')->get() as $col)
                                 <option value="{{ $col->id }}" {{ (int) old('column_id', $task->column_id) === $col->id ? 'selected' : '' }}>{{ $col->name }}</option>
                             @endforeach
@@ -65,12 +65,12 @@
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-300">Data de publicação</label>
                         <input type="date" name="publish_date" value="{{ old('publish_date', $task->publish_date?->toDateString()) }}"
-                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none [color-scheme:dark]">
+                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none [color-scheme:dark]">
                     </div>
 
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-300">Tipo de Conteúdo</label>
-                        <select name="content_type" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                        <select name="content_type" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                             <option value="">Selecione...</option>
                             @foreach(\App\Models\Task::CONTENT_TYPES as $key => $label)
                                 <option value="{{ $key }}" {{ old('content_type', $task->content_type) === $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -81,7 +81,7 @@
 
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-300">Responsável</label>
-                        <select name="assignee_id" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                        <select name="assignee_id" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                             <option value="">Sem responsável</option>
                             @foreach(auth()->user()->company->users as $u)
                                 <option value="{{ $u->id }}" {{ (int) old('assignee_id', $task->assignee_id) === $u->id ? 'selected' : '' }}>{{ $u->name }}</option>

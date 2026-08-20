@@ -68,23 +68,23 @@
 
                         if (!header) {
                             header = document.createElement('div');
-                            header.className = 'asana-header absolute top-0 left-0 w-full flex items-center justify-between px-6 py-4 text-white z-50 pointer-events-none font-sans';
+                            header.className = 'asana-header absolute top-0 left-0 w-full flex items-center justify-between px-6 py-4 text-slate-200 z-50 pointer-events-none font-sans';
                             header.innerHTML = `
                                 <div class="flex flex-col pointer-events-auto flex-1">
                                     <span class="text-sm font-medium image-title truncate max-w-sm"></span>
                                 </div>
-                                <div class="flex items-center gap-1 pointer-events-auto bg-[#2a2b2d] rounded-md border border-[#3f4145] p-1 shadow-lg">
-                                    <button onclick="window.taskViewer.zoom(-0.1)" class="p-1.5 text-slate-300 hover:text-white hover:bg-[#3f4145] rounded" title="Reduzir"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></button>
-                                    <button onclick="window.taskViewer.zoom(0.1)" class="p-1.5 text-slate-300 hover:text-white hover:bg-[#3f4145] rounded" title="Ampliar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
-                                    <div class="w-px h-4 bg-[#3f4145] mx-1"></div>
-                                    <button onclick="window.taskViewer.reset()" class="p-1.5 text-slate-300 hover:text-white hover:bg-[#3f4145] rounded" title="Ajustar à tela"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg></button>
+                                <div class="flex items-center gap-1 pointer-events-auto bg-ink-800 rounded-md border border-ink-700 p-1 shadow-lg">
+                                    <button onclick="window.taskViewer.zoom(-0.1)" class="p-1.5 text-slate-300 hover:text-slate-200 hover:bg-ink-700 rounded" title="Reduzir"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></button>
+                                    <button onclick="window.taskViewer.zoom(0.1)" class="p-1.5 text-slate-300 hover:text-slate-200 hover:bg-ink-700 rounded" title="Ampliar"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg></button>
+                                    <div class="w-px h-4 bg-ink-700 mx-1"></div>
+                                    <button onclick="window.taskViewer.reset()" class="p-1.5 text-slate-300 hover:text-slate-200 hover:bg-ink-700 rounded" title="Ajustar à tela"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path></svg></button>
                                 </div>
                                 <div class="flex items-center justify-end gap-6 pointer-events-auto flex-1">
-                                    <a href="" download class="image-download flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-white">
+                                    <a href="" download class="image-download flex items-center gap-2 text-sm font-medium text-slate-300 hover:text-slate-200">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                         Fazer o download
                                     </a>
-                                    <button onclick="window.taskViewer.hide()" class="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                                    <button onclick="window.taskViewer.hide()" class="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-white/10 rounded-lg transition-colors">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                     </button>
                                 </div>
@@ -223,7 +223,7 @@
         <div class="px-4 pt-4 pb-1 flex items-center justify-between">
             <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Clientes</span>
             @can('create', \App\Models\Client::class)
-                <a href="{{ route('clients.create') }}" class="text-slate-500 hover:text-white" title="Novo cliente">＋</a>
+                <a href="{{ route('clients.create') }}" class="text-slate-500 hover:text-slate-200" title="Novo cliente">＋</a>
             @endcan
         </div>
 
@@ -238,7 +238,7 @@
                         @if($client->logo_url)
                             <img src="{{ $client->logo_url }}" class="h-5 w-5 rounded object-cover" alt="{{ $client->name }}">
                         @else
-                            <span class="grid h-5 w-5 place-items-center rounded text-[10px] font-bold text-white shadow-sm" style="{{ $client->background_style ?: ('background: ' . ($client->color ?? '#'.substr(md5($client->name),0,6))) }}">
+                            <span class="grid h-5 w-5 place-items-center rounded text-[10px] font-bold text-slate-200 shadow-sm" style="{{ $client->background_style ?: ('background: ' . ($client->color ?? '#'.substr(md5($client->name),0,6))) }}">
                                 {{ \Illuminate\Support\Str::substr($client->name,0,1) }}
                             </span>
                         @endif
@@ -247,7 +247,7 @@
                     <div x-show="open" x-cloak class="ml-7 space-y-0.5 border-l border-ink-600 pl-2">
                         @foreach($client->projects as $project)
                             <a href="{{ route('projects.board', $project) }}"
-                               class="block truncate rounded px-2 py-1 text-[13px] {{ (int) optional(request()->route('project'))->id === $project->id ? 'bg-ink-600 text-white' : 'text-slate-400 hover:text-white hover:bg-ink-700' }}">
+                               class="block truncate rounded px-2 py-1 text-[13px] {{ (int) optional(request()->route('project'))->id === $project->id ? 'bg-ink-600 text-slate-200' : 'text-slate-400 hover:text-slate-200 hover:bg-ink-700' }}">
                                 {{ $project->name }}
                             </a>
                         @endforeach
@@ -266,7 +266,7 @@
     {{-- ============================ CONTEÚDO ============================ --}}
     <div class="flex min-w-0 flex-1 flex-col relative transition-all duration-300" style="{{ $activeClient?->background_style }}">
         <header class="flex items-center gap-3 border-b border-ink-600/70 bg-ink-800/80 px-4 py-3 backdrop-blur-md sticky top-0 z-20">
-            <button @click="sidebar = !sidebar" class="hidden lg:block rounded p-1.5 text-slate-400 hover:bg-ink-700 hover:text-white">☰</button>
+            <button @click="sidebar = !sidebar" class="hidden lg:block rounded p-1.5 text-slate-400 hover:bg-ink-700 hover:text-slate-200">☰</button>
             <div class="min-w-0 flex-1 flex items-center justify-between">
                 <div class="min-w-0">{{ $header ?? '' }}</div>
                 
@@ -294,7 +294,7 @@
             </div>
             <div class="flex items-center gap-3" x-data="{ menu:false }">
                 <div class="relative">
-                    <button @click="menu=!menu" class="flex items-center gap-2 text-sm text-slate-300 hover:text-white focus:outline-none">
+                    <button @click="menu=!menu" class="flex items-center gap-2 text-sm text-slate-300 hover:text-slate-200 focus:outline-none">
                         <x-avatar :user="auth()->user()" />
                         <span class="hidden sm:inline">{{ auth()->user()->name }} ▾</span>
                     </button>
@@ -326,7 +326,7 @@
 <div x-data="taskModal" @open-task-modal.window="open($event.detail)">
     <div x-show="isOpen" x-cloak class="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity" @click="closeModal()"></div>
     <div x-show="isOpen" x-cloak
-         class="fixed inset-y-0 right-0 z-50 w-full sm:max-w-2xl bg-[#1e1e1e] shadow-2xl ring-1 ring-white/10 transition-transform"
+         class="fixed inset-y-0 right-0 z-50 w-full sm:max-w-2xl bg-ink-900 shadow-2xl ring-1 ring-white/10 transition-transform"
          x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500"
          x-transition:enter-start="translate-x-full"
          x-transition:enter-end="translate-x-0"

@@ -1,6 +1,6 @@
 <x-app-layout title="Meu Perfil">
     <x-slot name="header">
-        <h1 class="text-xl font-bold text-white tracking-wide">Meu Perfil</h1>
+        <h1 class="text-xl font-bold text-slate-200 tracking-wide">Meu Perfil</h1>
     </x-slot>
 
     <div class="max-w-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
@@ -14,18 +14,18 @@
                     @if($user->avatar_url)
                         <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="h-24 w-24 rounded-full object-cover ring-4 ring-ink-700">
                     @else
-                        <span class="grid place-items-center rounded-full font-semibold text-white ring-4 ring-ink-700 h-24 w-24 text-2xl"
+                        <span class="grid place-items-center rounded-full font-semibold text-slate-200 ring-4 ring-ink-700 h-24 w-24 text-2xl"
                               style="background: {{ $user->avatar_color ?? '#6366f1' }}">
                             {{ $user->initials() }}
                         </span>
                     @endif
                     <label class="absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-                        <span class="text-xs font-medium text-white">Alterar</span>
+                        <span class="text-xs font-medium text-slate-200">Alterar</span>
                         <input type="file" name="avatar" accept="image/*" class="hidden">
                     </label>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-lg font-medium text-white">Sua Foto</h3>
+                    <h3 class="text-lg font-medium text-slate-200">Sua Foto</h3>
                     <p class="text-sm text-slate-400">Clique na imagem para enviar uma foto. JPG, PNG ou WEBP. Máx 5MB.</p>
                 </div>
             </div>
@@ -73,7 +73,7 @@
             {{-- Notificações (PWA / Push) --}}
             <div x-data="notificationsSetup()">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-white">Notificações no Dispositivo (Push)</h3>
+                    <h3 class="text-lg font-medium text-slate-200">Notificações no Dispositivo (Push)</h3>
                     <button type="button" @click="subscribe()" :disabled="subscribing" 
                             class="rounded bg-ink-700 px-3 py-1.5 text-xs font-semibold text-brand-400 hover:bg-ink-600 border border-ink-600 transition disabled:opacity-50">
                         <span x-text="subscribing ? 'Ativando...' : (isSubscribed ? 'Renovar Permissão' : 'Ativar neste Aparelho')"></span>
@@ -152,7 +152,7 @@
                             <p class="text-xs text-slate-500">Escolha entre Claro, Escuro ou Automático.</p>
                         </div>
                         <div>
-                            <select name="notification_settings[theme]" class="rounded bg-[#2a2b2d] border border-ink-600 text-sm text-slate-300 p-2 focus:ring-brand-500">
+                            <select name="notification_settings[theme]" class="rounded bg-ink-800 border border-ink-600 text-sm text-slate-300 p-2 focus:ring-brand-500">
                                 <option value="system" {{ ($settings['theme'] ?? 'system') === 'system' ? 'selected' : '' }}>Automático (Sistema)</option>
                                 <option value="dark" {{ ($settings['theme'] ?? '') === 'dark' ? 'selected' : '' }}>Escuro</option>
                                 <option value="light" {{ ($settings['theme'] ?? '') === 'light' ? 'selected' : '' }}>Claro</option>

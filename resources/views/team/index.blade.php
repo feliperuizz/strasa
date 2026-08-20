@@ -1,7 +1,7 @@
 <x-app-layout title="Equipe">
     <x-slot name="header">
         <div class="flex items-center justify-between">
-            <h1 class="text-base font-semibold text-white">Equipe da Agência</h1>
+            <h1 class="text-base font-semibold text-slate-200">Equipe da Agência</h1>
             @if(auth()->user()->isAdmin())
                 <button x-data @click="$dispatch('open-modal', 'invite-modal')" class="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500">＋ Adicionar</button>
             @endif
@@ -12,7 +12,7 @@
         
         {{-- Usuários Ativos --}}
         <div>
-            <h2 class="text-lg font-medium text-white mb-4">Membros Ativos</h2>
+            <h2 class="text-lg font-medium text-slate-200 mb-4">Membros Ativos</h2>
             <div class="overflow-x-auto rounded-xl border border-ink-600 bg-ink-800">
                 <table class="w-full text-left text-sm text-slate-300 min-w-[600px]">
                     <thead class="border-b border-ink-600 bg-ink-900/50 text-xs uppercase text-slate-400">
@@ -28,13 +28,13 @@
                             <tr class="hover:bg-ink-700/50">
                                 <td class="px-4 py-3 flex items-center gap-3">
                                     <x-avatar :user="$user" :size="8" />
-                                    <span class="font-medium text-white">{{ $user->name }}</span>
+                                    <span class="font-medium text-slate-200">{{ $user->name }}</span>
                                 </td>
                                 <td class="px-4 py-3">{{ $user->email }}</td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-2">
                                         <div class="text-xs text-slate-400">
-                                            <span class="text-white">{{ $user->tasks_total - $user->tasks_completed }}</span> pendentes
+                                            <span class="text-slate-200">{{ $user->tasks_total - $user->tasks_completed }}</span> pendentes
                                         </div>
                                         <div class="text-xs text-slate-600">&bull;</div>
                                         <div class="text-xs text-emerald-400">
@@ -89,26 +89,26 @@
                         <form method="POST" action="{{ route('team.invitations.store') }}">
                             @csrf
                             <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                                <h3 class="text-lg font-semibold leading-6 text-white" id="modal-title">Adicionar membro</h3>
+                                <h3 class="text-lg font-semibold leading-6 text-slate-200" id="modal-title">Adicionar membro</h3>
                                 <div class="mt-4 space-y-4">
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">Nome</label>
                                         <input type="text" name="name" required placeholder="Nome do membro"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">E-mail</label>
                                         <input type="email" name="email" required placeholder="email@exemplo.com"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">Senha</label>
                                         <input type="password" name="password" required placeholder="••••••••" minlength="8"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">Função</label>
-                                        <select name="role" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="role" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             @foreach(\App\Models\User::ROLES as $key => $label)
                                                 <option value="{{ $key }}">{{ $label }}</option>
                                             @endforeach
@@ -159,26 +159,26 @@
                             @csrf
                             @method('PATCH')
                             <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                                <h3 class="text-lg font-semibold leading-6 text-white" id="modal-title">Editar membro</h3>
+                                <h3 class="text-lg font-semibold leading-6 text-slate-200" id="modal-title">Editar membro</h3>
                                 <div class="mt-4 space-y-4">
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">Nome</label>
                                         <input type="text" name="name" x-model="name" required placeholder="Nome do membro"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">E-mail</label>
                                         <input type="email" name="email" x-model="email" required placeholder="email@exemplo.com"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">Senha (Opcional - preencha para alterar)</label>
                                         <input type="password" name="password" placeholder="••••••••" minlength="8"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-sm text-slate-300">Função</label>
-                                        <select name="role" x-model="role" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="role" x-model="role" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             @foreach(\App\Models\User::ROLES as $key => $label)
                                                 <option value="{{ $key }}">{{ $label }}</option>
                                             @endforeach

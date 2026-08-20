@@ -14,5 +14,5 @@
 @endphp
 
 <span title="{{ $network }}"
-      class="grid h-5 w-5 place-items-center rounded text-[9px] font-bold text-white"
+      class="grid h-5 w-5 place-items-center rounded text-[9px] font-bold text-slate-200"
       style="background: {{ $color }}">{{ $label }}</span>

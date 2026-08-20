@@ -3,7 +3,7 @@
         @if($isAdmin)
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">Painel de Gestão & Produtividade</h1>
+                    <h1 class="text-xl font-bold text-slate-200 tracking-wide">Painel de Gestão & Produtividade</h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Acompanhe a evolução da equipe, entregas e métricas gerais da agência.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -16,7 +16,7 @@
         @else
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">Olá, {{ auth()->user()->name }}! 👋</h1>
+                    <h1 class="text-xl font-bold text-slate-200 tracking-wide">Olá, {{ auth()->user()->name }}! 👋</h1>
                     <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Aqui está o seu resumo pessoal de tarefas, entregas e produtividade.</p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -33,7 +33,7 @@
 
         {{-- Painel de Frase do Dia (BorderBeam) --}}
         <x-border-beam-panel class="mb-2" :idleSpeed="30" :hoverSpeed="200" :thickness="2">
-            <div class="flex items-center gap-4 text-white">
+            <div class="flex items-center gap-4 text-slate-200">
                 <div class="h-10 w-10 shrink-0 rounded-full bg-brand-500/20 text-brand-400 grid place-items-center">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
@@ -52,7 +52,7 @@
             {{-- 1. Cartões de Métricas Globais --}}
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {{-- Total de Cards --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Total de Demandas</div>
                         <div class="text-3xl font-bold text-amber-400">{{ $stats['tasks'] }}</div>
@@ -64,7 +64,7 @@
                 </div>
 
                 {{-- Concluídos / Publicados --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Publicados / Entregues</div>
                         <div class="text-3xl font-bold text-emerald-400">{{ $stats['published'] }}</div>
@@ -76,7 +76,7 @@
                 </div>
 
                 {{-- Atrasados --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Em Atraso</div>
                         <div class="text-3xl font-bold {{ $stats['late'] > 0 ? 'text-rose-400' : 'text-slate-300' }}">{{ $stats['late'] }}</div>
@@ -92,7 +92,7 @@
                 </div>
 
                 {{-- Projetos & Clientes --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Projetos & Clientes</div>
                         <div class="text-3xl font-bold text-sky-400">{{ $stats['projects'] }} <span class="text-sm font-normal text-slate-400">proj.</span></div>
@@ -105,11 +105,11 @@
             </div>
 
             {{-- 2. Acompanhamento & Evolução da Equipe --}}
-            <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm overflow-hidden">
+            <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm overflow-hidden">
                 <header class="border-b border-ink-600 px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div>
                         <div class="flex items-center gap-2">
-                            <h2 class="text-base font-semibold text-white">Acompanhamento e Evolução da Equipe</h2>
+                            <h2 class="text-base font-semibold text-slate-200">Acompanhamento e Evolução da Equipe</h2>
                             <span class="bg-brand-500/20 text-brand-400 text-xs font-bold px-2 py-0.5 rounded-full">{{ $teamMembers->count() }} colaboradores</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-0.5">Progresso de tarefas, volume de entregas e status de cada colaborador em tempo real.</p>
@@ -139,7 +139,7 @@
                                         <div class="flex items-center gap-3">
                                             <x-avatar :user="$member" :size="9" />
                                             <div>
-                                                <div class="font-medium text-white flex items-center gap-2">
+                                                <div class="font-medium text-slate-200 flex items-center gap-2">
                                                     {{ $member->name }}
                                                     @if($member->isAdmin())
                                                         <span class="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 font-semibold border border-brand-500/30">Admin</span>
@@ -227,10 +227,10 @@
             {{-- 3. Gráficos Comparativos da Agência e Equipe --}}
             <div class="grid gap-6 lg:grid-cols-2">
                 {{-- Gráfico 1: Produtividade Semanal / Quinzenal --}}
-                <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm flex flex-col justify-between">
+                <section class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm flex flex-col justify-between">
                     <header class="mb-4">
                         <div class="flex items-center justify-between">
-                            <h2 class="text-base font-semibold text-white">Produtividade Geral da Agência</h2>
+                            <h2 class="text-base font-semibold text-slate-200">Produtividade Geral da Agência</h2>
                             <span class="text-xs text-emerald-400 font-medium bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Últimos 14 dias</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-0.5">Volume de cards concluídos por dia em toda a operação.</p>
@@ -241,10 +241,10 @@
                 </section>
 
                 {{-- Gráfico 2: Desempenho e Distribuição da Equipe --}}
-                <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm flex flex-col justify-between">
+                <section class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm flex flex-col justify-between">
                     <header class="mb-4">
                         <div class="flex items-center justify-between">
-                            <h2 class="text-base font-semibold text-white">Distribuição & Ritmo da Equipe</h2>
+                            <h2 class="text-base font-semibold text-slate-200">Distribuição & Ritmo da Equipe</h2>
                             <span class="text-xs text-brand-400 font-medium bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">Por Colaborador</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-0.5">Comparativo de tarefas concluídas vs pendentes por membro.</p>
@@ -258,11 +258,11 @@
             {{-- 4. Alertas de Atraso e Próximos Posts da Agência --}}
             <div class="grid gap-6 lg:grid-cols-2">
                 {{-- Cards Atrasados --}}
-                <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm">
+                <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm">
                     <header class="border-b border-ink-600 px-5 py-4 flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <div class="h-2.5 w-2.5 rounded-full bg-rose-500 {{ $lateTasks->count() > 0 ? 'animate-ping' : '' }}"></div>
-                            <h2 class="text-sm font-semibold text-white">Cards em Atraso (Requerem Atenção)</h2>
+                            <h2 class="text-sm font-semibold text-slate-200">Cards em Atraso (Requerem Atenção)</h2>
                         </div>
                         <span class="bg-rose-500/20 text-rose-400 text-xs font-bold px-2 py-0.5 rounded-full border border-rose-500/30">{{ $lateTasks->count() }}</span>
                     </header>
@@ -297,9 +297,9 @@
                 </section>
 
                 {{-- Próximas Entregas da Agência --}}
-                <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm">
+                <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm">
                     <header class="border-b border-ink-600 px-5 py-4 flex items-center justify-between">
-                        <h2 class="text-sm font-semibold text-white">Próximos Posts & Prazos da Agência</h2>
+                        <h2 class="text-sm font-semibold text-slate-200">Próximos Posts & Prazos da Agência</h2>
                         <span class="bg-brand-500/20 text-brand-400 text-xs font-bold px-2 py-0.5 rounded-full">{{ $upcoming->count() }}</span>
                     </header>
                     <ul class="divide-y divide-ink-700/50">
@@ -340,7 +340,7 @@
             {{-- 1. Cartões de Métricas Pessoais --}}
             <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {{-- Minhas Tarefas Pendentes --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Minhas Pendências</div>
                         <div class="text-3xl font-bold text-brand-400">{{ $myStats['pending'] }}</div>
@@ -352,7 +352,7 @@
                 </div>
 
                 {{-- Minhas Concluídas --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Minhas Entregas</div>
                         <div class="text-3xl font-bold text-emerald-400">{{ $myStats['completed'] }}</div>
@@ -364,7 +364,7 @@
                 </div>
 
                 {{-- Meus Atrasos --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Meus Atrasos</div>
                         <div class="text-3xl font-bold {{ $myStats['late'] > 0 ? 'text-rose-400' : 'text-slate-300' }}">{{ $myStats['late'] }}</div>
@@ -380,7 +380,7 @@
                 </div>
 
                 {{-- Meus Projetos Ativos --}}
-                <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+                <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                     <div class="relative z-10">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Meus Projetos</div>
                         <div class="text-3xl font-bold text-sky-400">{{ $myStats['projects_count'] }}</div>
@@ -396,10 +396,10 @@
                 {{-- Coluna Principal: Minha Fila de Trabalho & Produtividade --}}
                 <div class="lg:col-span-2 space-y-6">
                     {{-- Fila de Tarefas Pendentes --}}
-                    <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm">
+                    <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm">
                         <header class="border-b border-ink-600 px-5 py-4 flex items-center justify-between">
                             <div>
-                                <h2 class="text-base font-semibold text-white">Minhas Tarefas Prioritárias</h2>
+                                <h2 class="text-base font-semibold text-slate-200">Minhas Tarefas Prioritárias</h2>
                                 <p class="text-xs text-slate-400 mt-0.5">Tarefas atribuídas a você ordenadas por urgência e prazo.</p>
                             </div>
                             <a href="{{ route('my-tasks') }}" class="text-xs font-medium text-brand-400 hover:text-brand-300 flex items-center gap-1">
@@ -459,10 +459,10 @@
                     </section>
 
                     {{-- Meu Gráfico de Produtividade Pessoal --}}
-                    <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm">
+                    <section class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm">
                         <header class="mb-4 flex items-center justify-between">
                             <div>
-                                <h2 class="text-base font-semibold text-white">Minha Produtividade Pessoal</h2>
+                                <h2 class="text-base font-semibold text-slate-200">Minha Produtividade Pessoal</h2>
                                 <p class="text-xs text-slate-400">Cards finalizados por você nos últimos 14 dias</p>
                             </div>
                             <span class="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Seu Ritmo</span>
@@ -476,9 +476,9 @@
                 {{-- Coluna Lateral: Meus Projetos e Próximos Posts --}}
                 <div class="space-y-6 lg:col-span-1">
                     {{-- Meus Projetos Ativos --}}
-                    <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm">
+                    <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm">
                         <header class="border-b border-ink-600 px-5 py-4 flex items-center justify-between">
-                            <h2 class="text-sm font-semibold text-white">Meus Projetos Ativos</h2>
+                            <h2 class="text-sm font-semibold text-slate-200">Meus Projetos Ativos</h2>
                             <span class="bg-brand-500/20 text-brand-400 text-xs font-bold px-2 py-0.5 rounded-full">{{ $myProjects->count() }}</span>
                         </header>
                         <ul class="divide-y divide-ink-700/50">
@@ -509,9 +509,9 @@
                     </section>
 
                     {{-- Meus Próximos Posts Agendados --}}
-                    <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm">
+                    <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm">
                         <header class="border-b border-ink-600 px-5 py-4">
-                            <h2 class="text-sm font-semibold text-white">Minhas Próximas Publicações</h2>
+                            <h2 class="text-sm font-semibold text-slate-200">Minhas Próximas Publicações</h2>
                         </header>
                         <ul class="divide-y divide-ink-700/50">
                             @forelse($myUpcomingTasks as $task)
@@ -537,7 +537,7 @@
 
                     {{-- Minhas Entregas Recentes --}}
                     @if($myRecentlyCompleted->count() > 0)
-                        <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm">
+                        <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm">
                             <header class="border-b border-ink-600 px-5 py-4">
                                 <h2 class="text-sm font-semibold text-emerald-400 flex items-center gap-1.5">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>

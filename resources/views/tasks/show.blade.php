@@ -1,7 +1,7 @@
 <x-app-layout title="{{ $task->title }}">
     <x-slot name="header">
         <div class="flex items-center gap-2">
-            <a href="{{ route('projects.board', $task->project) }}" class="text-sm text-slate-400 hover:text-white">{{ $task->project->name }}</a>
+            <a href="{{ route('projects.board', $task->project) }}" class="text-sm text-slate-400 hover:text-slate-200">{{ $task->project->name }}</a>
             <span class="text-slate-600">/</span>
             <span class="text-sm text-slate-300">{{ $task->title }}</span>
         </div>
@@ -14,7 +14,7 @@
             {{-- Detalhes principais --}}
             <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
                 <div class="flex items-start justify-between gap-4">
-                    <h1 class="text-2xl font-bold text-white">{{ $task->title }}</h1>
+                    <h1 class="text-2xl font-bold text-slate-200">{{ $task->title }}</h1>
                     <div class="flex items-center gap-2">
                         <a href="{{ route('tasks.edit', $task) }}" class="rounded bg-ink-700 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-ink-600">Editar</a>
                     </div>
@@ -28,11 +28,11 @@
             {{-- Anexos (R2/S3) --}}
             <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
                 <div class="mb-4 flex items-center justify-between">
-                    <h2 class="font-semibold text-white">Anexos</h2>
+                    <h2 class="font-semibold text-slate-200">Anexos</h2>
                     <form action="{{ route('attachments.store', $task) }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
                         @csrf
-                        <input type="file" name="file" required class="text-sm text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-700 file:px-2 file:py-1 file:text-xs file:text-white hover:file:bg-ink-600">
-                        <button class="rounded bg-ink-700 px-2 py-1 text-xs font-medium text-white hover:bg-ink-600">Enviar</button>
+                        <input type="file" name="file" required class="text-sm text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-700 file:px-2 file:py-1 file:text-xs file:text-slate-200 hover:file:bg-ink-600">
+                        <button class="rounded bg-ink-700 px-2 py-1 text-xs font-medium text-slate-200 hover:bg-ink-600">Enviar</button>
                     </form>
                 </div>
 
@@ -65,7 +65,7 @@
 
             {{-- Comentários --}}
             <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                <h2 class="mb-4 font-semibold text-white">Comentários</h2>
+                <h2 class="mb-4 font-semibold text-slate-200">Comentários</h2>
                 
                 <div class="space-y-4 mb-6">
                     @forelse($task->comments as $comment)
@@ -91,7 +91,7 @@
                     <x-avatar :user="auth()->user()" :size="8" />
                     <div class="flex-1">
                         <textarea name="content" required rows="2" placeholder="Escreva um comentário..."
-                                  class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"></textarea>
+                                  class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none"></textarea>
                         <div class="mt-2 text-right">
                             <button class="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-500">Comentar</button>
                         </div>
@@ -108,7 +108,7 @@
                     <span class="block text-xs font-semibold uppercase text-slate-500">Coluna</span>
                     <div class="mt-1 flex items-center gap-2">
                         <span class="h-2 w-2 rounded-full" style="background: {{ $task->column->color }}"></span>
-                        <span class="text-sm font-medium text-white">{{ $task->column->name }}</span>
+                        <span class="text-sm font-medium text-slate-200">{{ $task->column->name }}</span>
                     </div>
                 </div>
 

@@ -1,5 +1,5 @@
 <x-guest-layout title="Criar conta">
-    <h1 class="mb-1 text-xl font-semibold text-white">Cadastrar agência</h1>
+    <h1 class="mb-1 text-xl font-semibold text-slate-200">Cadastrar agência</h1>
     <p class="mb-5 text-sm text-slate-400">Crie sua empresa e o usuário administrador.</p>
 
     <form method="POST" action="{{ route('register') }}" class="space-y-4">

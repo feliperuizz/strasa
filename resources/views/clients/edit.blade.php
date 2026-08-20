@@ -1,11 +1,11 @@
 <x-app-layout title="Editar cliente: {{ $client->name }}">
     <x-slot name="header">
         <div class="flex items-center gap-2">
-            <a href="{{ route('clients.index') }}" class="text-sm text-slate-400 hover:text-white">Clientes</a>
+            <a href="{{ route('clients.index') }}" class="text-sm text-slate-400 hover:text-slate-200">Clientes</a>
             <span class="text-slate-600">/</span>
-            <a href="{{ route('clients.show', $client) }}" class="text-sm text-slate-400 hover:text-white">{{ $client->name }}</a>
+            <a href="{{ route('clients.show', $client) }}" class="text-sm text-slate-400 hover:text-slate-200">{{ $client->name }}</a>
             <span class="text-slate-600">/</span>
-            <h1 class="text-base font-semibold text-white">Editar</h1>
+            <h1 class="text-base font-semibold text-slate-200">Editar</h1>
         </div>
     </x-slot>
 
@@ -20,13 +20,13 @@
                         <div>
                             <label class="mb-1 block text-sm text-slate-300">Nome do cliente <span class="text-rose-400">*</span></label>
                             <input name="name" value="{{ old('name', $client->name) }}" required autofocus
-                                   class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                   class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                             @error('name') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
                         </div>
                         <div>
                             <label class="mb-1 block text-sm text-slate-300">Segmento/Nicho</label>
                             <input name="segment" value="{{ old('segment', $client->segment) }}" placeholder="Ex: Advocacia, Odontologia..."
-                                   class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                   class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                             @error('segment') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
                         </div>
                     </div>
@@ -43,7 +43,7 @@
                                 </div>
                             @endif
                             <input type="file" name="logo" accept="image/*"
-                                   class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-400 file:mr-4 file:rounded-md file:border-0 file:bg-ink-700 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-white hover:file:bg-ink-600 focus:outline-none">
+                                   class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-400 file:mr-4 file:rounded-md file:border-0 file:bg-ink-700 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-200 hover:file:bg-ink-600 focus:outline-none">
                             <p class="mt-1 text-xs text-slate-500">Envie uma nova imagem para substituir a atual.</p>
                             @error('logo') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
                         </div>
@@ -69,7 +69,7 @@
                             @endcan
                         </div>
                         <div class="flex items-center gap-3">
-                            <a href="{{ route('clients.show', $client) }}" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:text-white">Cancelar</a>
+                            <a href="{{ route('clients.show', $client) }}" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:text-slate-200">Cancelar</a>
                             <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500">Salvar alterações</button>
                         </div>
                     </div>
@@ -90,7 +90,7 @@
                         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                     </div>
 
-                    <h3 class="text-lg font-bold text-white">Excluir Cliente Permanentemente</h3>
+                    <h3 class="text-lg font-bold text-slate-200">Excluir Cliente Permanentemente</h3>
                     <p class="mt-2 text-sm text-slate-400">
                         Esta ação é <strong class="text-rose-400">irreversível</strong>. 
                         Isso excluirá o cliente <strong>{{ $client->name }}</strong>, além de todos os seus <strong>Quadros e Tarefas</strong> associados.
@@ -102,11 +102,11 @@
                             <span class="text-slate-500 select-none">{{ $client->name }}</span>
                         </div>
                         <input type="text" x-model="confirmName" placeholder="Digite o nome aqui..."
-                               class="mt-2 w-full rounded-lg border border-rose-900/50 bg-ink-900 px-3 py-2 text-sm text-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none">
+                               class="mt-2 w-full rounded-lg border border-rose-900/50 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 focus:outline-none">
                     </div>
 
                     <div class="mt-6 flex justify-end gap-3">
-                        <button type="button" @click="showDeleteModal = false" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:bg-ink-700 hover:text-white">Cancelar</button>
+                        <button type="button" @click="showDeleteModal = false" class="rounded-lg px-4 py-2 text-sm font-medium text-slate-300 hover:bg-ink-700 hover:text-slate-200">Cancelar</button>
                         <form action="{{ route('clients.destroy', $client) }}" method="POST">
                             @csrf
                             @method('DELETE')

@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-                <h1 class="text-xl font-bold text-white tracking-wide">Gestão Financeira & Faturamento</h1>
+                <h1 class="text-xl font-bold text-slate-200 tracking-wide">Gestão Financeira & Faturamento</h1>
                 <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Acompanhe cobranças, previsões de faturamento e pagamentos de clientes.</p>
             </div>
             <div class="flex items-center gap-2">
@@ -27,7 +27,7 @@
         {{-- 1. Barra de Resumo & KPIs Financeiros --}}
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {{-- Recebido no Período --}}
-            <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+            <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                 <div class="relative z-10">
                     <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Recebido no Mês</div>
                     <div class="text-2xl sm:text-3xl font-bold text-emerald-400">
@@ -42,7 +42,7 @@
             </div>
 
             {{-- A Receber / Pendente --}}
-            <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+            <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                 <div class="relative z-10">
                     <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">A Receber (Em Dia)</div>
                     <div class="text-2xl sm:text-3xl font-bold text-sky-400">
@@ -57,7 +57,7 @@
             </div>
 
             {{-- Em Atraso / Inadimplência --}}
-            <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+            <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                 <div class="relative z-10">
                     <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Em Atraso</div>
                     <div class="text-2xl sm:text-3xl font-bold {{ $stats['late'] > 0 ? 'text-rose-400' : 'text-slate-300' }}">
@@ -77,7 +77,7 @@
             </div>
 
             {{-- Previsão Total / Faturamento do Mês --}}
-            <div class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm relative overflow-hidden group">
+            <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm relative overflow-hidden group">
                 <div class="relative z-10">
                     <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Previsão do Mês</div>
                     <div class="text-2xl sm:text-3xl font-bold text-amber-400">
@@ -95,10 +95,10 @@
         {{-- 2. Gráficos de Faturamento & Métodos de Pagamento --}}
         <div class="grid gap-6 lg:grid-cols-3">
             {{-- Gráfico 1: Evolução Mensal --}}
-            <section class="lg:col-span-2 rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm flex flex-col justify-between">
+            <section class="lg:col-span-2 rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm flex flex-col justify-between">
                 <header class="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 class="text-base font-semibold text-white">Evolução do Faturamento Mensal</h2>
+                        <h2 class="text-base font-semibold text-slate-200">Evolução do Faturamento Mensal</h2>
                         <p class="text-xs text-slate-400 mt-0.5">Comparativo entre faturamento recebido e previsto nos últimos 12 meses.</p>
                     </div>
                     <span class="text-xs font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Últimos 12 Meses</span>
@@ -109,10 +109,10 @@
             </section>
 
             {{-- Gráfico 2: Métodos de Pagamento --}}
-            <section class="lg:col-span-1 rounded-xl border border-ink-600 bg-[#2a2b2d] p-5 shadow-sm flex flex-col justify-between">
+            <section class="lg:col-span-1 rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-sm flex flex-col justify-between">
                 <header class="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 class="text-base font-semibold text-white">Métodos de Pagamento</h2>
+                        <h2 class="text-base font-semibold text-slate-200">Métodos de Pagamento</h2>
                         <p class="text-xs text-slate-400 mt-0.5">Distribuição do volume recebido</p>
                     </div>
                 </header>
@@ -127,20 +127,20 @@
         </div>
 
         {{-- 3. Barra de Filtros e Busca --}}
-        <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] p-4 shadow-sm">
+        <section class="rounded-xl border border-ink-600 bg-ink-800 p-4 shadow-sm">
             <form method="GET" action="{{ route('financial.index') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
                 {{-- Busca --}}
                 <div>
                     <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Buscar</label>
                     <input type="text" name="search" value="{{ $search }}" placeholder="Título ou cliente..."
-                           class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:border-brand-500 focus:outline-none">
+                           class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-brand-500 focus:outline-none">
                 </div>
 
                 {{-- Mês de Competência --}}
                 <div>
                     <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Competência / Mês</label>
                     <select name="month" onchange="this.form.submit()"
-                            class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none">
+                            class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-200 focus:border-brand-500 focus:outline-none">
                         <option value="all" {{ $selectedMonth === 'all' ? 'selected' : '' }}>Todos os Meses</option>
                         @for($i = -3; $i <= 6; $i++)
                             @php
@@ -158,7 +158,7 @@
                 <div>
                     <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Cliente</label>
                     <select name="client_id" onchange="this.form.submit()"
-                            class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none">
+                            class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-200 focus:border-brand-500 focus:outline-none">
                         <option value="">Todos os Clientes</option>
                         @foreach($clients as $c)
                             <option value="{{ $c->id }}" {{ (string)$selectedClient === (string)$c->id ? 'selected' : '' }}>
@@ -172,7 +172,7 @@
                 <div>
                     <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Status</label>
                     <select name="status" onchange="this.form.submit()"
-                            class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none">
+                            class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-200 focus:border-brand-500 focus:outline-none">
                         <option value="">Todos os Status</option>
                         <option value="paid" {{ $selectedStatus === 'paid' ? 'selected' : '' }}>Pagos</option>
                         <option value="pending" {{ $selectedStatus === 'pending' ? 'selected' : '' }}>Pendentes (Em Dia)</option>
@@ -186,7 +186,7 @@
                     <div class="flex-1">
                         <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Método</label>
                         <select name="method" onchange="this.form.submit()"
-                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-white focus:border-brand-500 focus:outline-none">
+                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-200 focus:border-brand-500 focus:outline-none">
                             <option value="">Todos os Métodos</option>
                             @foreach(\App\Models\Payment::METHODS as $key => $label)
                                 <option value="{{ $key }}" {{ $selectedMethod === $key ? 'selected' : '' }}>{{ $label }}</option>
@@ -195,7 +195,7 @@
                     </div>
                     @if($search || $selectedClient || $selectedStatus || $selectedMethod || ($selectedMonth && $selectedMonth !== now()->format('Y-m')))
                         <a href="{{ route('financial.index') }}" title="Limpar Filtros"
-                           class="rounded-lg border border-ink-600 bg-ink-800 p-2 text-slate-400 hover:text-white hover:bg-ink-700 transition">
+                           class="rounded-lg border border-ink-600 bg-ink-800 p-2 text-slate-400 hover:text-slate-200 hover:bg-ink-700 transition">
                             ✕
                         </a>
                     @endif
@@ -204,10 +204,10 @@
         </section>
 
         {{-- 4. Tabela de Cobranças / Pagamentos --}}
-        <section class="rounded-xl border border-ink-600 bg-[#2a2b2d] shadow-sm overflow-hidden">
+        <section class="rounded-xl border border-ink-600 bg-ink-800 shadow-sm overflow-hidden">
             <header class="border-b border-ink-600 px-5 py-4 flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <h2 class="text-base font-semibold text-white">Cobranças & Pagamentos</h2>
+                    <h2 class="text-base font-semibold text-slate-200">Cobranças & Pagamentos</h2>
                     <span class="bg-brand-500/20 text-brand-400 text-xs font-bold px-2 py-0.5 rounded-full">{{ $payments->count() }} registros</span>
                 </div>
             </header>
@@ -239,11 +239,11 @@
                                         @if($payment->client->logo_url)
                                             <img src="{{ $payment->client->logo_url }}" class="h-6 w-6 rounded object-cover" alt="{{ $payment->client->name }}">
                                         @else
-                                            <span class="grid h-6 w-6 place-items-center rounded text-[10px] font-bold text-white shadow-sm" style="{{ $payment->client->background_style ?: ('background: ' . ($payment->client->color ?? '#6366f1')) }}">
+                                            <span class="grid h-6 w-6 place-items-center rounded text-[10px] font-bold text-slate-200 shadow-sm" style="{{ $payment->client->background_style ?: ('background: ' . ($payment->client->color ?? '#6366f1')) }}">
                                                 {{ \Illuminate\Support\Str::substr($payment->client->name, 0, 1) }}
                                             </span>
                                         @endif
-                                        <span class="font-medium text-white">{{ $payment->client->name }}</span>
+                                        <span class="font-medium text-slate-200">{{ $payment->client->name }}</span>
                                     </div>
                                 </td>
 
@@ -262,7 +262,7 @@
 
                                 {{-- Valor --}}
                                 <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="font-bold text-sm {{ $isPaid ? 'text-emerald-400' : ($isLate ? 'text-rose-400' : 'text-white') }}">
+                                    <span class="font-bold text-sm {{ $isPaid ? 'text-emerald-400' : ($isLate ? 'text-rose-400' : 'text-slate-200') }}">
                                         {{ $payment->formatted_amount }}
                                     </span>
                                 </td>
@@ -395,15 +395,15 @@
                             @csrf
                             <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4 space-y-4">
                                 <div class="flex items-center justify-between border-b border-ink-600 pb-3">
-                                    <h3 class="text-lg font-semibold text-white">Nova Cobrança / Pagamento</h3>
-                                    <button type="button" @click="open = false" class="text-slate-400 hover:text-white">✕</button>
+                                    <h3 class="text-lg font-semibold text-slate-200">Nova Cobrança / Pagamento</h3>
+                                    <button type="button" @click="open = false" class="text-slate-400 hover:text-slate-200">✕</button>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {{-- Cliente --}}
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Cliente *</label>
-                                        <select name="client_id" required class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="client_id" required class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             <option value="">Selecione o Cliente</option>
                                             @foreach($clients as $c)
                                                 <option value="{{ $c->id }}">{{ $c->name }}</option>
@@ -415,27 +415,27 @@
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Descrição do Serviço / Cobrança *</label>
                                         <input type="text" name="title" required placeholder="Ex: Mensalidade Gestão de Redes Sociais"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Valor --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Valor (R$) *</label>
                                         <input type="number" name="amount" step="0.01" min="0.01" required placeholder="1500.00"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Data de Vencimento --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Data de Vencimento *</label>
                                         <input type="date" name="due_date" value="{{ now()->toDateString() }}" required
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Status Inicial --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Status *</label>
-                                        <select name="status" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="status" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             <option value="pending">Pendente (Aguardando Pagamento)</option>
                                             <option value="paid">Já Pago (Confirmado)</option>
                                         </select>
@@ -444,7 +444,7 @@
                                     {{-- Método de Pagamento --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Método de Pagamento</label>
-                                        <select name="payment_method" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="payment_method" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             @foreach(\App\Models\Payment::METHODS as $key => $label)
                                                 <option value="{{ $key }}">{{ $label }}</option>
                                             @endforeach
@@ -455,13 +455,13 @@
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Mês de Competência</label>
                                         <input type="month" name="reference_month" value="{{ now()->format('Y-m') }}"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Recorrência --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Tipo de Cobrança</label>
-                                        <select name="recurrence" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="recurrence" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             <option value="monthly">Mensalidade (Recorrente)</option>
                                             <option value="one_time">Avulso / Projeto Único</option>
                                         </select>
@@ -471,14 +471,14 @@
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Notas / Observações</label>
                                         <textarea name="notes" rows="2" placeholder="Observações internas sobre o faturamento, link da nota fiscal, etc..."
-                                                  class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"></textarea>
+                                                  class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none"></textarea>
                                     </div>
 
                                     {{-- Comprovante / Anexo --}}
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Comprovante / Recibo (Opcional)</label>
                                         <input type="file" name="attachment"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-ink-700 file:text-white hover:file:bg-ink-600">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-ink-700 file:text-slate-200 hover:file:bg-ink-600">
                                     </div>
                                 </div>
                             </div>
@@ -512,15 +512,15 @@
                             @csrf @method('PATCH')
                             <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4 space-y-4">
                                 <div class="flex items-center justify-between border-b border-ink-600 pb-3">
-                                    <h3 class="text-lg font-semibold text-white">Editar Cobrança</h3>
-                                    <button type="button" @click="editModal = false" class="text-slate-400 hover:text-white">✕</button>
+                                    <h3 class="text-lg font-semibold text-slate-200">Editar Cobrança</h3>
+                                    <button type="button" @click="editModal = false" class="text-slate-400 hover:text-slate-200">✕</button>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     {{-- Cliente --}}
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Cliente *</label>
-                                        <select name="client_id" x-model="editData.client_id" required class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="client_id" x-model="editData.client_id" required class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             @foreach($clients as $c)
                                                 <option value="{{ $c->id }}">{{ $c->name }}</option>
                                             @endforeach
@@ -531,27 +531,27 @@
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Descrição do Serviço *</label>
                                         <input type="text" name="title" x-model="editData.title" required
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Valor --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Valor (R$) *</label>
                                         <input type="number" name="amount" x-model="editData.amount" step="0.01" min="0.01" required
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Vencimento --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Data de Vencimento *</label>
                                         <input type="date" name="due_date" x-model="editData.due_date" required
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Status --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Status *</label>
-                                        <select name="status" x-model="editData.status" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="status" x-model="editData.status" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             <option value="pending">Pendente</option>
                                             <option value="paid">Pago</option>
                                             <option value="cancelled">Cancelado</option>
@@ -562,13 +562,13 @@
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Data do Pagamento</label>
                                         <input type="date" name="paid_at" x-model="editData.paid_at"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Método --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Método de Pagamento</label>
-                                        <select name="payment_method" x-model="editData.payment_method" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="payment_method" x-model="editData.payment_method" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             @foreach(\App\Models\Payment::METHODS as $key => $label)
                                                 <option value="{{ $key }}">{{ $label }}</option>
                                             @endforeach
@@ -579,21 +579,21 @@
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Mês de Competência</label>
                                         <input type="month" name="reference_month" x-model="editData.reference_month"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     {{-- Observações --}}
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Notas / Observações</label>
                                         <textarea name="notes" x-model="editData.notes" rows="2"
-                                                  class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"></textarea>
+                                                  class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none"></textarea>
                                     </div>
 
                                     {{-- Anexo --}}
                                     <div class="sm:col-span-2">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Substituir Comprovante</label>
                                         <input type="file" name="attachment"
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-ink-700 file:text-white hover:file:bg-ink-600">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-ink-700 file:text-slate-200 hover:file:bg-ink-600">
                                     </div>
                                 </div>
                             </div>
@@ -631,7 +631,7 @@
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                     </div>
                                     <div>
-                                        <h3 class="text-base font-semibold text-white">Confirmar Recebimento</h3>
+                                        <h3 class="text-base font-semibold text-slate-200">Confirmar Recebimento</h3>
                                         <p class="text-xs text-slate-400" x-text="`${payData.client} · ${payData.title}`"></p>
                                     </div>
                                 </div>
@@ -645,12 +645,12 @@
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Data do Pagamento</label>
                                         <input type="date" name="paid_at" value="{{ now()->toDateString() }}" required
-                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                               class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Forma / Método de Pagamento</label>
-                                        <select name="payment_method" x-model="payData.method" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">
+                                        <select name="payment_method" x-model="payData.method" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                             @foreach(\App\Models\Payment::METHODS as $key => $label)
                                                 <option value="{{ $key }}">{{ $label }}</option>
                                             @endforeach

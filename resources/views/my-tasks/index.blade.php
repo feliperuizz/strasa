@@ -1,7 +1,7 @@
 <x-app-layout title="Minhas Tarefas">
     <x-slot name="header">
         <div class="flex items-center gap-3">
-            <h1 class="text-xl font-bold text-white tracking-wide">Minhas Tarefas</h1>
+            <h1 class="text-xl font-bold text-slate-200 tracking-wide">Minhas Tarefas</h1>
         </div>
     </x-slot>
 
@@ -30,7 +30,7 @@
                                 </td>
                                 <td class="px-4 py-3 font-medium text-slate-200">{{ $task->title }}</td>
                                 <td class="px-4 py-3 text-slate-400">
-                                    <a href="{{ route('projects.board', $task->project_id) }}" class="hover:text-white" @click.stop>
+                                    <a href="{{ route('projects.board', $task->project_id) }}" class="hover:text-slate-200" @click.stop>
                                         {{ optional($task->project->client)->name }} - {{ optional($task->project)->name }}
                                     </a>
                                 </td>

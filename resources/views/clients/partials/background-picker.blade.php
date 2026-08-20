@@ -15,7 +15,7 @@
     <!-- Cabeçalho da Seção -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-ink-600/70 pb-3">
         <div>
-            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+            <h3 class="text-sm font-semibold text-slate-200 flex items-center gap-2">
                 <span class="text-base">🎨</span> Padrão Visual e Plano de Fundo
             </h3>
             <p class="text-xs text-slate-400 mt-0.5">
@@ -69,7 +69,7 @@
                             class="group relative h-9 w-full rounded-lg border transition transform hover:scale-105 flex items-center justify-center"
                             :class="bgColor.toLowerCase() === c.value.toLowerCase() ? 'border-brand-400 ring-2 ring-brand-500/50 scale-105 shadow-md' : 'border-ink-600 hover:border-slate-400'"
                             :style="'background-color: ' + c.value">
-                        <span x-show="bgColor.toLowerCase() === c.value.toLowerCase()" class="text-white text-xs drop-shadow font-bold">✓</span>
+                        <span x-show="bgColor.toLowerCase() === c.value.toLowerCase()" class="text-slate-200 text-xs drop-shadow font-bold">✓</span>
                     </button>
                 </template>
             </div>
@@ -81,7 +81,7 @@
                 <label class="text-xs text-slate-300">Cor Personalizada:</label>
                 <div class="flex items-center gap-2 bg-ink-900 px-2 py-1 rounded-lg border border-ink-600">
                     <input type="color" x-model="bgColor" class="h-6 w-7 rounded cursor-pointer border-0 bg-transparent p-0">
-                    <input type="text" x-model="bgColor" maxlength="7" class="w-20 bg-transparent text-xs font-mono text-white focus:outline-none uppercase">
+                    <input type="text" x-model="bgColor" maxlength="7" class="w-20 bg-transparent text-xs font-mono text-slate-200 focus:outline-none uppercase">
                 </div>
             </div>
             <span class="text-[11px] text-slate-500">Dica: Tons escuros proporcionam o melhor contraste para os cartões de tarefas.</span>
@@ -105,8 +105,8 @@
                             :style="'background: ' + g.value">
                         <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition"></div>
                         <div class="relative z-10 flex items-center justify-between">
-                            <span class="text-[11px] font-medium text-white drop-shadow truncate pr-1" x-text="g.name"></span>
-                            <span x-show="bgGradient === g.value" class="text-white text-xs drop-shadow font-bold">✓</span>
+                            <span class="text-[11px] font-medium text-slate-200 drop-shadow truncate pr-1" x-text="g.name"></span>
+                            <span x-show="bgGradient === g.value" class="text-slate-200 text-xs drop-shadow font-bold">✓</span>
                         </div>
                     </button>
                 </template>
@@ -127,7 +127,7 @@
                     <label class="text-[11px] text-slate-400 block mb-1">Cor Inicial</label>
                     <div class="flex items-center gap-2 bg-ink-800 px-2 py-1 rounded border border-ink-600">
                         <input type="color" x-model="gradColor1" @input="updateCustomGradient()" class="h-6 w-6 rounded cursor-pointer border-0 bg-transparent p-0">
-                        <input type="text" x-model="gradColor1" @input="updateCustomGradient()" maxlength="7" class="w-16 bg-transparent text-xs font-mono text-white focus:outline-none uppercase">
+                        <input type="text" x-model="gradColor1" @input="updateCustomGradient()" maxlength="7" class="w-16 bg-transparent text-xs font-mono text-slate-200 focus:outline-none uppercase">
                     </div>
                 </div>
 
@@ -135,13 +135,13 @@
                     <label class="text-[11px] text-slate-400 block mb-1">Cor Final</label>
                     <div class="flex items-center gap-2 bg-ink-800 px-2 py-1 rounded border border-ink-600">
                         <input type="color" x-model="gradColor2" @input="updateCustomGradient()" class="h-6 w-6 rounded cursor-pointer border-0 bg-transparent p-0">
-                        <input type="text" x-model="gradColor2" @input="updateCustomGradient()" maxlength="7" class="w-16 bg-transparent text-xs font-mono text-white focus:outline-none uppercase">
+                        <input type="text" x-model="gradColor2" @input="updateCustomGradient()" maxlength="7" class="w-16 bg-transparent text-xs font-mono text-slate-200 focus:outline-none uppercase">
                     </div>
                 </div>
 
                 <div>
                     <label class="text-[11px] text-slate-400 block mb-1">Direção</label>
-                    <select x-model="gradAngle" @change="updateCustomGradient()" class="w-full bg-ink-800 text-xs text-white rounded border border-ink-600 px-2 py-1.5 focus:outline-none">
+                    <select x-model="gradAngle" @change="updateCustomGradient()" class="w-full bg-ink-800 text-xs text-slate-200 rounded border border-ink-600 px-2 py-1.5 focus:outline-none">
                         <option value="135deg">Diagonal (135°)</option>
                         <option value="90deg">Horizontal (90°)</option>
                         <option value="180deg">Vertical (180°)</option>
@@ -171,7 +171,7 @@
             <div class="flex items-center justify-between bg-ink-800/80 backdrop-blur-md rounded-lg px-3 py-1.5 border border-white/10 shadow-sm mb-3">
                 <div class="flex items-center gap-2">
                     <span class="h-4 w-4 rounded bg-brand-500 grid place-items-center text-[9px] font-bold text-white">C</span>
-                    <span class="text-xs font-semibold text-white">Exemplo de Cliente</span>
+                    <span class="text-xs font-semibold text-slate-200">Exemplo de Cliente</span>
                     <span class="text-[10px] text-slate-400">/ Rede Social 2026</span>
                 </div>
                 <div class="flex items-center gap-1.5">
