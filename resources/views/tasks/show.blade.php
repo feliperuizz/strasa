@@ -20,8 +20,8 @@
                     </div>
                 </div>
 
-                <div class="mt-6 prose prose-invert max-w-none text-slate-300 prose-a:text-brand-400">
-                    {!! nl2br(e($task->description ?: 'Sem descrição.')) !!}
+                <div class="prose prose-invert max-w-none text-slate-300 ql-editor px-0 pb-0">
+                    {!! $task->description ?: '<p class="text-slate-500">Sem descrição.</p>' !!}
                 </div>
             </div>
 

@@ -143,6 +143,22 @@
                             </label>
                         </div>
                     </div>
+
+                    <hr class="border-ink-700/50">
+
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-300">Tema do Sistema</label>
+                            <p class="text-xs text-slate-500">Escolha entre Claro, Escuro ou Automático.</p>
+                        </div>
+                        <div>
+                            <select name="notification_settings[theme]" class="rounded bg-[#2a2b2d] border border-ink-600 text-sm text-slate-300 p-2 focus:ring-brand-500">
+                                <option value="system" {{ ($settings['theme'] ?? 'system') === 'system' ? 'selected' : '' }}>Automático (Sistema)</option>
+                                <option value="dark" {{ ($settings['theme'] ?? '') === 'dark' ? 'selected' : '' }}>Escuro</option>
+                                <option value="light" {{ ($settings['theme'] ?? '') === 'light' ? 'selected' : '' }}>Claro</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 

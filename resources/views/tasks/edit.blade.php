@@ -20,10 +20,30 @@
                             @error('title') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
                         </div>
 
-                        <div>
+                        <div x-data="{
+                                quill: null,
+                                initQuill() {
+                                    this.quill = new Quill($refs.editor, {
+                                        theme: 'snow',
+                                        placeholder: 'O que é essa tarefa?',
+                                        modules: {
+                                            toolbar: [
+                                                ['bold', 'italic', 'underline', 'strike'],
+                                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                                ['link'],
+                                                ['clean']
+                                            ]
+                                        }
+                                    });
+                                    this.quill.on('text-change', () => {
+                                        $refs.hiddenInput.value = this.quill.root.innerHTML;
+                                    });
+                                }
+                            }" 
+                            x-init="initQuill()">
                             <label class="mb-1 block text-sm font-medium text-slate-300">Descrição</label>
-                            <textarea name="description" rows="8"
-                                      class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none">{{ old('description', $task->description) }}</textarea>
+                            <input type="hidden" name="description" x-ref="hiddenInput" value="{{ old('description', $task->description) }}">
+                            <div x-ref="editor" class="w-full rounded-lg bg-ink-900 text-white border border-ink-600">{!! old('description', $task->description) !!}</div>
                             @error('description') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
                         </div>
                     </div>

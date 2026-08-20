@@ -16,12 +16,36 @@
     {{-- Tailwind via CDN (sem Node em produção). Para build estático, ver README. --}}
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Quill Editor -->
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
     <style>
         /* Oculta os botões originais e barra do viewer, deixando escuro igual Asana */
         .viewer-backdrop { background-color: rgba(30, 30, 30, 0.95); }
         .viewer-button { display: none !important; }
+        
+        /* Quill Dark/Light Theme Adjustments */
+        .ql-toolbar.ql-snow, .ql-container.ql-snow {
+            border-color: var(--ink-700, #363638) !important;
+        }
+        .ql-toolbar.ql-snow {
+            background-color: var(--ink-800, #2a2b2d);
+            border-top-left-radius: 0.375rem;
+            border-top-right-radius: 0.375rem;
+        }
+        .ql-container.ql-snow {
+            background-color: var(--ink-900, #1e1e1e);
+            border-bottom-left-radius: 0.375rem;
+            border-bottom-right-radius: 0.375rem;
+        }
+        .ql-snow .ql-stroke { stroke: var(--text-primary, #e2e8f0) !important; }
+        .ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: var(--text-primary, #e2e8f0) !important; }
+        .ql-snow .ql-picker { color: var(--text-primary, #e2e8f0) !important; }
+        .ql-editor.ql-blank::before { color: var(--text-secondary, #94a3b8) !important; }
+        .ql-editor { min-height: 120px; font-family: inherit; font-size: 0.875rem; }
     </style>
     <script>
         window.initTaskViewer = function(el) {
@@ -75,11 +99,63 @@
             }, 100);
         };
     </script>
+    <style>
+        :root {
+            /* Tema Claro */
+            --ink-900: #f1f5f9;
+            --ink-800: #ffffff;
+            --ink-700: #e2e8f0;
+            --ink-600: #cbd5e1;
+            --ink-500: #94a3b8;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-tertiary: #64748b;
+        }
+        html.dark {
+            /* Tema Escuro (Padrão) */
+            --ink-900: #1e1e1e;
+            --ink-800: #2a2b2d;
+            --ink-700: #363638;
+            --ink-600: #454545;
+            --ink-500: #6b6b6b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+        }
+    </style>
+    @php
+        $userTheme = auth()->check() ? (auth()->user()->notification_settings['theme'] ?? 'system') : 'system';
+    @endphp
+    <script>
+        (function() {
+            let theme = '{{ $userTheme }}';
+            if (theme === 'system') {
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            } else if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: { extend: { colors: {
-                ink: { 900:'#1e1e1e', 800:'#2a2b2d', 700:'#363638', 600:'#454545', 500:'#6b6b6b' },
+                ink: { 
+                    900: 'var(--ink-900)', 
+                    800: 'var(--ink-800)', 
+                    700: 'var(--ink-700)', 
+                    600: 'var(--ink-600)', 
+                    500: 'var(--ink-500)' 
+                },
+                slate: {
+                    200: 'var(--text-primary)',
+                    300: 'var(--text-secondary)',
+                    400: 'var(--text-tertiary)',
+                    500: 'var(--ink-500)',
+                    600: 'var(--ink-600)',
+                },
                 brand: { 400:'#818cf8', 500:'#6366f1', 600:'#4f46e5' },
             } } }
         }

@@ -117,10 +117,31 @@
                 </div>
 
                 {{-- Descrição --}}
-                <div>
+                <div x-data="{
+                        quill: null,
+                        initQuill() {
+                            this.quill = new Quill($refs.editor, {
+                                theme: 'snow',
+                                placeholder: 'O que é essa tarefa?',
+                                modules: {
+                                    toolbar: [
+                                        ['bold', 'italic', 'underline', 'strike'],
+                                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                        ['link'],
+                                        ['clean']
+                                    ]
+                                }
+                            });
+                            this.quill.on('text-change', () => {
+                                $refs.hiddenInput.value = this.quill.root.innerHTML;
+                                $refs.hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            });
+                        }
+                    }" 
+                    x-init="initQuill()">
                     <label class="block text-xs font-semibold uppercase text-slate-500 mb-2">Descrição</label>
-                    <textarea name="description" rows="4" placeholder="O que é essa tarefa?" @change="save()"
-                              class="w-full rounded border border-[#2a2b2d] bg-[#2a2b2d] p-3 text-sm text-white focus:border-brand-500 focus:ring-0">{{ $task->description }}</textarea>
+                    <input type="hidden" name="description" x-ref="hiddenInput" value="{{ $task->description }}">
+                    <div x-ref="editor">{!! $task->description !!}</div>
                 </div>
             </div>
         </form>

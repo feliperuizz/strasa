@@ -25,7 +25,7 @@ class ClientPolicy
 
     public function create(User $user): bool
     {
-        return $user->isManager();
+        return $user->company_id !== null;
     }
 
     public function update(User $user, Client $client): bool
