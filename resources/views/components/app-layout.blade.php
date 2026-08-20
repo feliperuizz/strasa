@@ -102,25 +102,25 @@
     <style>
         :root {
             /* Tema Claro */
-            --ink-900: #f1f5f9;
-            --ink-800: #ffffff;
-            --ink-700: #e2e8f0;
-            --ink-600: #cbd5e1;
-            --ink-500: #94a3b8;
-            --text-primary: #1e293b;
-            --text-secondary: #475569;
-            --text-tertiary: #64748b;
+            --ink-900: 241 245 249; /* #f1f5f9 */
+            --ink-800: 255 255 255; /* #ffffff */
+            --ink-700: 226 232 240; /* #e2e8f0 */
+            --ink-600: 203 213 225; /* #cbd5e1 */
+            --ink-500: 148 163 184; /* #94a3b8 */
+            --text-primary: 30 41 59; /* #1e293b */
+            --text-secondary: 71 85 105; /* #475569 */
+            --text-tertiary: 100 116 139; /* #64748b */
         }
         html.dark {
             /* Tema Escuro (Padrão) */
-            --ink-900: #1e1e1e;
-            --ink-800: #2a2b2d;
-            --ink-700: #363638;
-            --ink-600: #454545;
-            --ink-500: #6b6b6b;
-            --text-primary: #e2e8f0;
-            --text-secondary: #cbd5e1;
-            --text-tertiary: #94a3b8;
+            --ink-900: 30 30 30; /* #1e1e1e */
+            --ink-800: 42 43 45; /* #2a2b2d */
+            --ink-700: 54 54 56; /* #363638 */
+            --ink-600: 69 69 69; /* #454545 */
+            --ink-500: 107 107 107; /* #6b6b6b */
+            --text-primary: 226 232 240; /* #e2e8f0 */
+            --text-secondary: 203 213 225; /* #cbd5e1 */
+            --text-tertiary: 148 163 184; /* #94a3b8 */
         }
     </style>
     @php
@@ -143,18 +143,18 @@
             darkMode: 'class',
             theme: { extend: { colors: {
                 ink: { 
-                    900: 'var(--ink-900)', 
-                    800: 'var(--ink-800)', 
-                    700: 'var(--ink-700)', 
-                    600: 'var(--ink-600)', 
-                    500: 'var(--ink-500)' 
+                    900: 'rgb(var(--ink-900) / <alpha-value>)', 
+                    800: 'rgb(var(--ink-800) / <alpha-value>)', 
+                    700: 'rgb(var(--ink-700) / <alpha-value>)', 
+                    600: 'rgb(var(--ink-600) / <alpha-value>)', 
+                    500: 'rgb(var(--ink-500) / <alpha-value>)' 
                 },
                 slate: {
-                    200: 'var(--text-primary)',
-                    300: 'var(--text-secondary)',
-                    400: 'var(--text-tertiary)',
-                    500: 'var(--ink-500)',
-                    600: 'var(--ink-600)',
+                    200: 'rgb(var(--text-primary) / <alpha-value>)',
+                    300: 'rgb(var(--text-secondary) / <alpha-value>)',
+                    400: 'rgb(var(--text-tertiary) / <alpha-value>)',
+                    500: 'rgb(var(--ink-500) / <alpha-value>)',
+                    600: 'rgb(var(--ink-600) / <alpha-value>)',
                 },
                 brand: { 400:'#818cf8', 500:'#6366f1', 600:'#4f46e5' },
             } } }

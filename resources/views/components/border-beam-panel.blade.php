@@ -18,7 +18,7 @@
      x-on:mouseleave="settle()"
      x-on:focusin="surge()"
      x-on:focusout="settle()"
-     {{ $attributes->merge(['class' => "relative w-full border border-ink-600 bg-[#111827] mk-beam-$uid"]) }}
+     {{ $attributes->merge(['class' => "relative w-full border border-ink-600 bg-ink-900 mk-beam-$uid"]) }}
      style="border-radius: {{ $radius }}px; isolation: isolate;"
      x-bind:style="`--mk-beam-a: ${angle.toFixed(2)}deg; border-radius: {{ $radius }}px; isolation: isolate;`">
     
