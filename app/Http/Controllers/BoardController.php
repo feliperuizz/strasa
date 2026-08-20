@@ -38,6 +38,7 @@ class BoardController extends Controller
             ->groupBy('column_id');
 
         $members = User::where('company_id', $project->company_id)->orderBy('name')->get();
+        $myNote = \App\Models\ProjectNote::where('project_id', $project->id)->where('user_id', auth()->id())->first();
 
         return view('projects.board', [
             'project' => $project,
@@ -45,6 +46,7 @@ class BoardController extends Controller
             'columns' => $columns,
             'tasksByColumn' => $tasks,
             'members' => $members,
+            'myNote' => $myNote,
             'filters' => $request->only(['assignee', 'from', 'to']),
         ]);
     }
@@ -71,6 +73,7 @@ class BoardController extends Controller
             ->groupBy('column_id');
 
         $members = User::where('company_id', $project->company_id)->orderBy('name')->get();
+        $myNote = \App\Models\ProjectNote::where('project_id', $project->id)->where('user_id', auth()->id())->first();
 
         return view('projects.list', [
             'project' => $project,
@@ -78,6 +81,7 @@ class BoardController extends Controller
             'columns' => $columns,
             'tasksByColumn' => $tasks,
             'members' => $members,
+            'myNote' => $myNote,
             'filters' => $request->only(['assignee', 'from', 'to']),
         ]);
     }

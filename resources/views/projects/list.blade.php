@@ -36,6 +36,14 @@
                 </button>
             </div>
 
+            {{-- Botão Minhas Notas --}}
+            <div>
+                <button @click="$dispatch('open-notes')" class="flex items-center gap-1.5 rounded-md border border-ink-600 bg-ink-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-ink-700 hover:text-white transition">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    Minhas Notas
+                </button>
+            </div>
+
             {{-- Status do Projeto --}}
             <div x-data="{
                 status: '{{ $project->status }}',
@@ -257,6 +265,102 @@
         <button @click="deleteTask" class="flex w-full items-center gap-2 px-4 py-1.5 text-left text-sm text-rose-400 hover:bg-ink-700">
             Excluir card
         </button>
+    {{-- Notes Slide-over --}}
+    <div x-data="{
+             open: false,
+             content: '',
+             saveTimeout: null,
+             quill: null,
+             saveStatus: '',
+             initNotes() {
+                 this.content = this.$refs.hiddenNotesInput.value;
+                 this.quill = new Quill(this.$refs.notesEditor, {
+                     theme: 'snow',
+                     placeholder: 'Digite suas notas aqui...',
+                     modules: {
+                         toolbar: [
+                             ['bold', 'italic', 'underline', 'strike'],
+                             [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                             ['link'],
+                             ['clean']
+                         ]
+                     }
+                 });
+                 this.quill.on('text-change', () => {
+                     this.content = this.quill.root.innerHTML;
+                     this.saveStatus = 'Salvando...';
+                     clearTimeout(this.saveTimeout);
+                     this.saveTimeout = setTimeout(() => { this.saveNotes(); }, 1000);
+                 });
+             },
+             async saveNotes() {
+                 try {
+                     const res = await fetch('{{ route('projects.notes.store', $project) }}', {
+                         method: 'POST',
+                         headers: {
+                             'Content-Type': 'application/json',
+                             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                             'Accept': 'application/json'
+                         },
+                         body: JSON.stringify({ content: this.content })
+                     });
+                     if (res.ok) {
+                         this.saveStatus = 'Salvo';
+                         setTimeout(() => { if(this.saveStatus === 'Salvo') this.saveStatus = ''; }, 2000);
+                     } else {
+                         this.saveStatus = 'Erro ao salvar';
+                     }
+                 } catch (e) {
+                     this.saveStatus = 'Erro de conexão';
+                 }
+             }
+         }"
+         @open-notes.window="open = true"
+         x-init="initNotes()"
+         x-show="open" 
+         class="relative z-40" x-cloak>
+         
+        <div x-show="open" x-transition.opacity class="fixed inset-0 bg-black/60 backdrop-blur-sm"></div>
+
+        <div class="fixed inset-0 overflow-hidden">
+            <div class="absolute inset-0 overflow-hidden">
+                <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10 sm:pl-16">
+                    <div x-show="open"
+                         x-transition:enter="transform transition ease-in-out duration-300 sm:duration-500"
+                         x-transition:enter-start="translate-x-full"
+                         x-transition:enter-end="translate-x-0"
+                         x-transition:leave="transform transition ease-in-out duration-300 sm:duration-500"
+                         x-transition:leave-start="translate-x-0"
+                         x-transition:leave-end="translate-x-full"
+                         class="pointer-events-auto w-screen max-w-md">
+                        
+                        <div class="flex h-full flex-col bg-ink-900 shadow-2xl border-l border-ink-600">
+                            {{-- Header --}}
+                            <div class="flex items-center justify-between border-b border-ink-700 px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <h2 class="text-lg font-bold text-white">Minhas Notas</h2>
+                                    <span class="text-xs text-brand-400 font-medium" x-show="saveStatus" x-text="saveStatus"></span>
+                                </div>
+                                <button @click="open = false" class="rounded p-1 text-slate-400 hover:bg-ink-700 hover:text-white" title="Fechar">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            </div>
+
+                            {{-- Body --}}
+                            <div class="flex-1 overflow-y-auto flex flex-col p-6 h-full">
+                                <div class="mb-4">
+                                    <p class="text-sm text-slate-400">Estas notas são privadas. Apenas você pode vê-las neste quadro.</p>
+                                </div>
+                                <input type="hidden" x-ref="hiddenNotesInput" value="{{ $myNote?->content ?? '' }}">
+                                <div class="flex-1 border border-ink-600 rounded flex flex-col min-h-0 bg-ink-900 text-white">
+                                    <div x-ref="notesEditor" class="flex-1 h-full overflow-y-auto">{!! $myNote?->content ?? '' !!}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     @endpush
 </x-app-layout>

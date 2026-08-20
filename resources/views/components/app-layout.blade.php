@@ -192,7 +192,7 @@
     <aside x-show="sidebar" x-cloak
            class="hidden lg:block fixed inset-y-0 left-0 z-30 w-64 shrink-0 overflow-y-auto border-r border-ink-600 bg-ink-800 lg:static">
         <div class="flex items-center justify-center px-4 py-4 border-b border-ink-600">
-            <img src="{{ asset('strasalogo.png') }}" alt="{{ config('app.name') }}" class="h-8 w-auto object-contain">
+            <img src="{{ asset('strasalogo.png') }}" alt="{{ config('app.name') }}" class="h-8 w-auto object-contain dark:invert-0 invert">
         </div>
 
         <nav class="px-2 py-3 text-sm space-y-1">

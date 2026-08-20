@@ -63,6 +63,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
     Route::post('projects/{project}/favorite', [ProjectController::class, 'toggleFavorite'])->name('projects.favorite');
     Route::patch('projects/{project}/status', [ProjectController::class, 'updateStatus'])->name('projects.status');
+    Route::post('projects/{project}/notes', [\App\Http\Controllers\ProjectNoteController::class, 'store'])->name('projects.notes.store');
 
     /* Quadro Kanban e Lista ----------------------------------------------- */
     Route::get('projects/{project}/board', [BoardController::class, 'show'])->name('projects.board');

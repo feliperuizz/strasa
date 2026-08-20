@@ -64,6 +64,9 @@ class ProfileController extends Controller
                 'daily_time' => $settings['daily_time'] ?? '08:00',
                 'publish_enabled' => !empty($settings['publish_enabled']),
                 'publish_time' => $settings['publish_time'] ?? '10:00',
+                'publish_time_reminder_enabled' => !empty($settings['publish_time_reminder_enabled']),
+                'daily_briefing_email_enabled' => !empty($settings['daily_briefing_email_enabled']),
+                'theme' => $settings['theme'] ?? 'system',
             ];
         }
 
