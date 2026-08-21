@@ -66,6 +66,12 @@ class TaskAttachment extends Model
         }
     }
 
+    /** Vídeo tem player próprio no card (não é coluna do banco). */
+    public function getIsVideoAttribute(): bool
+    {
+        return str_starts_with((string) $this->mime_type, 'video/');
+    }
+
     /** Tamanho legível (ex.: 1.4 MB). */
     public function getHumanSizeAttribute(): string
     {

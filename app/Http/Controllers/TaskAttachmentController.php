@@ -47,10 +47,7 @@ class TaskAttachmentController extends Controller
             // anexo era gravado no banco com caminho vazio e "sumia" depois.
             abort_if($path === false, 500, "Não foi possível salvar \"{$file->getClientOriginalName()}\" no armazenamento. Tente novamente.");
 
-            // getMimeType() adivinha pelo conteúdo; getClientMimeType() vem do
-            // navegador e é forjável. Como esse valor vira o Content-Type na
-            // hora de servir o arquivo, guardamos o detectado.
-            $mime = (string) $file->getMimeType();
+            $mime = $this->detectarMime($file, $extension);
 
             $task->attachments()->create([
                 'company_id' => $task->company_id,
@@ -122,24 +119,181 @@ class TaskAttachmentController extends Controller
             return response('', 304, $headers);
         }
 
-        // Stream manual em vez de Storage::response(): aquele helper chama
-        // mimeType() e size() no disco, o que custa duas chamadas extras à API
-        // do Drive por imagem. Esses dados já estão no banco.
-        $stream = Storage::disk($attachment->disk)->readStream($attachment->path);
-        abort_if($stream === false || $stream === null, 404);
-
         $headers += $this->headersDeExibicao($attachment);
 
-        if ($attachment->size > 0) {
-            $headers['Content-Length'] = (string) $attachment->size;
+        // Accept-Ranges avisa o navegador que ele pode pedir pedaços do arquivo.
+        // É isso que permite dar play e arrastar a linha do tempo de um vídeo
+        // sem baixar tudo antes (e sem isso o Safari simplesmente não toca).
+        $tamanho = (int) $attachment->size;
+        $headers['Accept-Ranges'] = 'bytes';
+
+        $faixa = $tamanho > 0 ? $this->faixaPedida($request, $tamanho) : null;
+
+        if ($faixa === false) {
+            return response('', 416, $headers + ['Content-Range' => "bytes */{$tamanho}"]);
         }
 
-        return response()->stream(function () use ($stream) {
-            fpassthru($stream);
+        $inicio = $faixa['inicio'] ?? 0;
+        $fim = $faixa['fim'] ?? ($tamanho > 0 ? $tamanho - 1 : null);
+
+        $stream = $this->abrirStream($attachment, $inicio);
+
+        if ($faixa !== null) {
+            $headers['Content-Range'] = "bytes {$inicio}-{$fim}/{$tamanho}";
+            $headers['Content-Length'] = (string) ($fim - $inicio + 1);
+            $status = 206;
+        } else {
+            if ($tamanho > 0) {
+                $headers['Content-Length'] = (string) $tamanho;
+            }
+            $status = 200;
+        }
+
+        $bytesAEnviar = $fim === null ? null : $fim - $inicio + 1;
+
+        return response()->stream(function () use ($stream, $bytesAEnviar) {
+            if ($bytesAEnviar === null) {
+                fpassthru($stream);
+            } else {
+                $restante = $bytesAEnviar;
+                while ($restante > 0 && ! feof($stream)) {
+                    $bloco = fread($stream, (int) min(262144, $restante));
+                    if ($bloco === false || $bloco === '') {
+                        break;
+                    }
+                    echo $bloco;
+                    $restante -= strlen($bloco);
+                }
+            }
+
             if (is_resource($stream)) {
                 fclose($stream);
             }
-        }, 200, $headers);
+        }, $status, $headers);
+    }
+
+    /**
+     * Tipo do arquivo, usado depois como Content-Type ao servir.
+     *
+     * getMimeType() olha o conteúdo (confiável); getClientMimeType() vem do
+     * navegador e é forjável, por isso não é usado. Só que o fileinfo devolve
+     * "application/octet-stream" para vários containers de vídeo — e aí o
+     * player não abriria. Nesses casos vale o palpite pela extensão.
+     *
+     * Isso não reabre a porta do XSS: se o conteúdo fosse HTML/SVG o fileinfo
+     * teria detectado, e quem decide o que abre inline é a lista em
+     * headersDeExibicao(), onde esses tipos não entram.
+     */
+    private function detectarMime(\Illuminate\Http\UploadedFile $file, string $extension): string
+    {
+        $mime = (string) $file->getMimeType();
+
+        // Se o conteúdo é de um formato que o navegador executaria, essa
+        // detecção manda — nada de "promover" para vídeo por causa do nome.
+        $executaveis = [
+            'text/html', 'application/xhtml+xml', 'image/svg+xml',
+            'application/xml', 'text/xml', 'application/javascript', 'text/javascript',
+        ];
+
+        if (in_array($mime, $executaveis, true)) {
+            return $mime;
+        }
+
+        // Já é um tipo que sabemos exibir: mantém.
+        if ($mime === 'application/pdf' || Str::startsWith($mime, ['video/', 'audio/', 'image/'])) {
+            return $mime;
+        }
+
+        // Sobrou o caso comum com vídeo: o fileinfo devolve algo genérico ou
+        // ambíguo ("application/octet-stream", "application/mp4") e o player
+        // não abriria. Aí a extensão decide.
+        if ($extension !== '') {
+            $candidatos = (new \Symfony\Component\Mime\MimeTypes())->getMimeTypes(strtolower($extension));
+
+            foreach ($candidatos as $candidato) {
+                if (Str::startsWith($candidato, ['video/', 'audio/', 'image/'])) {
+                    return $candidato;
+                }
+            }
+        }
+
+        return $mime ?: 'application/octet-stream';
+    }
+
+    /**
+     * Interpreta o header Range.
+     *
+     * @return array{inicio:int, fim:int}|null|false  null = sem Range (arquivo
+     *         inteiro); false = faixa impossível (responder 416).
+     */
+    private function faixaPedida(Request $request, int $tamanho): array|null|false
+    {
+        $header = trim((string) $request->header('Range'));
+
+        if ($header === '' || ! preg_match('/^bytes=(\d*)-(\d*)$/', $header, $m)) {
+            return null;
+        }
+
+        $temInicio = $m[1] !== '';
+        $temFim = $m[2] !== '';
+
+        if (! $temInicio && ! $temFim) {
+            return null;
+        }
+
+        if (! $temInicio) {
+            // Forma "bytes=-500": os últimos 500 bytes.
+            $inicio = max(0, $tamanho - (int) $m[2]);
+            $fim = $tamanho - 1;
+        } else {
+            $inicio = (int) $m[1];
+            $fim = $temFim ? (int) $m[2] : $tamanho - 1;
+        }
+
+        $fim = min($fim, $tamanho - 1);
+
+        if ($inicio > $fim || $inicio >= $tamanho) {
+            return false;
+        }
+
+        return ['inicio' => $inicio, 'fim' => $fim];
+    }
+
+    /**
+     * Abre o arquivo já posicionado no byte pedido.
+     *
+     * Discos remotos (Google Drive) devolvem um stream que não aceita fseek;
+     * nesse caso não há alternativa senão ler e descartar o começo. Por isso
+     * dar play (offset 0) é barato e arrastar para o meio de um arquivo grande
+     * não é — em disco S3/R2 com URL pública o vídeo nem passa por aqui.
+     *
+     * @return resource
+     */
+    private function abrirStream(TaskAttachment $attachment, int $offset)
+    {
+        $stream = Storage::disk($attachment->disk)->readStream($attachment->path);
+        abort_if($stream === false || $stream === null, 404);
+
+        if ($offset <= 0) {
+            return $stream;
+        }
+
+        $meta = stream_get_meta_data($stream);
+
+        if (! empty($meta['seekable']) && fseek($stream, $offset) === 0) {
+            return $stream;
+        }
+
+        $restante = $offset;
+        while ($restante > 0 && ! feof($stream)) {
+            $bloco = fread($stream, (int) min(1048576, $restante));
+            if ($bloco === false || $bloco === '') {
+                break;
+            }
+            $restante -= strlen($bloco);
+        }
+
+        return $stream;
     }
 
     /**

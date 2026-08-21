@@ -142,6 +142,70 @@ class AttachmentUploadTest extends TestCase
     }
 
     /**
+     * Sem Range o navegador não consegue avançar no vídeo — e o Safari nem
+     * chega a tocar. É o que permite assistir sem baixar o arquivo.
+     */
+    public function test_video_e_servido_em_pedacos_com_range(): void
+    {
+        config(['filesystems.attachments_disk' => 'local']);
+        Storage::fake('local');
+
+        [$user, $task] = $this->cenario();
+
+        $conteudo = str_repeat('A', 1000).str_repeat('B', 1000); // 2000 bytes
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest', 'Accept' => 'application/json'])
+            ->post(route('attachments.store', $task), [
+                'files' => [UploadedFile::fake()->createWithContent('clipe.mp4', $conteudo)],
+            ])
+            ->assertStatus(200);
+
+        $att = $task->attachments()->first();
+
+        // Resposta inteira avisa que aceita pedaços.
+        $inteiro = $this->actingAs($user)->get(route('attachments.show', $att));
+        $inteiro->assertStatus(200);
+        $this->assertSame('bytes', $inteiro->headers->get('Accept-Ranges'));
+        $this->assertSame('2000', $inteiro->headers->get('Content-Length'));
+
+        // Pedaço do meio: precisa vir 206 com o trecho certo.
+        $pedaco = $this->actingAs($user)
+            ->withHeaders(['Range' => 'bytes=1000-1099'])
+            ->get(route('attachments.show', $att));
+
+        $pedaco->assertStatus(206);
+        $this->assertSame('bytes 1000-1099/2000', $pedaco->headers->get('Content-Range'));
+        $this->assertSame('100', $pedaco->headers->get('Content-Length'));
+        $this->assertSame(str_repeat('B', 100), $pedaco->streamedContent());
+
+        // Últimos bytes (forma "bytes=-50").
+        $fim = $this->actingAs($user)
+            ->withHeaders(['Range' => 'bytes=-50'])
+            ->get(route('attachments.show', $att));
+
+        $fim->assertStatus(206);
+        $this->assertSame('bytes 1950-1999/2000', $fim->headers->get('Content-Range'));
+
+        // Faixa impossível responde 416, não um arquivo cortado.
+        $this->actingAs($user)
+            ->withHeaders(['Range' => 'bytes=9999-'])
+            ->get(route('attachments.show', $att))
+            ->assertStatus(416);
+
+        // E o vídeo abre inline (sem forçar download).
+        $this->assertStringContainsString('video/', (string) $inteiro->headers->get('Content-Type'));
+        $this->assertNull($inteiro->headers->get('Content-Disposition'));
+        $this->assertTrue($att->is_video);
+
+        // No card, o anexo de vídeo abre o player em vez de virar link de download.
+        $this->actingAs($user)
+            ->withHeaders(['X-Requested-With' => 'XMLHttpRequest'])
+            ->get(route('tasks.edit', $task))
+            ->assertStatus(200)
+            ->assertSee('open-video');
+    }
+
+    /**
      * O slideover posta comentário por AJAX. O controller declarava retorno
      * RedirectResponse e devolvia JSON — TypeError, erro 500.
      */

@@ -319,6 +319,48 @@
     </div>
 </div>
 
+{{-- Player de vídeo global. z-[60] para ficar acima do slideover (z-50), que é
+     de onde o vídeo é aberto. O streaming aceita Range, então dá para arrastar
+     a linha do tempo sem baixar o arquivo inteiro. --}}
+<div x-data="{
+        open: false, url: '', name: '', download: '',
+        abrir(dados) {
+            this.url = dados.url;
+            this.name = dados.name || 'Vídeo';
+            this.download = dados.download || dados.url;
+            this.open = true;
+            this.$nextTick(() => {
+                const p = this.$refs.player;
+                if (p) p.play().catch(() => {});
+            });
+        },
+        fechar() {
+            const p = this.$refs.player;
+            if (p) { p.pause(); p.removeAttribute('src'); p.load(); }
+            this.open = false;
+            this.url = '';
+        }
+     }"
+     @open-video.window="abrir($event.detail)"
+     @keydown.escape.window="if (open) fechar()">
+    <div x-show="open" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+         @click.self="fechar()">
+        <div class="w-full max-w-4xl">
+            <div class="mb-2 flex items-center justify-between gap-4">
+                <span class="truncate text-sm font-medium text-slate-200" x-text="name"></span>
+                <div class="flex shrink-0 items-center gap-4">
+                    <a :href="download" download class="text-xs font-medium text-slate-300 hover:text-slate-200">Baixar</a>
+                    <button type="button" @click="fechar()" class="rounded p-1 text-slate-400 hover:bg-white/10 hover:text-slate-200" title="Fechar">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <video x-ref="player" :src="url" controls playsinline preload="metadata"
+                   class="max-h-[80vh] w-full rounded-lg bg-black shadow-2xl"></video>
+        </div>
+    </div>
+</div>
+
 <script>
     // Sistema inteligente e à prova de falhas de persistência e restauração de scroll
     (function() {

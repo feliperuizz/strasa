@@ -1,6 +1,21 @@
 <div class="group relative flex items-center gap-3 rounded-lg border border-ink-800 bg-ink-800 p-2">
     @if($att->is_image)
         <img src="{{ route('attachments.show', $att) }}" data-url="{{ route('attachments.show', $att) }}" data-download-url="{{ route('attachments.download', $att) }}" loading="lazy" decoding="async" class="h-10 w-10 rounded object-cover viewer-image cursor-pointer" alt="{{ $att->original_name }}">
+    @elseif($att->is_video)
+        {{-- Miniatura de vídeo: clica e assiste no player, sem baixar. --}}
+        <button type="button"
+                {{-- $att->url: no R2/S3 com URL pública aponta direto pro bucket,
+                     que trata Range nativamente (busca instantânea na timeline).
+                     No Google Drive cai na rota que faz o streaming pelo app. --}}
+                @click="$dispatch('open-video', {
+                    url: @js($att->url),
+                    download: '{{ route('attachments.download', $att) }}',
+                    name: @js($att->original_name)
+                })"
+                class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded bg-ink-900 ring-1 ring-ink-700 hover:ring-brand-500 transition"
+                title="Assistir {{ $att->original_name }}">
+            <svg class="h-5 w-5 text-brand-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+        </button>
     @else
         <div class="flex h-10 w-10 items-center justify-center rounded bg-ink-900">
             <span class="text-[10px] font-bold text-slate-500">{{ strtoupper(pathinfo($att->original_name, PATHINFO_EXTENSION)) }}</span>
@@ -9,6 +24,8 @@
     <div class="flex-1 overflow-hidden">
         @if($att->is_image)
             <span class="cursor-pointer truncate text-xs font-medium text-slate-200 hover:text-slate-200 hover:underline block" onclick="this.closest('.group').querySelector('img').click()">{{ $att->original_name }}</span>
+        @elseif($att->is_video)
+            <span class="cursor-pointer truncate text-xs font-medium text-slate-200 hover:underline block" onclick="this.closest('.group').querySelector('button').click()">{{ $att->original_name }}</span>
         @else
             <a href="{{ route('attachments.download', $att) }}" target="_blank" class="truncate text-xs font-medium text-slate-200 hover:text-slate-200 hover:underline block">{{ $att->original_name }}</a>
         @endif
