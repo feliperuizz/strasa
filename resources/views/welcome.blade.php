@@ -58,6 +58,11 @@
                 Suporte Técnico <span aria-hidden="true">→</span>
             </a>
         </div>
+        
+        <div class="mt-16 pt-8 border-t border-ink-800 flex flex-wrap justify-center gap-6 text-sm text-slate-400">
+            <a href="{{ route('privacy') }}" class="hover:text-slate-200 transition-colors">Política de Privacidade</a>
+            <a href="{{ route('terms') }}" class="hover:text-slate-200 transition-colors">Termos de Serviço</a>
+        </div>
     </div>
 </body>
 </html>
