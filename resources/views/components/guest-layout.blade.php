@@ -6,10 +6,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $title ? $title.' · ' : '' }}{{ config('app.name') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>tailwind.config = { theme: { extend: { colors: {
-        ink:{900:'#0f1115',800:'#161a21',700:'#1d222b',600:'#272d39'},
-        brand:{400:'#818cf8',500:'#6366f1',600:'#4f46e5'} } } } }</script>
+    {{-- CSS compilado (Vite). As variáveis abaixo reproduzem exatamente a paleta
+         que antes era passada para o tailwind.config do CDN. --}}
+    @vite(['resources/css/app.css'])
+    <style>
+        :root {
+            --ink-900: 15 17 21;    /* #0f1115 */
+            --ink-800: 22 26 33;    /* #161a21 */
+            --ink-700: 29 34 43;    /* #1d222b */
+            --ink-600: 39 45 57;    /* #272d39 */
+            --ink-500: 107 107 107;
+            --text-primary: 226 232 240;   /* slate-200 */
+            --text-secondary: 203 213 225; /* slate-300 */
+            --text-tertiary: 148 163 184;  /* slate-400 */
+        }
+    </style>
 </head>
 <body class="h-full bg-ink-900 text-slate-200">
 <div class="flex min-h-full items-center justify-center px-4 py-12">

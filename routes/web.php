@@ -35,15 +35,11 @@ Route::middleware('guest')->group(function () {
 Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')->name('logout');
 
-Route::get('/', function () {
-    return view('welcome');
-});
-Route::get('/privacy', function () {
-    return view('privacy');
-})->name('privacy');
-Route::get('/terms', function () {
-    return view('terms');
-})->name('terms');
+// Route::view (e não Closure) para que `php artisan route:cache` funcione:
+// rotas com Closure não podem ser serializadas.
+Route::view('/', 'welcome');
+Route::view('/privacy', 'privacy')->name('privacy');
+Route::view('/terms', 'terms')->name('terms');
 
 /*
 |--------------------------------------------------------------------------

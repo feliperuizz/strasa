@@ -1,6 +1,6 @@
 <div class="group relative flex items-center gap-3 rounded-lg border border-ink-800 bg-ink-800 p-2">
     @if($att->is_image)
-        <img src="{{ route('attachments.show', $att) }}" data-url="{{ route('attachments.show', $att) }}" data-download-url="{{ route('attachments.download', $att) }}" class="h-10 w-10 rounded object-cover viewer-image cursor-pointer" alt="{{ $att->original_name }}">
+        <img src="{{ route('attachments.show', $att) }}" data-url="{{ route('attachments.show', $att) }}" data-download-url="{{ route('attachments.download', $att) }}" loading="lazy" decoding="async" class="h-10 w-10 rounded object-cover viewer-image cursor-pointer" alt="{{ $att->original_name }}">
     @else
         <div class="flex h-10 w-10 items-center justify-center rounded bg-ink-900">
             <span class="text-[10px] font-bold text-slate-500">{{ strtoupper(pathinfo($att->original_name, PATHINFO_EXTENSION)) }}</span>

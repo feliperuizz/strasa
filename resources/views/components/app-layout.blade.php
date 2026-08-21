@@ -13,15 +13,19 @@
     <title>{{ $title ? $title.' · ' : '' }}{{ config('app.name') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('strasafavicon.png') }}">
 
-    {{-- Tailwind via CDN (sem Node em produção). Para build estático, ver README. --}}
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{-- CSS compilado (Tailwind buildado por Vite). Substitui o antigo cdn.tailwindcss.com,
+         que baixava ~300KB de JS e compilava o CSS no navegador a cada page load. --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Quill Editor -->
+    <link rel="preconnect" href="https://cdn.quilljs.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+
+    <!-- Quill Editor (defer: só é usado pelo Alpine, que também é defer) -->
     <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script defer src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/viewerjs/1.11.6/viewer.min.js"></script>
     <style>
         /* Oculta os botões originais e barra do viewer, deixando escuro igual Asana */
         .viewer-backdrop { background-color: rgba(30, 30, 30, 0.95); }
@@ -138,35 +142,11 @@
             }
         })();
     </script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: { extend: { colors: {
-                ink: { 
-                    900: 'rgb(var(--ink-900) / <alpha-value>)', 
-                    800: 'rgb(var(--ink-800) / <alpha-value>)', 
-                    700: 'rgb(var(--ink-700) / <alpha-value>)', 
-                    600: 'rgb(var(--ink-600) / <alpha-value>)', 
-                    500: 'rgb(var(--ink-500) / <alpha-value>)' 
-                },
-                slate: {
-                    200: 'rgb(var(--text-primary) / <alpha-value>)',
-                    300: 'rgb(var(--text-secondary) / <alpha-value>)',
-                    400: 'rgb(var(--text-tertiary) / <alpha-value>)',
-                    500: 'rgb(var(--ink-500) / <alpha-value>)',
-                    600: 'rgb(var(--ink-600) / <alpha-value>)',
-                },
-                brand: { 400:'#818cf8', 500:'#6366f1', 600:'#4f46e5' },
-            } } }
-        }
-    </script>
     <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#111111">
     <link rel="apple-touch-icon" href="{{ asset('icon-192.png') }}">
-
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Service Worker Registration for PWA / WebPush -->
     <script>
@@ -529,13 +509,20 @@
                 },
                 updateTitle(event) { this.save(); },
                 uploadAttachment(event) {
-                    const form = event.target; const formData = new FormData(form);
+                    const form = event.target;
                     this.uploading = true;
-                    fetch(form.action, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: formData })
-                    .then(res => res.json()).then(data => {
-                        this.uploading = false;
-                        this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
-                    });
+
+                    // Overlay com barra de progresso real (o upload pro bucket
+                    // pode demorar; antes a tela só ficava parada).
+                    window.uploadOverlay.sendForm(form, { json: true })
+                        .then(() => {
+                            this.uploading = false;
+                            window.uploadOverlay.hide();
+                            this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                        })
+                        .catch(() => {
+                            this.uploading = false;
+                        });
                 },
                 deleteAttachment(url, element) {
                     if(!confirm('Excluir este anexo?')) return;
@@ -659,6 +646,8 @@
         @endforeach
     </div>
 </nav>
+
+<x-upload-progress />
 
 </body>
 </html>

@@ -95,6 +95,16 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
 
+        // O slideover percorre todas essas relações. Sem o eager loading era
+        // uma query por pasta/comentário/anexo toda vez que a tarefa abria —
+        // e ela reabre a cada upload, comentário ou item de checklist.
+        $task->load([
+            'assignees', 'tags', 'items',
+            'folders.attachments',
+            'attachments',
+            'comments.user',
+        ]);
+
         $data = array_merge($this->formData($task->project), ['task' => $task]);
 
         if ($request->ajax() || $request->wantsJson()) {

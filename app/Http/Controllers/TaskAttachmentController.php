@@ -79,11 +79,48 @@ class TaskAttachmentController extends Controller
         return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
     }
 
+    /**
+     * Serve o arquivo através do app (usado quando o disco não tem URL pública,
+     * ex.: Google Drive). Sem cache, cada <img> da tela obrigava o PHP a baixar
+     * o arquivo do provedor de novo — daí a lentidão em telas com muitos anexos.
+     *
+     * O conteúdo de um anexo nunca muda (o caminho no bucket é um UUID novo a
+     * cada upload), então podemos mandar o navegador guardar por bastante tempo
+     * e responder 304 quando ele revalidar.
+     */
     public function show(Request $request, TaskAttachment $attachment)
     {
         abort_unless($attachment->company_id === $request->user()->company_id, 403);
         $this->authorize('view', $attachment->task);
 
-        return Storage::disk($attachment->disk)->response($attachment->path);
+        $etag = '"att-'.$attachment->id.'-'.optional($attachment->updated_at)->timestamp.'"';
+
+        $headers = [
+            'Cache-Control' => 'private, max-age=2592000', // 30 dias no navegador
+            'ETag' => $etag,
+        ];
+
+        // Revalidação barata: nem toca no Google Drive/S3.
+        if (trim((string) $request->header('If-None-Match')) === $etag) {
+            return response('', 304, $headers);
+        }
+
+        // Stream manual em vez de Storage::response(): aquele helper chama
+        // mimeType() e size() no disco, o que custa duas chamadas extras à API
+        // do Drive por imagem. Esses dados já estão no banco.
+        $stream = Storage::disk($attachment->disk)->readStream($attachment->path);
+        abort_if($stream === false || $stream === null, 404);
+
+        $headers['Content-Type'] = $attachment->mime_type ?: 'application/octet-stream';
+        if ($attachment->size > 0) {
+            $headers['Content-Length'] = (string) $attachment->size;
+        }
+
+        return response()->stream(function () use ($stream) {
+            fpassthru($stream);
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }, 200, $headers);
     }
 }
