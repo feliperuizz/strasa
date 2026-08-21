@@ -31,7 +31,7 @@
                     <h2 class="font-semibold text-slate-200">Anexos</h2>
                     <form action="{{ route('attachments.store', $task) }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
                         @csrf
-                        <input type="file" name="file" required class="text-sm text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-700 file:px-2 file:py-1 file:text-xs file:text-slate-200 hover:file:bg-ink-600">
+                        <input type="file" name="files[]" multiple required class="text-sm text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-700 file:px-2 file:py-1 file:text-xs file:text-slate-200 hover:file:bg-ink-600">
                         <button class="rounded bg-ink-700 px-2 py-1 text-xs font-medium text-slate-200 hover:bg-ink-600">Enviar</button>
                     </form>
                 </div>

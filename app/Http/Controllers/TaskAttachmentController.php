@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\TaskAttachment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class TaskAttachmentController extends Controller
 {
-    public function store(Request $request, Task $task): RedirectResponse
+    public function store(Request $request, Task $task): RedirectResponse|JsonResponse
     {
         $this->authorize('update', $task);
 

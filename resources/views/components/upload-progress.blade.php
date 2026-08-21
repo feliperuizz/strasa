@@ -112,7 +112,11 @@
 
             return new Promise(function (resolve, reject) {
                 var xhr = new XMLHttpRequest();
-                xhr.open(form.method && form.method.toUpperCase() !== 'GET' ? 'POST' : 'GET', form.action);
+                // Sempre POST: upload nunca é GET, e vários formulários do app
+                // não declaram method="POST" (o Laravel resolve PATCH/DELETE
+                // pelo campo _method, que já vai dentro do FormData).
+                var xhr_url = form.getAttribute('action') || form.action || window.location.href;
+                xhr.open('POST', xhr_url);
                 xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
                 if (options.json) xhr.setRequestHeader('Accept', 'application/json');
 

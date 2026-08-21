@@ -5,13 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\TaskComment;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class TaskCommentController extends Controller
 {
-    public function store(Request $request, Task $task): RedirectResponse
+    public function store(Request $request, Task $task): RedirectResponse|JsonResponse
     {
         $this->authorize('view', $task);
 
