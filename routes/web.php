@@ -35,13 +35,16 @@ Route::middleware('guest')->group(function () {
 Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')->name('logout');
 
+Route::get('/', function () {
+    return view('welcome');
+});
+
 /*
 |--------------------------------------------------------------------------
 | Aplicação (autenticado + multi-tenant)
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'tenant'])->group(function () {
-    Route::get('/', fn () => redirect()->route('dashboard'));
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('my-tasks', [\App\Http\Controllers\MyTasksController::class, 'index'])->name('my-tasks');
     Route::get('search/tasks', [\App\Http\Controllers\SearchController::class, 'tasks'])->name('search.tasks');
