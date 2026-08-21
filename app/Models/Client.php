@@ -95,7 +95,7 @@ class Client extends Model
             return null;
         }
 
-        return Storage::disk($this->logo_disk ?: config('filesystems.attachments_disk'))
+        return Storage::disk($this->logo_disk ?: 's3')
             ->url($this->logo_path);
     }
 }

@@ -42,7 +42,7 @@ class ProfileController extends Controller
 
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            $disk = config('filesystems.attachments_disk');
+            $disk = 's3'; // Fixado no R2/S3 independente do disco de anexos
             $folder = "company-{$user->company_id}/avatars";
             $name = Str::uuid() . '.' . $file->getClientOriginalExtension();
             

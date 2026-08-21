@@ -100,7 +100,7 @@ class ClientController extends Controller
             return;
         }
 
-        $disk = config('filesystems.attachments_disk');
+        $disk = 's3'; // Fixado no R2/S3 independente do disco de anexos
 
         // Remove o logo antigo do bucket, se houver.
         if ($client->logo_path) {
