@@ -95,7 +95,11 @@ class Client extends Model
             return null;
         }
 
-        return Storage::disk($this->logo_disk ?: 's3')
-            ->url($this->logo_path);
+        try {
+            return Storage::disk($this->logo_disk ?: 's3')
+                ->url($this->logo_path);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

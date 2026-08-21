@@ -114,7 +114,11 @@ class User extends Authenticatable
             return null;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk($this->avatar_disk ?: 's3')
-            ->url($this->avatar_path);
+        try {
+            return \Illuminate\Support\Facades\Storage::disk($this->avatar_disk ?: 's3')
+                ->url($this->avatar_path);
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }
