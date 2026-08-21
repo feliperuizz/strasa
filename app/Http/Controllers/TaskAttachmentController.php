@@ -78,4 +78,12 @@ class TaskAttachmentController extends Controller
 
         return Storage::disk($attachment->disk)->download($attachment->path, $attachment->original_name);
     }
+
+    public function show(Request $request, TaskAttachment $attachment)
+    {
+        abort_unless($attachment->company_id === $request->user()->company_id, 403);
+        $this->authorize('view', $attachment->task);
+
+        return Storage::disk($attachment->disk)->response($attachment->path);
+    }
 }

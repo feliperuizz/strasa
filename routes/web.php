@@ -112,6 +112,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('tasks/{task}/attachments', [TaskAttachmentController::class, 'store'])->name('attachments.store');
     Route::delete('attachments/{attachment}', [TaskAttachmentController::class, 'destroy'])->name('attachments.destroy');
     Route::get('attachments/{attachment}/download', [TaskAttachmentController::class, 'download'])->name('attachments.download');
+    Route::get('attachments/{attachment}/show', [TaskAttachmentController::class, 'show'])->name('attachments.show');
 
     /* Calendário --------------------------------------------------------- */
     Route::get('clients/{client}/calendar', [CalendarController::class, 'client'])->name('clients.calendar');
