@@ -40,6 +40,7 @@
             
             {{-- Campos Ocultos Obrigatórios --}}
             <input type="hidden" name="column_id" value="{{ $task->column_id ?? request('column_id') }}">
+            <input type="hidden" name="has_assignees" value="1">
 
             <div class="space-y-6">
                 {{-- Título --}}
@@ -57,11 +58,7 @@
                             @if(isset($task->assignees) && $task->assignees->isNotEmpty())
                                 @foreach($task->assignees as $assignee)
                                     <div class="inline-flex items-center gap-1 rounded-full bg-ink-800 pr-2 pl-1 py-1 border border-ink-700" title="{{ $assignee->name }}">
-                                        @if($assignee->avatar_url)
-                                            <img src="{{ $assignee->avatar_url }}" class="h-4 w-4 rounded-full object-cover">
-                                        @else
-                                            <div class="h-4 w-4 rounded-full bg-brand-500 flex items-center justify-center text-[8px] text-white font-bold">{{ substr($assignee->name, 0, 1) }}</div>
-                                        @endif
+                                        <x-avatar :user="$assignee" size="4" />
                                         <span class="text-[11px] text-slate-300">{{ explode(' ', $assignee->name)[0] }}</span>
                                     </div>
                                 @endforeach
@@ -78,6 +75,7 @@
                                     <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-ink-800 rounded cursor-pointer transition">
                                         <input type="checkbox" name="assignees[]" value="{{ $m->id }}" class="rounded border-ink-600 bg-ink-800 text-brand-500 focus:ring-brand-500"
                                             {{ (isset($task->assignees) && $task->assignees->contains($m->id)) ? 'checked' : '' }}>
+                                        <x-avatar :user="$m" size="6" />
                                         <span class="text-sm text-slate-200">{{ $m->name }}</span>
                                     </label>
                                 @endforeach

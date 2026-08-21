@@ -53,7 +53,7 @@ class TaskController extends Controller
             ]);
 
             $this->syncTags($task, $request->input('tags', []));
-            if ($request->has('assignees')) {
+            if ($request->has('has_assignees') || $request->has('assignees')) {
                 $task->assignees()->sync($request->input('assignees', []));
             }
             
@@ -128,7 +128,7 @@ class TaskController extends Controller
             ]);
 
             $this->syncTags($task, $request->input('tags', []));
-            if ($request->has('assignees')) {
+            if ($request->has('has_assignees') || $request->has('assignees')) {
                 $task->assignees()->sync($request->input('assignees', []));
             }
         });
