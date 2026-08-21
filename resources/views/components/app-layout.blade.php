@@ -29,23 +29,23 @@
         
         /* Quill Dark/Light Theme Adjustments */
         .ql-toolbar.ql-snow, .ql-container.ql-snow {
-            border-color: var(--ink-700, #363638) !important;
+            border-color: rgb(var(--ink-700)) !important;
         }
         .ql-toolbar.ql-snow {
-            background-color: var(--ink-800, #2a2b2d);
+            background-color: rgb(var(--ink-800));
             border-top-left-radius: 0.375rem;
             border-top-right-radius: 0.375rem;
         }
         .ql-container.ql-snow {
-            background-color: var(--ink-900, #1e1e1e);
+            background-color: rgb(var(--ink-900));
             border-bottom-left-radius: 0.375rem;
             border-bottom-right-radius: 0.375rem;
         }
-        .ql-snow .ql-stroke { stroke: var(--text-primary, #e2e8f0) !important; }
-        .ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: var(--text-primary, #e2e8f0) !important; }
-        .ql-snow .ql-picker { color: var(--text-primary, #e2e8f0) !important; }
-        .ql-editor.ql-blank::before { color: var(--text-secondary, #94a3b8) !important; }
-        .ql-editor { min-height: 120px; font-family: inherit; font-size: 0.875rem; }
+        .ql-snow .ql-stroke { stroke: rgb(var(--text-primary)) !important; }
+        .ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: rgb(var(--text-primary)) !important; }
+        .ql-snow .ql-picker { color: rgb(var(--text-primary)) !important; }
+        .ql-editor.ql-blank::before { color: rgb(var(--text-secondary)) !important; font-style: normal; }
+        .ql-editor { min-height: 120px; font-family: inherit; font-size: 0.875rem; color: rgb(var(--text-primary)); }
     </style>
     <script>
         window.initTaskViewer = function(el) {
