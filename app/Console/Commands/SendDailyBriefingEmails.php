@@ -40,7 +40,7 @@ class SendDailyBriefingEmails extends Command
 
         foreach ($users as $user) {
             // Get tasks for today or overdue
-            $tasks = $user->tasks()
+            $tasks = $user->assignedTasks()
                 ->with(['project', 'client'])
                 ->where('is_published', false)
                 ->where(function($query) use ($today) {
