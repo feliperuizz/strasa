@@ -26,7 +26,7 @@ class ProfileController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'avatar_color' => ['nullable', 'string', 'size:7'],
-            'avatar' => ['nullable', 'image', 'max:5120'], // 5MB max
+            'avatar' => ['nullable', 'image'],
         ]);
 
         $user->name = $data['name'];

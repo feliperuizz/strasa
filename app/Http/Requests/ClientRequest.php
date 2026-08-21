@@ -19,7 +19,7 @@ class ClientRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'segment' => ['nullable', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'max:2048'],
+            'logo' => ['nullable', 'image'],
             'color' => ['nullable', 'string', 'max:20'],
             'bg_type' => ['nullable', 'string', 'in:default,color,gradient'],
             'bg_color' => ['nullable', 'string', 'max:20'],

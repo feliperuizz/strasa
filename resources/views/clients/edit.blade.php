@@ -46,6 +46,7 @@
                                    class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-400 file:mr-4 file:rounded-md file:border-0 file:bg-ink-700 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-slate-200 hover:file:bg-ink-600 focus:outline-none">
                             <p class="mt-1 text-xs text-slate-500">Envie uma nova imagem para substituir a atual.</p>
                             @error('logo') <p class="mt-1 text-xs text-rose-400">{{ $message }}</p> @enderror
+                            <div data-upload-progress></div>
                         </div>
                         <div>
                             <label class="mb-1 block text-sm text-slate-300">Cor Principal</label>

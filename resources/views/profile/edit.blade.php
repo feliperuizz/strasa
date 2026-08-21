@@ -26,7 +26,9 @@
                 </div>
                 <div class="flex-1">
                     <h3 class="text-lg font-medium text-slate-200">Sua Foto</h3>
-                    <p class="text-sm text-slate-400">Clique na imagem para enviar uma foto. JPG, PNG ou WEBP. Máx 5MB.</p>
+                    <p class="text-sm text-slate-400">Clique na imagem para enviar uma foto. JPG, PNG ou WEBP.</p>
+                    {{-- A barra de progresso do upload aparece aqui. --}}
+                    <div data-upload-progress></div>
                 </div>
             </div>
 

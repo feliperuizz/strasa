@@ -296,7 +296,9 @@
 
         <x-flash />
 
-        <main class="flex-1 overflow-auto pb-24 lg:pb-0">
+        {{-- pb-28: a hotbar ocupa os 96px de baixo (bottom-6 + ~72px de altura);
+             com pb-24 o conteúdo encostava exatamente na barra, sem folga. --}}
+        <main class="flex-1 overflow-auto pb-28 lg:pb-0">
             {{ $slot }}
         </main>
     </div>
@@ -622,7 +624,9 @@
 </script>
 
 {{-- ============================ MOBILE BOTTOM NAVIGATION ============================ --}}
-<nav class="lg:hidden fixed bottom-6 inset-x-4 z-50">
+{{-- z-30 (e não z-50): os modais/slideover/menu de contexto do card usam z-40/z-50
+     e a hotbar, por vir depois no HTML, ficava por cima deles no celular. --}}
+<nav class="lg:hidden fixed bottom-6 inset-x-4 z-30">
     <div class="flex items-center justify-around px-2 py-2 backdrop-blur-2xl bg-[#1c1c1e]/90 border border-white/10 rounded-full shadow-2xl">
         @php
             $navItems = [

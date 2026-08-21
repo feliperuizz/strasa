@@ -216,7 +216,7 @@ class FinancialController extends Controller
             'reference_month' => ['nullable', 'string', 'regex:/^\d{4}-\d{2}$/'],
             'recurrence' => ['nullable', 'string', Rule::in(['one_time', 'monthly'])],
             'notes' => ['nullable', 'string'],
-            'attachment' => ['nullable', 'file', 'max:10240'],
+            'attachment' => ['nullable', 'file'],
         ]);
 
         if (empty($data['reference_month']) && !empty($data['due_date'])) {
@@ -262,7 +262,7 @@ class FinancialController extends Controller
             'reference_month' => ['nullable', 'string', 'regex:/^\d{4}-\d{2}$/'],
             'recurrence' => ['nullable', 'string', Rule::in(['one_time', 'monthly'])],
             'notes' => ['nullable', 'string'],
-            'attachment' => ['nullable', 'file', 'max:10240'],
+            'attachment' => ['nullable', 'file'],
         ]);
 
         if (empty($data['reference_month']) && !empty($data['due_date'])) {

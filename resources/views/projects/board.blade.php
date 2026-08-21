@@ -95,7 +95,7 @@
         </div>
     </x-slot>
 
-    <div class="flex h-[calc(100dvh-4rem)] flex-col" id="kanban-wrapper">
+    <div class="flex h-full flex-col" id="kanban-wrapper">
 
         {{-- Toolbar do Quadro (Add task etc) --}}
         <div class="px-4 pt-4 pb-2 flex items-center gap-4">

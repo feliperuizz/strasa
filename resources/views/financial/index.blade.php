@@ -479,6 +479,7 @@
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Comprovante / Recibo (Opcional)</label>
                                         <input type="file" name="attachment"
                                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-ink-700 file:text-slate-200 hover:file:bg-ink-600">
+                                        <div data-upload-progress></div>
                                     </div>
                                 </div>
                             </div>
@@ -594,6 +595,7 @@
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Substituir Comprovante</label>
                                         <input type="file" name="attachment"
                                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-1.5 text-xs text-slate-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-ink-700 file:text-slate-200 hover:file:bg-ink-600">
+                                        <div data-upload-progress></div>
                                     </div>
                                 </div>
                             </div>

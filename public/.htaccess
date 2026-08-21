@@ -1,3 +1,21 @@
+# Limites de upload para quando o PHP roda como módulo do Apache (mod_php).
+# Com PHP-FPM/CGI esses php_value são ignorados — nesse caso vale o .user.ini
+# ao lado. Os dois ficam aqui porque o host pode usar qualquer um dos modos.
+<IfModule mod_php.c>
+    php_value upload_max_filesize 2048M
+    php_value post_max_size 2048M
+    php_value max_execution_time 3600
+    php_value max_input_time 3600
+    php_value memory_limit 512M
+</IfModule>
+<IfModule mod_php7.c>
+    php_value upload_max_filesize 2048M
+    php_value post_max_size 2048M
+    php_value max_execution_time 3600
+    php_value max_input_time 3600
+    php_value memory_limit 512M
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes

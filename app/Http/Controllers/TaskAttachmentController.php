@@ -21,9 +21,11 @@ class TaskAttachmentController extends Controller
     {
         $this->authorize('update', $task);
 
+        // Sem restrição de tipo nem de tamanho: qualquer arquivo é aceito.
+        // O teto real passa a ser o do PHP/servidor (veja public/.user.ini).
         $request->validate([
             'files' => ['required', 'array'],
-            'files.*' => ['file', 'max:10240', 'mimes:jpg,jpeg,png,gif,webp,pdf,mp4'],
+            'files.*' => ['file'],
             'folder_id' => ['nullable', 'integer', 'exists:task_folders,id'],
         ]);
 
@@ -33,8 +35,22 @@ class TaskAttachmentController extends Controller
 
         foreach ($request->file('files') as $file) {
             // Nome único no bucket, preservando a extensão original.
-            $name = Str::uuid().'.'.$file->getClientOriginalExtension();
-            $path = $file->storeAs($folder, $name, $disk);
+            $extension = $file->getClientOriginalExtension();
+            $name = Str::uuid().($extension !== '' ? '.'.$extension : '');
+
+            // putFileAs em vez de storeAs: é o mesmo caminho, mas deixa
+            // explícito que o envio é em streaming — um vídeo de 1GB não é
+            // carregado inteiro na memória do PHP.
+            $path = Storage::disk($disk)->putFileAs($folder, $file, $name);
+
+            // O bucket/Drive pode recusar o arquivo (cota, timeout). Sem isto o
+            // anexo era gravado no banco com caminho vazio e "sumia" depois.
+            abort_if($path === false, 500, "Não foi possível salvar \"{$file->getClientOriginalName()}\" no armazenamento. Tente novamente.");
+
+            // getMimeType() adivinha pelo conteúdo; getClientMimeType() vem do
+            // navegador e é forjável. Como esse valor vira o Content-Type na
+            // hora de servir o arquivo, guardamos o detectado.
+            $mime = (string) $file->getMimeType();
 
             $task->attachments()->create([
                 'company_id' => $task->company_id,
@@ -43,9 +59,9 @@ class TaskAttachmentController extends Controller
                 'disk' => $disk,
                 'path' => $path,
                 'original_name' => $file->getClientOriginalName(),
-                'mime_type' => $file->getClientMimeType(),
+                'mime_type' => $mime ?: 'application/octet-stream',
                 'size' => $file->getSize(),
-                'is_image' => Str::startsWith((string) $file->getMimeType(), 'image/'),
+                'is_image' => Str::startsWith($mime, 'image/'),
             ]);
         }
 
@@ -112,7 +128,8 @@ class TaskAttachmentController extends Controller
         $stream = Storage::disk($attachment->disk)->readStream($attachment->path);
         abort_if($stream === false || $stream === null, 404);
 
-        $headers['Content-Type'] = $attachment->mime_type ?: 'application/octet-stream';
+        $headers += $this->headersDeExibicao($attachment);
+
         if ($attachment->size > 0) {
             $headers['Content-Length'] = (string) $attachment->size;
         }
@@ -123,5 +140,42 @@ class TaskAttachmentController extends Controller
                 fclose($stream);
             }
         }, 200, $headers);
+    }
+
+    /**
+     * Como o arquivo deve ser entregue ao navegador.
+     *
+     * Aceitamos qualquer tipo de arquivo no upload, e esta rota serve pelo
+     * domínio do próprio app. Abrir um .html ou .svg enviado por alguém como
+     * "inline" faria o navegador executar o script dele dentro da sessão do
+     * usuário. Por isso só abre inline o que é seguro exibir (imagem, vídeo,
+     * áudio, PDF); o resto vira download com tipo genérico.
+     *
+     * @return array<string, string>
+     */
+    private function headersDeExibicao(TaskAttachment $attachment): array
+    {
+        $mime = (string) ($attachment->mime_type ?: 'application/octet-stream');
+
+        $inline = Str::startsWith($mime, ['video/', 'audio/'])
+            || $mime === 'application/pdf'
+            || (Str::startsWith($mime, 'image/') && $mime !== 'image/svg+xml');
+
+        if ($inline) {
+            return [
+                'Content-Type' => $mime,
+                'X-Content-Type-Options' => 'nosniff',
+            ];
+        }
+
+        // O SVG mantém o tipo real, senão a miniatura <img> do card quebra —
+        // o Content-Disposition não atrapalha imagem carregada em <img>, só
+        // impede que o arquivo abra como página se alguém acessar a URL direto.
+        return [
+            'Content-Type' => $mime === 'image/svg+xml' ? $mime : 'application/octet-stream',
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Disposition' => 'attachment; filename="'
+                .str_replace('"', '', $attachment->original_name).'"',
+        ];
     }
 }

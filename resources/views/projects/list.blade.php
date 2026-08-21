@@ -95,7 +95,7 @@
         </div>
     </x-slot>
 
-    <div class="flex h-[calc(100vh-4rem)] flex-col">
+    <div class="flex h-full flex-col">
 
         <div class="px-4 pt-4 pb-2 flex items-center gap-4">
             <button type="button" @click="$dispatch('open-task-modal', '{{ route('tasks.create', $project) }}')" class="inline-flex items-center gap-1 rounded bg-ink-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition">

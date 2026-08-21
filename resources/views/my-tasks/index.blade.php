@@ -5,7 +5,7 @@
         </div>
     </x-slot>
 
-    <div class="flex h-[calc(100vh-4rem)] flex-col">
+    <div class="flex h-full flex-col">
 
         <div class="flex-1 overflow-auto p-4 max-w-6xl mx-auto w-full">
             <div class="rounded-xl border border-ink-600 bg-ink-800 overflow-hidden">
