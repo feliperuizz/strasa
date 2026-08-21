@@ -48,6 +48,10 @@ class TaskAttachment extends Model
      */
     public function getUrlAttribute(): string
     {
+        if ($this->disk === 'google') {
+            return route('attachments.show', $this);
+        }
+
         $disk = Storage::disk($this->disk);
         $config = config("filesystems.disks.{$this->disk}");
 
