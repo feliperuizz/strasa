@@ -10,7 +10,7 @@ class MyTasksController extends Controller
     public function index(Request $request)
     {
         $tasks = Task::where('company_id', $request->user()->company_id)
-            ->where('assignee_id', $request->user()->id)
+            ->whereHas('assignees', fn($q) => $q->where('users.id', $request->user()->id))
             ->with(['project.client', 'column', 'tags'])
             ->orderBy('publish_date', 'asc')
             ->get();

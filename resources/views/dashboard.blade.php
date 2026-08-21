@@ -281,9 +281,11 @@
                                     <span class="text-xs font-medium text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
                                         {{ $task->publish_date->format('d/m/Y') }}
                                     </span>
-                                    @if($task->assignee)
-                                        <div class="flex items-center gap-1.5" title="Responsável: {{ $task->assignee->name }}">
-                                            <x-avatar :user="$task->assignee" :size="6" />
+                                    @if($task->assignees->isNotEmpty())
+                                        <div class="flex -space-x-1.5" title="Responsáveis: {{ $task->assignees->pluck('name')->join(', ') }}">
+                                            @foreach($task->assignees->take(3) as $assignee)
+                                                <div class="ring-2 ring-ink-800 rounded-full"><x-avatar :user="$assignee" :size="6" /></div>
+                                            @endforeach
                                         </div>
                                     @endif
                                 </div>
@@ -317,9 +319,11 @@
                                         </div>
                                     </button>
                                 </div>
-                                @if($task->assignee)
-                                    <div class="shrink-0 flex items-center gap-1.5" title="Responsável: {{ $task->assignee->name }}">
-                                        <x-avatar :user="$task->assignee" :size="7" />
+                                @if($task->assignees->isNotEmpty())
+                                    <div class="shrink-0 flex -space-x-1.5" title="Responsáveis: {{ $task->assignees->pluck('name')->join(', ') }}">
+                                        @foreach($task->assignees->take(3) as $assignee)
+                                            <div class="ring-2 ring-ink-800 rounded-full"><x-avatar :user="$assignee" :size="7" /></div>
+                                        @endforeach
                                     </div>
                                 @endif
                             </li>

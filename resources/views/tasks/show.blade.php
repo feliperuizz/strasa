@@ -115,11 +115,15 @@
                 <div>
                     <span class="block text-xs font-semibold uppercase text-slate-500">Responsável</span>
                     <div class="mt-1 flex items-center gap-2">
-                        @if($task->assignee)
-                            <x-avatar :user="$task->assignee" :size="6" />
-                            <span class="text-sm text-slate-200">{{ $task->assignee->name }}</span>
-                        @else
-                            <span class="text-sm text-slate-500">Não atribuído</span>
+                        @if($task->assignees->isNotEmpty())
+                            <div class="flex -space-x-1.5 mt-2">
+                                @foreach($task->assignees as $assignee)
+                                    <div class="ring-2 ring-ink-800 rounded-full" title="{{ $assignee->name }}">
+                                        <x-avatar :user="$assignee" :size="6" />
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else    <span class="text-sm text-slate-500">Não atribuído</span>
                         @endif
                     </div>
                 </div>

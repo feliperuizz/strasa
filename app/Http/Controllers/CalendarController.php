@@ -49,7 +49,7 @@ class CalendarController extends Controller
 
         $tasks = Task::query()
             ->where('client_id', $client->id)
-            ->with(['project', 'assignee', 'column'])
+            ->with(['project', 'assignees', 'column'])
             ->forCalendar($from->toDateString(), $to->toDateString())
             ->when($request->filled('project'), fn ($q) => $q->where('project_id', $request->integer('project')))
             ->get();
@@ -62,7 +62,7 @@ class CalendarController extends Controller
             'color' => $task->column->color,
             'content_type' => $task->contentTypeLabel(),
             'project' => $task->project->name,
-            'assignee' => $task->assignee?->name,
+            'assignees' => $task->assignees->pluck('name')->toArray(),
             'is_published' => $task->is_published,
         ]);
 

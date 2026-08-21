@@ -142,10 +142,11 @@
                                         </td>
                                         <td class="px-4 py-3 font-medium text-slate-200">{{ $task->title }}</td>
                                         <td class="px-4 py-3">
-                                            @if($task->assignee)
-                                                <div class="flex items-center gap-2">
-                                                    <x-avatar :user="$task->assignee" :size="5" />
-                                                    <span class="text-xs">{{ $task->assignee->name }}</span>
+                                            @if($task->assignees->isNotEmpty())
+                                                <div class="flex -space-x-1.5" title="Responsáveis: {{ $task->assignees->pluck('name')->join(', ') }}">
+                                                    @foreach($task->assignees->take(3) as $assignee)
+                                                        <div class="ring-2 ring-ink-800 rounded-full"><x-avatar :user="$assignee" :size="5" /></div>
+                                                    @endforeach
                                                 </div>
                                             @else
                                                 <span class="text-xs text-slate-500">Sem responsável</span>

@@ -59,9 +59,9 @@ class User extends Authenticatable
         return $this->belongsTo(Company::class);
     }
 
-    public function assignedTasks(): HasMany
+    public function assignedTasks(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->hasMany(Task::class, 'assignee_id');
+        return $this->belongsToMany(Task::class, 'task_user');
     }
 
     public function favoriteProjects()

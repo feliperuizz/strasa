@@ -27,7 +27,7 @@ class Task extends Model
 
     protected $fillable = [
         'company_id', 'client_id', 'project_id', 'column_id',
-        'assignee_id', 'created_by',
+        'created_by',
         'title', 'description', 'content_type',
         'publish_date', 'publish_time', 'position', 'is_published', 'published_at', 'rejection_reason',
     ];
@@ -63,9 +63,9 @@ class Task extends Model
         return $this->belongsTo(Column::class);
     }
 
-    public function assignee(): BelongsTo
+    public function assignees(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'assignee_id');
+        return $this->belongsToMany(User::class, 'task_user');
     }
 
     public function creator(): BelongsTo

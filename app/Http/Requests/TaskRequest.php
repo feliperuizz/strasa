@@ -27,7 +27,8 @@ class TaskRequest extends FormRequest
         return [
             'title' => ['nullable', 'string', 'max:255'],
             'column_id' => ['nullable', 'integer', 'exists:columns,id'],
-            'assignee_id' => ['nullable', 'integer', 'exists:users,id'],
+            'assignees' => ['nullable', 'array'],
+            'assignees.*' => ['integer', 'exists:users,id'],
             'content_type' => ['nullable', Rule::in(array_keys(Task::CONTENT_TYPES))],
             'publish_date' => ['nullable', 'date'],
             'publish_time' => ['nullable', 'date_format:H:i'],

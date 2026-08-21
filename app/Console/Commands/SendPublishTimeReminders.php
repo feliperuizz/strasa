@@ -32,21 +32,21 @@ class SendPublishTimeReminders extends Command
         $targetTime = $now->copy()->addMinutes(5)->format('H:i:00');
         $today = $now->format('Y-m-d');
 
-        $tasks = Task::with('assignee')
+        $tasks = Task::with('assignees')
             ->whereHas('column', function ($query) {
                 $query->where('is_publish_column', true);
             })
             ->where('publish_date', $today)
             ->where('publish_time', $targetTime)
             ->where('is_published', false)
-            ->whereNotNull('assignee_id')
+            ->has('assignees')
             ->get();
 
         foreach ($tasks as $task) {
-            $user = $task->assignee;
-            
-            if ($user && !empty($user->notification_settings['publish_time_reminder_enabled'])) {
-                $user->notify(new PublishTimeReminderNotification($task));
+            foreach ($task->assignees as $user) {
+                if ($user && !empty($user->notification_settings['publish_time_reminder_enabled'])) {
+                    $user->notify(new PublishTimeReminderNotification($task));
+                }
             }
         }
 

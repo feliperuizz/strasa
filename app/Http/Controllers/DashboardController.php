@@ -97,7 +97,7 @@ class DashboardController extends Controller
                 $member->progress_percent = $total > 0 ? round(($completed / $total) * 100) : 0;
                 
                 // Última tarefa trabalhada ou atribuída
-                $member->latest_task = Task::where('assignee_id', $member->id)
+                $member->latest_task = Task::whereHas('assignees', fn ($q) => $q->where('users.id', $member->id))
                     ->with('client', 'project', 'column')
                     ->latest('updated_at')
                     ->first();
@@ -124,7 +124,7 @@ class DashboardController extends Controller
         }
 
         // Tarefas atrasadas da equipe
-        $lateTasks = Task::with(['client', 'project', 'assignee', 'column'])
+        $lateTasks = Task::with(['client', 'project', 'assignees', 'column'])
             ->where('is_published', false)
             ->whereNotNull('publish_date')
             ->whereDate('publish_date', '<', $today)
@@ -133,7 +133,7 @@ class DashboardController extends Controller
             ->get();
 
         // Próximas entregas / posts agendados da agência
-        $upcoming = Task::with(['client', 'project', 'assignee', 'column'])
+        $upcoming = Task::with(['client', 'project', 'assignees', 'column'])
             ->whereNotNull('publish_date')
             ->whereDate('publish_date', '>=', $today)
             ->where('is_published', false)
@@ -158,10 +158,10 @@ class DashboardController extends Controller
         $user = $request->user();
         $today = now()->toDateString();
 
-        $myTotalTasks = Task::where('assignee_id', $user->id)->count();
-        $myCompletedTasks = Task::where('assignee_id', $user->id)->where('is_published', true)->count();
-        $myPendingTasksCount = Task::where('assignee_id', $user->id)->where('is_published', false)->count();
-        $myLateTasksCount = Task::where('assignee_id', $user->id)
+        $myTotalTasks = Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->count();
+        $myCompletedTasks = Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->where('is_published', true)->count();
+        $myPendingTasksCount = Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->where('is_published', false)->count();
+        $myLateTasksCount = Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
             ->where('is_published', false)
             ->whereNotNull('publish_date')
             ->whereDate('publish_date', '<', $today)
@@ -173,12 +173,12 @@ class DashboardController extends Controller
             'pending' => $myPendingTasksCount,
             'late' => $myLateTasksCount,
             'completion_rate' => $myTotalTasks > 0 ? round(($myCompletedTasks / $myTotalTasks) * 100) : 0,
-            'projects_count' => Project::whereHas('tasks', fn ($q) => $q->where('assignee_id', $user->id))->count(),
+            'projects_count' => Project::whereHas('tasks', fn ($q) => $q->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id)))->count(),
         ];
 
         // Minha Fila de Tarefas Pendentes ordenada por prioridade/prazo
         $myPendingTasks = Task::with(['client', 'project', 'column', 'tags'])
-            ->where('assignee_id', $user->id)
+            ->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
             ->where('is_published', false)
             ->orderByRaw('CASE WHEN publish_date IS NOT NULL AND publish_date < ? THEN 0 WHEN publish_date IS NOT NULL THEN 1 ELSE 2 END', [$today])
             ->orderBy('publish_date', 'asc')
@@ -188,7 +188,7 @@ class DashboardController extends Controller
 
         // Meus Próximos Posts / Entregas agendadas
         $myUpcomingTasks = Task::with(['client', 'project', 'column'])
-            ->where('assignee_id', $user->id)
+            ->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
             ->where('is_published', false)
             ->whereNotNull('publish_date')
             ->whereDate('publish_date', '>=', $today)
@@ -197,12 +197,12 @@ class DashboardController extends Controller
             ->get();
 
         // Meus Projetos Ativos (onde o colaborador tem tarefas pendentes)
-        $myProjects = Project::whereHas('tasks', fn ($q) => $q->where('assignee_id', $user->id))
+        $myProjects = Project::whereHas('tasks', fn ($q) => $q->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id)))
             ->with('client')
             ->withCount([
-                'tasks as my_total' => fn ($q) => $q->where('assignee_id', $user->id),
-                'tasks as my_completed' => fn ($q) => $q->where('assignee_id', $user->id)->where('is_published', true),
-                'tasks as my_pending' => fn ($q) => $q->where('assignee_id', $user->id)->where('is_published', false),
+                'tasks as my_total' => fn ($q) => $q->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id)),
+                'tasks as my_completed' => fn ($q) => $q->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->where('is_published', true),
+                'tasks as my_pending' => fn ($q) => $q->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->where('is_published', false),
             ])
             ->orderBy('name')
             ->limit(6)
@@ -214,7 +214,7 @@ class DashboardController extends Controller
 
         // Minhas entregas concluídas recentemente
         $myRecentlyCompleted = Task::with(['client', 'project', 'column'])
-            ->where('assignee_id', $user->id)
+            ->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
             ->where('is_published', true)
             ->latest('published_at')
             ->latest('updated_at')
@@ -226,7 +226,7 @@ class DashboardController extends Controller
         for ($i = 13; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $chartData['labels'][] = $date->format('d/m');
-            $chartData['data'][] = Task::where('assignee_id', $user->id)
+            $chartData['data'][] = Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
                 ->where('is_published', true)
                 ->whereDate('published_at', $date->toDateString())
                 ->count();

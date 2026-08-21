@@ -51,14 +51,38 @@
 
                 {{-- Metadados rápidos --}}
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Responsável</label>
-                        <select name="assignee_id" @change="save()" class="w-full rounded border-0 bg-ink-800 py-1.5 pl-3 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500">
-                            <option value="">Sem responsável</option>
-                            @foreach($members as $m)
-                                <option value="{{ $m->id }}" {{ $task->assignee_id == $m->id ? 'selected' : '' }}>{{ $m->name }}</option>
-                            @endforeach
-                        </select>
+                    <div x-data="{ open: false }">
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Responsáveis</label>
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            @if(isset($task->assignees) && $task->assignees->isNotEmpty())
+                                @foreach($task->assignees as $assignee)
+                                    <div class="inline-flex items-center gap-1 rounded-full bg-ink-800 pr-2 pl-1 py-1 border border-ink-700" title="{{ $assignee->name }}">
+                                        @if($assignee->avatar_url)
+                                            <img src="{{ $assignee->avatar_url }}" class="h-4 w-4 rounded-full object-cover">
+                                        @else
+                                            <div class="h-4 w-4 rounded-full bg-brand-500 flex items-center justify-center text-[8px] text-white font-bold">{{ substr($assignee->name, 0, 1) }}</div>
+                                        @endif
+                                        <span class="text-[11px] text-slate-300">{{ explode(' ', $assignee->name)[0] }}</span>
+                                    </div>
+                                @endforeach
+                            @else
+                                <span class="text-xs text-slate-500 italic">Sem responsáveis</span>
+                            @endif
+                        </div>
+                        
+                        <div class="relative">
+                            <button type="button" @click="open = !open" class="text-xs text-brand-400 hover:text-brand-300 transition font-medium">＋ Adicionar / Remover</button>
+                            
+                            <div x-show="open" @click.outside="open = false" style="display: none;" class="absolute left-0 mt-2 w-56 rounded-lg border border-ink-700 bg-ink-900 p-2 shadow-xl z-50 max-h-60 overflow-y-auto">
+                                @foreach($members as $m)
+                                    <label class="flex items-center gap-2 px-2 py-1.5 hover:bg-ink-800 rounded cursor-pointer transition">
+                                        <input type="checkbox" name="assignees[]" value="{{ $m->id }}" class="rounded border-ink-600 bg-ink-800 text-brand-500 focus:ring-brand-500"
+                                            {{ (isset($task->assignees) && $task->assignees->contains($m->id)) ? 'checked' : '' }}>
+                                        <span class="text-sm text-slate-200">{{ $m->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Publicação</label>

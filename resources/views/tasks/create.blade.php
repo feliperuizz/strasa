@@ -62,13 +62,13 @@
 
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-300">Responsável</label>
-                        <select name="assignee_id" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
-                            <option value="">Sem responsável</option>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Responsáveis</label>
+                        <select name="assignees[]" multiple class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none h-32">
                             @foreach(auth()->user()->company->users as $u)
-                                <option value="{{ $u->id }}" {{ (int) old('assignee_id') === $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
+                                <option value="{{ $u->id }}" {{ in_array($u->id, old('assignees', [])) ? 'selected' : '' }}>{{ $u->name }}</option>
                             @endforeach
                         </select>
+                        <p class="text-xs text-slate-500 mt-1">Segure Ctrl (ou Cmd no Mac) para selecionar vários.</p>
                     </div>
 
                 </div>

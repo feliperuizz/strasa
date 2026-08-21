@@ -53,7 +53,18 @@
                         @endif
                     </span>
                 @endif
-                <x-avatar :user="$task->assignee" :size="6" />
+                <div class="flex -space-x-1.5">
+                    @foreach($task->assignees->take(3) as $assignee)
+                        <div class="ring-2 ring-ink-800 rounded-full" title="{{ $assignee->name }}">
+                            <x-avatar :user="$assignee" :size="6" />
+                        </div>
+                    @endforeach
+                    @if($task->assignees->count() > 3)
+                        <div class="h-6 w-6 rounded-full bg-ink-700 ring-2 ring-ink-800 flex items-center justify-center text-[9px] font-bold text-slate-300">
+                            +{{ $task->assignees->count() - 3 }}
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
 

@@ -42,7 +42,6 @@ class TaskController extends Controller
                 'company_id' => $project->company_id,
                 'client_id' => $project->client_id,
                 'column_id' => $column->id,
-                'assignee_id' => $request->input('assignee_id'),
                 'created_by' => $request->user()->id,
                 'title' => $request->validated('title') ?? 'Nova Tarefa', // Permite salvar sem título temporariamente
                 'description' => $request->validated('description'),
@@ -54,6 +53,10 @@ class TaskController extends Controller
             ]);
 
             $this->syncTags($task, $request->input('tags', []));
+            if ($request->has('assignees')) {
+                $task->assignees()->sync($request->input('assignees', []));
+            }
+            
             $this->log($task, TaskActivity::TYPE_CREATED, 'criou a tarefa');
 
             return $task;
@@ -116,7 +119,6 @@ class TaskController extends Controller
 
             $task->update([
                 'column_id' => $column->id,
-                'assignee_id' => $request->input('assignee_id'),
                 'title' => $request->validated('title') ?? 'Nova Tarefa',
                 'description' => $request->validated('description'),
                 'content_type' => $request->validated('content_type'),
@@ -126,6 +128,9 @@ class TaskController extends Controller
             ]);
 
             $this->syncTags($task, $request->input('tags', []));
+            if ($request->has('assignees')) {
+                $task->assignees()->sync($request->input('assignees', []));
+            }
         });
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -295,8 +300,13 @@ class TaskController extends Controller
 
     private function trackChanges(TaskRequest $request, Task $task, Column $column): void
     {
-        if ((int) $request->input('assignee_id') !== (int) $task->assignee_id) {
-            $this->log($task, TaskActivity::TYPE_ASSIGNEE_CHANGED, 'alterou o responsável');
+        $currentAssignees = $task->assignees()->pluck('users.id')->map(fn($id) => (int)$id)->toArray();
+        $newAssignees = collect($request->input('assignees', []))->map(fn($id) => (int)$id)->toArray();
+        sort($currentAssignees);
+        sort($newAssignees);
+        
+        if ($currentAssignees !== $newAssignees) {
+            $this->log($task, TaskActivity::TYPE_ASSIGNEE_CHANGED, 'alterou os responsáveis');
         }
 
         if ((string) $request->validated('publish_date') !== (string) optional($task->publish_date)->toDateString()) {
