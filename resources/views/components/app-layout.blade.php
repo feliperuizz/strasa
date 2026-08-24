@@ -11,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' · ' : '' }}{{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('strasafavicon.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('strasafavicon2.png') }}">
 
     {{-- CSS compilado (Tailwind buildado por Vite). Substitui o antigo cdn.tailwindcss.com,
          que baixava ~300KB de JS e compilava o CSS no navegador a cada page load. --}}
