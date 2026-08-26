@@ -103,6 +103,19 @@ class Task extends Model
         return $this->hasMany(TaskItem::class)->orderBy('position');
     }
 
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(TaskApproval::class)->orderByDesc('round');
+    }
+
+    /** A submissão mais recente ao painel do cliente, se houver. */
+    public function currentApproval(): ?TaskApproval
+    {
+        return $this->relationLoaded('approvals')
+            ? $this->approvals->first()
+            : $this->approvals()->first();
+    }
+
     /* --------------------------------------------------------------------- */
     /* Scopes / Helpers                                                      */
     /* --------------------------------------------------------------------- */
@@ -117,6 +130,18 @@ class Task extends Model
     public function coverImage(): ?TaskAttachment
     {
         return $this->attachments->firstWhere('is_image', true);
+    }
+
+    /**
+     * Peças visuais que o cliente vê no portal: todas as imagens (o carrossel
+     * inteiro, na ordem em que foram anexadas) seguidas dos vídeos.
+     */
+    public function approvalMedia()
+    {
+        return $this->attachments
+            ->filter(fn ($a) => $a->is_image || str_starts_with((string) $a->mime_type, 'video/'))
+            ->sortBy([['is_image', 'desc'], ['id', 'asc']])
+            ->values();
     }
 
     public function contentTypeLabel(): ?string

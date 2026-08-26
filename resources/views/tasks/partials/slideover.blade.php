@@ -171,6 +171,59 @@
         @if($task->exists)
         <hr class="my-6 border-ink-800">
 
+        {{-- Aprovação do cliente -------------------------------------------
+             Aparece só quando o cliente tem painel criado. O estado vem do
+             registro de submissão mais recente da tarefa. --}}
+        @php $aprovacao = $task->currentApproval(); @endphp
+        @if($task->client?->portal)
+            <div x-data="{ enviando: false, estado: '{{ $aprovacao?->status ?? '' }}' }" class="mb-6">
+                <div class="flex items-center justify-between gap-3 rounded-lg border border-ink-700 bg-ink-800/60 px-4 py-3">
+                    <div class="min-w-0">
+                        <div class="text-[13px] font-semibold text-slate-200">Painel de aprovação</div>
+
+                        <div class="mt-0.5 text-[11.5px] text-slate-400">
+                            @if($aprovacao?->isPending())
+                                Aguardando {{ $task->client->name }} desde {{ $aprovacao->submitted_at?->diffForHumans() }}
+                            @elseif($aprovacao?->isApproved())
+                                <span class="text-emerald-400 font-medium">Aprovado</span>
+                                por {{ $aprovacao->reviewer_name }} · {{ $aprovacao->responded_at?->format('d/m H:i') }}
+                            @elseif($aprovacao?->isRejected())
+                                <span class="text-rose-400 font-medium">Ajuste pedido</span>
+                                por {{ $aprovacao->reviewer_name }} · {{ $aprovacao->responded_at?->format('d/m H:i') }}
+                            @else
+                                Ainda não enviado para {{ $task->client->name }}.
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="shrink-0">
+                        @if($aprovacao?->isPending())
+                            <button type="button" x-bind:disabled="enviando"
+                                    @click="enviando = true; cancelarAprovacao('{{ route('approvals.cancel', $task) }}')"
+                                    class="rounded-lg border border-ink-600 px-3 py-1.5 text-[12px] font-semibold text-slate-300 hover:bg-ink-700 transition disabled:opacity-50">
+                                Retirar do painel
+                            </button>
+                        @else
+                            <button type="button" x-bind:disabled="enviando"
+                                    @click="enviando = true; enviarAprovacao('{{ route('approvals.submit', $task) }}')"
+                                    class="rounded-lg bg-brand-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-brand-500 transition disabled:opacity-50">
+                                <span x-text="enviando ? 'Enviando…' : '{{ $aprovacao ? 'Reenviar para aprovação' : 'Enviar para aprovação' }}'"></span>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                @if($aprovacao?->isRejected() && filled($aprovacao->feedback))
+                    <div class="mt-2 rounded-lg border border-rose-500/25 bg-rose-500/[0.06] px-3 py-2">
+                        <div class="text-[10.5px] font-bold uppercase tracking-wider text-rose-400 mb-0.5">O que o cliente pediu</div>
+                        <p class="text-[13px] text-slate-300 whitespace-pre-line">{{ $aprovacao->feedback }}</p>
+                    </div>
+                @endif
+            </div>
+
+            <hr class="my-6 border-ink-800">
+        @endif
+
         {{-- Anexos --}}
         {{-- Anexos e Pastas --}}
         <div x-data="{ creatingFolder: false, newFolderName: '' }">
@@ -356,16 +409,30 @@
 
             <div class="space-y-4" id="comments-container">
                 @foreach($task->comments->sortByDesc('created_at') as $comment)
-                    <div class="flex gap-3" x-data="{ editing: false, body: {{ json_encode($comment->body) }} }">
-                        <div class="h-8 w-8 shrink-0 rounded-full bg-ink-800 flex items-center justify-center font-bold text-xs">{{ substr($comment->user->name, 0, 1) }}</div>
+                    <div class="flex gap-3 @if($comment->is_from_client) rounded-lg border border-amber-500/25 bg-amber-500/[0.06] p-3 @endif"
+                         x-data="{ editing: false, body: {{ json_encode($comment->body) }}, visivel: {{ $comment->visible_to_client ? 'true' : 'false' }} }">
+                        <div class="h-8 w-8 shrink-0 rounded-full flex items-center justify-center font-bold text-xs
+                                    @if($comment->is_from_client) bg-amber-500/20 text-amber-300 @else bg-ink-800 @endif">
+                            {{ mb_substr($comment->authorName(), 0, 1) }}
+                        </div>
                         <div class="flex-1">
                             <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-slate-200">{{ $comment->user->name }}</span>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-sm font-medium text-slate-200">{{ $comment->authorName() }}</span>
+                                    @if($comment->is_from_client)
+                                        <span class="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-amber-400">Cliente</span>
+                                    @elseif($comment->visible_to_client)
+                                        <span class="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-emerald-400">Visível ao cliente</span>
+                                    @endif
                                     <span class="text-[10px] text-slate-500">{{ $comment->created_at->diffForHumans() }}</span>
                                 </div>
-                                @if($comment->user_id === auth()->id() || auth()->user()->isManager())
+                                @if(! $comment->is_from_client && ($comment->user_id === auth()->id() || auth()->user()->isManager()))
                                     <div class="flex items-center gap-2">
+                                        {{-- Deixa este comentário aparecer no painel do cliente. --}}
+                                        <button type="button"
+                                                @click="toggleCommentVisibility('{{ route('comments.visibility', $comment) }}', $el)"
+                                                class="text-xs text-slate-500 hover:text-emerald-400"
+                                                x-text="visivel ? 'Ocultar do cliente' : 'Responder ao cliente'"></button>
                                         @if($comment->user_id === auth()->id())
                                             <button type="button" @click="editing = !editing" class="text-xs text-slate-500 hover:text-brand-400">Editar</button>
                                         @endif

@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
 class Client extends Model
@@ -50,6 +51,16 @@ class Client extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function portal(): HasOne
+    {
+        return $this->hasOne(ClientPortal::class);
+    }
+
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(TaskApproval::class);
     }
 
     /* Scopes ------------------------------------------------------------- */

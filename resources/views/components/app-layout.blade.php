@@ -11,7 +11,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ? $title.' · ' : '' }}{{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('strasafavicon2.png') }}?v={{ time() }}">
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32.png') }}?v={{ config('app.icon_version') }}">
+    <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}?v={{ config('app.icon_version') }}">
 
     {{-- CSS compilado (Tailwind buildado por Vite). Substitui o antigo cdn.tailwindcss.com,
          que baixava ~300KB de JS e compilava o CSS no navegador a cada page load. --}}
@@ -146,7 +148,6 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#111111">
-    <link rel="apple-touch-icon" href="{{ asset('icon-192.png') }}">
 
     <!-- Service Worker Registration for PWA / WebPush -->
     <script>
@@ -183,6 +184,13 @@
             <x-nav-link :href="route('my-tasks')" :active="request()->routeIs('my-tasks')">
                 <svg class="w-4 h-4 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                 Minhas Tarefas
+            </x-nav-link>
+            <x-nav-link :href="route('approvals.index')" :active="request()->routeIs('approvals.*')">
+                <svg class="w-4 h-4 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Aprovações
+                @if(($aguardandoAprovacao ?? 0) > 0)
+                    <span class="ml-auto rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold text-amber-400">{{ $aguardandoAprovacao }}</span>
+                @endif
             </x-nav-link>
             <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                 <svg class="w-4 h-4 mr-1 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
@@ -623,6 +631,68 @@
                         },
                         body: new URLSearchParams({ '_method': 'DELETE' })
                     }).then(() => element.remove());
+                },
+                /** Envia a peça para o painel de aprovação do cliente. */
+                enviarAprovacao(url) {
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                    .then(({ ok, data }) => {
+                        if (!ok) {
+                            alert(data.message || 'Não foi possível enviar para aprovação.');
+                            this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                            return;
+                        }
+                        this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                    })
+                    .catch(() => alert('Falha de conexão ao enviar para aprovação.'));
+                },
+
+                /** Retira do painel uma peça ainda não respondida. */
+                cancelarAprovacao(url) {
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        },
+                        body: new URLSearchParams({ '_method': 'DELETE' })
+                    })
+                    .then(() => this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`))
+                    .catch(() => alert('Falha de conexão ao retirar do painel.'));
+                },
+
+                /**
+                 * Marca (ou desmarca) um comentário nosso como visível no
+                 * painel do cliente. O x-data do comentário guarda o estado
+                 * em `visivel`, então basta alterná-lo com a resposta.
+                 */
+                toggleCommentVisibility(url, elemento) {
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.ok) return;
+
+                        const escopo = Alpine.$data(elemento);
+                        if (escopo) { escopo.visivel = data.visible_to_client; }
+
+                        // Recarrega o slideover para o selo aparecer/sumir.
+                        this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                    });
                 },
                 completeTaskAndClose(taskId) {
                     const btn = this.$event.currentTarget;

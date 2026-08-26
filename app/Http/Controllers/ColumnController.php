@@ -38,12 +38,14 @@ class ColumnController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'color' => ['nullable', 'string', 'max:7'],
             'is_publish_column' => ['nullable', 'boolean'],
+            'is_approval_column' => ['nullable', 'boolean'],
         ]);
 
         $column->update([
             'name' => $data['name'],
             'color' => $data['color'] ?? $column->color,
             'is_publish_column' => $data['is_publish_column'] ?? false,
+            'is_approval_column' => $data['is_approval_column'] ?? false,
         ]);
 
         $this->forgetCache($column->project);

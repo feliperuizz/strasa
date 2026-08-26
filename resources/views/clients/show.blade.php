@@ -19,6 +19,10 @@
     </x-slot>
 
     <div class="p-4 sm:p-6">
+        @can('update', $client)
+            @include('clients.partials.approval-portal')
+        @endcan
+
         <div class="mb-6 flex items-center justify-between">
             <h2 class="text-lg font-medium text-slate-200">Projetos</h2>
             @can('create', \App\Models\Project::class)

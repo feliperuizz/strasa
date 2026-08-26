@@ -9,6 +9,7 @@ use App\Models\Tag;
 use App\Models\Task;
 use App\Models\TaskActivity;
 use App\Models\User;
+use App\Services\ApprovalService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -227,6 +228,19 @@ class TaskController extends Controller
                 if ($target->requires_rejection_reason) {
                     $this->log($task, TaskActivity::TYPE_REJECTED, 'rejeitou a tarefa',
                         ['reason' => $task->rejection_reason]);
+                }
+
+                // Coluna de aprovação: arrastar para dentro submete a peça ao
+                // painel do cliente; arrastar para fora cancela um envio que
+                // ainda não foi respondido.
+                if ($target->is_approval_column && $task->client_id) {
+                    app(ApprovalService::class)->submit($task, auth()->user(), $origin);
+                } elseif ($origin->is_approval_column) {
+                    $pendente = $task->approvals()->first();
+
+                    if ($pendente && $pendente->isPending()) {
+                        $pendente->delete();
+                    }
                 }
             }
         });

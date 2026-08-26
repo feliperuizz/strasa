@@ -5,10 +5,13 @@ use App\Http\Controllers\Auth\InvitationController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\ApprovalsController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\ColumnController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialController;
+use App\Http\Controllers\Portal\ApprovalPortalController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskAttachmentController;
 use App\Http\Controllers\TaskCommentController;
@@ -46,6 +49,33 @@ Route::view('/terms', 'terms')->name('terms');
 | Aplicação (autenticado + multi-tenant)
 |--------------------------------------------------------------------------
 */
+/*
+|--------------------------------------------------------------------------
+| Painel de aprovação do cliente (acesso por link + código)
+|--------------------------------------------------------------------------
+| Sem autenticação: o middleware 'portal' resolve o portal pelo token e
+| confirma que a sessão já validou o código. O CompanyScope NÃO atua aqui,
+| então o controller filtra company_id/client_id explicitamente.
+*/
+Route::prefix('aprovacao/{token}')->name('portal.')->group(function () {
+    Route::get('/entrar', [ApprovalPortalController::class, 'showLogin'])->name('login');
+    Route::post('/entrar', [ApprovalPortalController::class, 'login'])
+        ->middleware('throttle:12,1')
+        ->name('login.attempt');
+    Route::post('/sair', [ApprovalPortalController::class, 'logout'])->name('logout');
+
+    Route::middleware('portal')->group(function () {
+        Route::get('/', [ApprovalPortalController::class, 'index'])->name('index');
+        Route::get('/peca/{approval}', [ApprovalPortalController::class, 'show'])->name('show');
+        Route::post('/peca/{approval}/aprovar', [ApprovalPortalController::class, 'approve'])->name('approve');
+        Route::post('/peca/{approval}/ajustar', [ApprovalPortalController::class, 'reject'])->name('reject');
+        Route::post('/peca/{approval}/comentar', [ApprovalPortalController::class, 'comment'])
+            ->middleware('throttle:20,1')
+            ->name('comment');
+        Route::get('/midia/{attachment}', [ApprovalPortalController::class, 'media'])->name('media');
+    });
+});
+
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('my-tasks', [\App\Http\Controllers\MyTasksController::class, 'index'])->name('my-tasks');
@@ -121,6 +151,20 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroy'])->name('team.invitations.destroy');
     Route::patch('team/members/{user}', [TeamController::class, 'updateMember'])->name('team.members.update');
     Route::delete('team/members/{user}', [TeamController::class, 'removeMember'])->name('team.members.destroy');
+
+    /* Aprovações --------------------------------------------------------- */
+    Route::get('aprovacoes', [ApprovalsController::class, 'index'])->name('approvals.index');
+    Route::post('tasks/{task}/approval', [ApprovalsController::class, 'submit'])->name('approvals.submit');
+    Route::delete('tasks/{task}/approval', [ApprovalsController::class, 'cancel'])->name('approvals.cancel');
+    Route::post('comments/{comment}/visibility', [ApprovalsController::class, 'toggleCommentVisibility'])
+        ->name('comments.visibility');
+
+    /* Portal do cliente (administração) ---------------------------------- */
+    Route::post('clients/{client}/portal', [ClientPortalController::class, 'store'])->name('clients.portal.store');
+    Route::patch('clients/{client}/portal', [ClientPortalController::class, 'update'])->name('clients.portal.update');
+    Route::post('clients/{client}/portal/rotate', [ClientPortalController::class, 'rotate'])->name('clients.portal.rotate');
+    Route::post('clients/{client}/portal/revoke', [ClientPortalController::class, 'revoke'])->name('clients.portal.revoke');
+    Route::post('clients/{client}/portal/reactivate', [ClientPortalController::class, 'reactivate'])->name('clients.portal.reactivate');
 
     /* Financeiro (Apenas Admins) ----------------------------------------- */
     Route::get('financial', [FinancialController::class, 'index'])->name('financial.index');

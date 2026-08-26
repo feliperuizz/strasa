@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Icon Version
+    |--------------------------------------------------------------------------
+    |
+    | Cache buster dos favicons. Incremente este numero sempre que trocar as
+    | imagens em public/ para forcar os navegadores a rebaixarem os icones.
+    | Usar time() aqui impediria o cache em todo request.
+    |
+    */
+
+    'icon_version' => '3',
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

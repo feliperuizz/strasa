@@ -24,7 +24,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="https://consultoriastr.com.br/strasa/public/strasalogo.png" alt="Strasa">
+            <img src="{{ asset('strasalogo.png') }}" alt="Strasa">
         </div>
         <div class="content">
             <h1 class="greeting">Bom dia, {{ explode(' ', $user->name)[0] }}! ☀️</h1>

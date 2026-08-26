@@ -48,9 +48,17 @@ class ClientController extends Controller
     {
         $this->authorize('view', $client);
 
-        $client->load(['projects' => fn ($q) => $q->orderBy('name')->withCount('tasks')]);
+        $client->load([
+            'projects' => fn ($q) => $q->orderBy('name')->withCount('tasks'),
+            'portal',
+        ]);
 
-        return view('clients.show', compact('client'));
+        // Usados no bloco do painel de aprovação: quem pode receber o push.
+        $equipe = \App\Models\User::where('company_id', $client->company_id)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('clients.show', compact('client', 'equipe'));
     }
 
     public function edit(Client $client)

@@ -29,6 +29,13 @@
                             <span class="text-[11px] leading-tight text-slate-400">Notificar Postagens desta coluna hoje</span>
                         </label>
 
+                        {{-- Arrastar um card para cá o envia ao painel do cliente. --}}
+                        <label class="flex items-center gap-2">
+                            <input type="hidden" name="is_approval_column" value="0">
+                            <input type="checkbox" name="is_approval_column" value="1" {{ $column->is_approval_column ? 'checked' : '' }} class="rounded border-ink-600 bg-ink-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-ink-800">
+                            <span class="text-[11px] leading-tight text-slate-400">Enviar para aprovação do cliente</span>
+                        </label>
+
                         <button class="w-full rounded bg-brand-600 py-1 text-xs font-medium text-white hover:bg-brand-500 mt-2">Salvar</button>
                     </form>
                     <form method="POST" action="{{ route('columns.destroy', $column) }}"

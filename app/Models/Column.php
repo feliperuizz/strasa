@@ -14,6 +14,7 @@ class Column extends Model
     protected $fillable = [
         'company_id', 'project_id', 'name', 'key', 'color',
         'position', 'marks_published', 'requires_rejection_reason', 'is_publish_column',
+        'is_approval_column',
     ];
 
     protected function casts(): array
@@ -22,6 +23,7 @@ class Column extends Model
             'marks_published' => 'boolean',
             'requires_rejection_reason' => 'boolean',
             'is_publish_column' => 'boolean',
+            'is_approval_column' => 'boolean',
             'position' => 'integer',
         ];
     }

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Client;
+use App\Models\TaskApproval;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -41,8 +42,12 @@ class ShareTenantData
             })->values();
         }
 
+        // Badge da aba "Aprovações": peças aguardando resposta do cliente.
+        $aguardandoAprovacao = TaskApproval::where('status', TaskApproval::PENDING)->count();
+
         View::share('currentCompany', $user->company);
         View::share('sidebarClients', $sidebarClients);
+        View::share('aguardandoAprovacao', $aguardandoAprovacao);
 
         return $next($request);
     }
