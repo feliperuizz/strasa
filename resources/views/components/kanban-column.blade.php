@@ -1,11 +1,29 @@
 @props(['column', 'tasks', 'project'])
 
-<div class="flex w-[280px] shrink-0 flex-col bg-ink-800/80 backdrop-blur-md rounded-xl p-2 h-full border border-white/5 shadow-md" data-column="{{ $column->id }}">
+@php
+    // A coluna que envia peças ao cliente ganha destaque próprio: fundo mais
+    // escuro, borda âmbar e etiqueta no cabeçalho — para ninguém arrastar um
+    // card para lá sem perceber que isso dispara o painel do cliente.
+    $ehAprovacao = $column->is_approval_column;
+@endphp
+
+<div class="flex w-[280px] shrink-0 flex-col backdrop-blur-md rounded-xl p-2 h-full shadow-md transition-colors
+            @if($ehAprovacao)
+                bg-ink-900/95 border border-amber-500/40 ring-1 ring-amber-500/10
+            @else
+                bg-ink-800/80 border border-white/5
+            @endif"
+     data-column="{{ $column->id }}">
     {{-- Cabeçalho da coluna --}}
     <div class="column-drag-handle cursor-grab group flex items-center justify-between px-1 py-1 mb-2" x-data="{ menu:false }">
-        <div class="flex items-center gap-2">
-            <span class="text-[13px] font-semibold text-slate-300 uppercase tracking-wide">{{ $column->name }}</span>
-            <span class="column-count text-[13px] text-slate-500 font-medium">{{ $tasks->count() }}</span>
+        <div class="flex items-center gap-2 min-w-0">
+            @if($ehAprovacao)
+                <svg class="w-3.5 h-3.5 shrink-0 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            @endif
+            <span class="text-[13px] font-semibold uppercase tracking-wide truncate {{ $ehAprovacao ? 'text-amber-300' : 'text-slate-300' }}">{{ $column->name }}</span>
+            <span class="column-count text-[13px] font-medium {{ $ehAprovacao ? 'text-amber-500/70' : 'text-slate-500' }}">{{ $tasks->count() }}</span>
         </div>
         <div class="relative flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button @click="window.quickCreateTask({{ $project->id }}, {{ $column->id }})"

@@ -1,11 +1,24 @@
 @props(['task'])
 
-@php $cover = $task->coverImage(); @endphp
+@php
+    $cover = $task->coverImage();
+
+    // Estado da peça no painel do cliente. Vem da relação já carregada pelo
+    // BoardController, então não custa uma query por card.
+    $aprovacao = $task->currentApproval();
+
+    $selo = match ($aprovacao?->status) {
+        'approved' => ['Aprovado',      'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', 'border-l-emerald-500'],
+        'rejected' => ['Ajuste pedido', 'bg-rose-500/15 text-rose-400 border-rose-500/30',          'border-l-rose-500'],
+        'pending'  => ['Aguardando',    'bg-amber-500/15 text-amber-400 border-amber-500/30',       'border-l-amber-500'],
+        default    => null,
+    };
+@endphp
 
 <div data-id="{{ $task->id }}"
      @click.stop="window.__kanbanDragging || $dispatch('open-task-modal', '{{ route('tasks.show', $task) }}')"
      @contextmenu.prevent.stop="$dispatch('open-context-menu', { taskId: {{ $task->id }}, currentColumn: {{ $task->column_id }}, event: $event, url: '{{ route('tasks.destroy', $task) }}' })"
-     class="task-card group relative cursor-grab rounded-xl border border-ink-600 bg-ink-800 p-0 shadow-sm transition-colors hover:border-slate-500 active:cursor-grabbing select-none">
+     class="task-card group relative cursor-grab rounded-xl border border-ink-600 bg-ink-800 p-0 shadow-sm transition-colors hover:border-slate-500 active:cursor-grabbing select-none @if($selo) border-l-4 {{ $selo[2] }} @endif">
 
     @if($cover)
         <img src="{{ $cover->url }}" alt="" loading="lazy" draggable="false"
@@ -13,6 +26,25 @@
     @endif
 
     <div class="p-3">
+        @if($selo)
+            <div class="mb-2 flex items-center gap-1.5">
+                <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide {{ $selo[1] }}">
+                    @if($aprovacao->isApproved())
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    @elseif($aprovacao->isRejected())
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4l16 16M20 4L4 20"/></svg>
+                    @else
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path stroke-linecap="round" d="M12 7v5l3 2"/></svg>
+                    @endif
+                    {{ $selo[0] }}
+                </span>
+
+                @if($aprovacao->round > 1)
+                    <span class="text-[9.5px] font-semibold text-slate-500" title="Rodada de aprovação">v{{ $aprovacao->round }}</span>
+                @endif
+            </div>
+        @endif
+
         <div class="flex items-start gap-2">
             <button type="button" 
                     @click.stop="$event.preventDefault(); $event.stopPropagation(); window.completeTask($el, {{ $task->id }}, $event)"
