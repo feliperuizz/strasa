@@ -36,12 +36,28 @@ class DashboardController extends Controller
                     session(['greeted_evening' => $dateStr]);
                 }
             } else {
-                $count = \App\Models\Phrase::where('type', 'daily')->count();
-                if ($count > 0) {
-                    $phrase = \App\Models\Phrase::where('type', 'daily')->orderBy('id')->skip($now->dayOfYear % $count)->first();
-                    if ($phrase) {
-                        $phraseContent = $phrase->content;
+                // A frase do dia é a mesma o dia inteiro para todo mundo, então
+                // não faz sentido pagar duas idas ao banco por request para
+                // buscá-la. Fica em cache até o fim do dia.
+                $doDia = \Illuminate\Support\Facades\Cache::remember(
+                    "frase-do-dia:{$dateStr}",
+                    $now->copy()->endOfDay(),
+                    function () use ($now) {
+                        $count = \App\Models\Phrase::where('type', 'daily')->count();
+
+                        if ($count === 0) {
+                            return null;
+                        }
+
+                        return \App\Models\Phrase::where('type', 'daily')
+                            ->orderBy('id')
+                            ->skip($now->dayOfYear % $count)
+                            ->value('content');
                     }
+                );
+
+                if ($doDia) {
+                    $phraseContent = $doDia;
                 }
             }
         } catch (\Exception $e) {

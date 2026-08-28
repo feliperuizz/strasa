@@ -42,6 +42,13 @@ class TaskApproval extends Model
         ];
     }
 
+    /** O badge de pendentes na sidebar é cacheado; aqui o derrubamos. */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $a) => \App\Http\Middleware\ShareTenantData::esquecerAprovacoes($a->company_id));
+        static::deleted(fn (self $a) => \App\Http\Middleware\ShareTenantData::esquecerAprovacoes($a->company_id));
+    }
+
     /* Relações ------------------------------------------------------------ */
 
     public function task(): BelongsTo

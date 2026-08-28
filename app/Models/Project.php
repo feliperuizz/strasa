@@ -23,6 +23,13 @@ class Project extends Model
         ];
     }
 
+    /** Mantém a sidebar em dia — ver Client::booted(). */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $p) => \App\Http\Middleware\ShareTenantData::esquecerSidebar($p->company_id));
+        static::deleted(fn (self $p) => \App\Http\Middleware\ShareTenantData::esquecerSidebar($p->company_id));
+    }
+
     public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);

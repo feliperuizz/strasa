@@ -38,6 +38,16 @@ class Client extends Model
         ];
     }
 
+    /**
+     * A sidebar é cacheada pelo ShareTenantData; qualquer mudança em cliente
+     * precisa derrubar esse cache, senão o menu mostra dado velho.
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $c) => \App\Http\Middleware\ShareTenantData::esquecerSidebar($c->company_id));
+        static::deleted(fn (self $c) => \App\Http\Middleware\ShareTenantData::esquecerSidebar($c->company_id));
+    }
+
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class);

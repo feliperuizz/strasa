@@ -27,3 +27,8 @@ Thumbs.db
 /storage/logs/*
 leia/*.log
 
+# Qualquer variante do .env fica de fora — inclusive backups improvisados
+# (.env.bak-2026-01-01 e afins), que carregam senha do banco e APP_KEY.
+# O .env.example e a unica excecao, por nao ter segredo nenhum.
+.env.*
+!.env.example
