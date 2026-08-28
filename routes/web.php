@@ -7,7 +7,9 @@ use App\Http\Controllers\BoardController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ApprovalsController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ClientMetricController;
 use App\Http\Controllers\ClientPortalController;
+use App\Http\Controllers\DemandsController;
 use App\Http\Controllers\ColumnController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialController;
@@ -159,7 +161,17 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('comments/{comment}/visibility', [ApprovalsController::class, 'toggleCommentVisibility'])
         ->name('comments.visibility');
 
+    /* Demandas da equipe -------------------------------------------------- */
+    Route::get('demandas', [DemandsController::class, 'index'])->name('demands.index');
+
+    /* Métricas de redes sociais ------------------------------------------- */
+    Route::get('clients/{client}/metricas', [ClientMetricController::class, 'index'])->name('clients.metrics');
+    Route::post('clients/{client}/metricas', [ClientMetricController::class, 'store'])->name('clients.metrics.store');
+    Route::patch('metricas/{metric}', [ClientMetricController::class, 'update'])->name('metrics.update');
+    Route::delete('metricas/{metric}', [ClientMetricController::class, 'destroy'])->name('metrics.destroy');
+
     /* Portal do cliente (administração) ---------------------------------- */
+    Route::get('clients/{client}/aprovacao', [ClientPortalController::class, 'show'])->name('clients.portal');
     Route::post('clients/{client}/portal', [ClientPortalController::class, 'store'])->name('clients.portal.store');
     Route::patch('clients/{client}/portal', [ClientPortalController::class, 'update'])->name('clients.portal.update');
     Route::post('clients/{client}/portal/rotate', [ClientPortalController::class, 'rotate'])->name('clients.portal.rotate');

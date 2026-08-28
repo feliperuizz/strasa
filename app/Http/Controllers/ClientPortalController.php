@@ -12,6 +12,31 @@ use Illuminate\Http\Request;
  */
 class ClientPortalController extends Controller
 {
+    /**
+     * Página do painel de aprovação de um cliente, acessível direto pelo menu
+     * lateral: chave de acesso, mensagem pronta e o histórico de respostas.
+     */
+    public function show(Request $request, Client $client)
+    {
+        $this->autorizar($request, $client);
+
+        $client->load('portal');
+
+        return view('clients.portal', [
+            'client' => $client,
+            'equipe' => \App\Models\User::where('company_id', $client->company_id)
+                ->orderBy('name')
+                ->get(['id', 'name']),
+            'aprovacoes' => \App\Models\TaskApproval::where('client_id', $client->id)
+                ->with(['task:id,title,content_type,project_id', 'submitter:id,name'])
+                ->orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+                ->orderByDesc('responded_at')
+                ->orderByDesc('submitted_at')
+                ->limit(50)
+                ->get(),
+        ]);
+    }
+
     /** Cria o portal na primeira vez que a equipe abre a aba. */
     public function store(Request $request, Client $client): RedirectResponse
     {

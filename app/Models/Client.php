@@ -73,6 +73,11 @@ class Client extends Model
         return $this->hasMany(TaskApproval::class);
     }
 
+    public function metrics(): HasMany
+    {
+        return $this->hasMany(ClientMetric::class);
+    }
+
     /* Scopes ------------------------------------------------------------- */
 
     public function scopeActive(Builder $query): Builder
