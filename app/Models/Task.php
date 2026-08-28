@@ -44,6 +44,16 @@ class Task extends Model
         ];
     }
 
+    /**
+     * Qualquer mudança em tarefa derruba o cache do dashboard da empresa —
+     * é o que garante que os contadores nunca fiquem atrasados.
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn (self $t) => \App\Http\Controllers\DashboardController::invalidar($t->company_id));
+        static::deleted(fn (self $t) => \App\Http\Controllers\DashboardController::invalidar($t->company_id));
+    }
+
     /* --------------------------------------------------------------------- */
     /* Relações                                                              */
     /* --------------------------------------------------------------------- */

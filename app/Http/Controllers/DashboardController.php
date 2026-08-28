@@ -7,6 +7,7 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
@@ -65,14 +66,44 @@ class DashboardController extends Controller
             \Log::error("Erro ao buscar frase do dia: " . $e->getMessage());
         }
 
-        if ($user->isAdmin()) {
-            return $this->adminDashboard($request, $phraseContent);
-        }
+        // As métricas custam 17 queries, e o MySQL da hospedagem cobra dezenas
+        // de milissegundos por query. Um minuto de defasagem num painel de
+        // acompanhamento é imperceptível e economiza a conta inteira na
+        // maioria dos acessos. A frase fica fora do cache porque muda
+        // conforme a hora do dia.
+        $dados = Cache::remember(
+            "dashboard:{$user->id}:v".self::versaoCache($user->company_id),
+            now()->addMinutes(10),
+            fn () => $user->isAdmin()
+                ? $this->adminDashboard($request)
+                : $this->memberDashboard($request)
+        );
 
-        return $this->memberDashboard($request, $phraseContent);
+        return view('dashboard', $dados + ['phraseContent' => $phraseContent]);
     }
 
-    private function adminDashboard(Request $request, $phraseContent)
+    /**
+     * Selo de versão do cache do dashboard.
+     *
+     * Em vez de expirar por tempo e correr o risco de mostrar número velho
+     * depois que alguém conclui uma tarefa, a chave carrega uma versão que é
+     * incrementada a cada mudança em Task (ver Task::booted). Assim o cache
+     * é eficaz e ao mesmo tempo sempre condiz com o que está no quadro.
+     */
+    public static function versaoCache(?int $companyId): int
+    {
+        return (int) Cache::get("dashboard-versao:{$companyId}", 1);
+    }
+
+    public static function invalidar(?int $companyId): void
+    {
+        if ($companyId) {
+            Cache::forever("dashboard-versao:{$companyId}", self::versaoCache($companyId) + 1);
+        }
+    }
+
+    /** @return array<string, mixed> dados da tela; a view é montada em __invoke */
+    private function adminDashboard(Request $request): array
     {
         $companyId = $request->user()->company_id;
         $today = now()->toDateString();
@@ -157,7 +188,7 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        return view('dashboard', [
+        return [
             'isAdmin' => true,
             'stats' => $stats,
             'teamMembers' => $teamMembers,
@@ -165,11 +196,11 @@ class DashboardController extends Controller
             'chartData' => $chartData,
             'lateTasks' => $lateTasks,
             'upcoming' => $upcoming,
-            'phraseContent' => $phraseContent,
-        ]);
+        ];
     }
 
-    private function memberDashboard(Request $request, $phraseContent)
+    /** @return array<string, mixed> dados da tela; a view é montada em __invoke */
+    private function memberDashboard(Request $request): array
     {
         $user = $request->user();
         $today = now()->toDateString();
@@ -248,7 +279,7 @@ class DashboardController extends Controller
             Task::query()->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))
         );
 
-        return view('dashboard', [
+        return [
             'isAdmin' => false,
             'myStats' => $myStats,
             'myPendingTasks' => $myPendingTasks,
@@ -256,8 +287,7 @@ class DashboardController extends Controller
             'myProjects' => $myProjects,
             'myRecentlyCompleted' => $myRecentlyCompleted,
             'chartData' => $chartData,
-            'phraseContent' => $phraseContent,
-        ]);
+        ];
     }
 
     /**
