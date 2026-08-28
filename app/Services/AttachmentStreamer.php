@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\TaskAttachment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
@@ -63,6 +64,16 @@ class AttachmentStreamer
         }
 
         $bytesAEnviar = $fim === null ? null : $fim - $inicio + 1;
+
+        // Devolve a conexão do banco ANTES de começar a transmitir.
+        //
+        // Um vídeo de 200 MB mantém este processo PHP ocupado por minutos. Sem
+        // isto, a conexão MySQL fica presa junto — e em hospedagem
+        // compartilhada, onde o limite de conexões simultâneas por usuário é
+        // baixo, alguns downloads em paralelo esgotam o limite e derrubam o
+        // login de todo mundo (a sessão também vive no banco). Nada mais será
+        // consultado daqui pra frente, então a conexão não faz falta.
+        DB::disconnect();
 
         return response()->stream(function () use ($stream, $bytesAEnviar) {
             if ($bytesAEnviar === null) {
