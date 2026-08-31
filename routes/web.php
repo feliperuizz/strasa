@@ -9,6 +9,7 @@ use App\Http\Controllers\ApprovalsController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientMetricController;
 use App\Http\Controllers\ClientPortalController;
+use App\Http\Controllers\ClientRevenueController;
 use App\Http\Controllers\DemandsController;
 use App\Http\Controllers\ColumnController;
 use App\Http\Controllers\DashboardController;
@@ -169,6 +170,10 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('clients/{client}/metricas', [ClientMetricController::class, 'store'])->name('clients.metrics.store');
     Route::patch('metricas/{metric}', [ClientMetricController::class, 'update'])->name('metrics.update');
     Route::delete('metricas/{metric}', [ClientMetricController::class, 'destroy'])->name('metrics.destroy');
+
+    /* Faturamento do próprio cliente (não confundir com o Financeiro) ------ */
+    Route::post('clients/{client}/faturamento', [ClientRevenueController::class, 'store'])->name('clients.revenues.store');
+    Route::delete('faturamento/{revenue}', [ClientRevenueController::class, 'destroy'])->name('revenues.destroy');
 
     /* Portal do cliente (administração) ---------------------------------- */
     Route::get('clients/{client}/aprovacao', [ClientPortalController::class, 'show'])->name('clients.portal');

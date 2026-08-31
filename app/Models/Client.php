@@ -78,6 +78,12 @@ class Client extends Model
         return $this->hasMany(ClientMetric::class);
     }
 
+    /** Faturamento do próprio cliente — não confundir com payments(). */
+    public function revenues(): HasMany
+    {
+        return $this->hasMany(ClientRevenue::class);
+    }
+
     /* Scopes ------------------------------------------------------------- */
 
     public function scopeActive(Builder $query): Builder

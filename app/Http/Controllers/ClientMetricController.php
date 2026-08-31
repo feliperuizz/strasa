@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\ClientMetric;
-use App\Models\Payment;
+use App\Models\ClientRevenue;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -43,11 +43,7 @@ class ClientMetricController extends Controller
             'series' => $this->series($registros),
             'resumo' => $this->resumo($registros),
             'redesUsadas' => $registros->pluck('network')->unique()->values(),
-            // O modulo Financeiro e restrito a admin; o faturamento aqui
-            // respeita a mesma regra — nem a consulta roda para os demais.
-            'faturamento' => $request->user()->isAdmin()
-                ? $this->faturamento($client, $periodo)
-                : null,
+            'faturamento' => $this->faturamento($client, $periodo),
             'filtros' => ['network' => $rede, 'periodo' => $periodo],
         ]);
     }
@@ -113,14 +109,14 @@ class ClientMetricController extends Controller
     }
 
     /**
-     * Faturamento mensal do cliente.
+     * Faturamento do PRÓPRIO CLIENTE, mês a mês.
      *
-     * Sai dos pagamentos que já existem no módulo Financeiro, e não de um
-     * lançamento manual à parte — assim os números nunca divergem do que a
-     * gestão vê lá. O mês vem de `reference_month` quando preenchido; senão,
-     * do vencimento.
+     * Vem dos lançamentos manuais (ClientRevenue), informados pelo cliente —
+     * não da tabela `payments`, que é a cobrança da agência. São coisas
+     * diferentes: uma mede o resultado do negócio dele, a outra mede se ele
+     * nos pagou.
      *
-     * É UMA consulta agregada, feita pelo banco.
+     * Uma consulta; os totais e derivados saem em memória.
      *
      * @return array<string, mixed>
      */
@@ -133,49 +129,49 @@ class ClientMetricController extends Controller
             default => 12,
         };
 
-        $desde = now()->subMonths($meses)->startOfMonth()->toDateString();
+        $desde = now()->startOfMonth()->subMonths($meses)->toDateString();
 
-        $mesSql = "COALESCE(NULLIF(reference_month, ''), DATE_FORMAT(due_date, '%Y-%m'))";
-
-        $linhas = Payment::query()
+        $lancamentos = ClientRevenue::query()
             ->where('client_id', $client->id)
-            ->where('status', '!=', Payment::STATUS_CANCELLED)
-            ->whereDate('due_date', '>=', $desde)
-            ->selectRaw("{$mesSql} as mes")
-            ->selectRaw('SUM(amount) as total')
-            ->selectRaw('SUM(CASE WHEN status = ? THEN amount ELSE 0 END) as recebido', [Payment::STATUS_PAID])
-            ->selectRaw('COUNT(*) as cobrancas')
-            // Agrupa pelo ALIAS, não pela expressão repetida: com
-            // ONLY_FULL_GROUP_BY (padrão no MySQL 8) o servidor não reconhece
-            // as duas ocorrências de COALESCE(...) como a mesma coisa e
-            // recusa a query.
-            ->groupBy('mes')
-            ->orderBy('mes')
+            ->whereDate('reference_month', '>=', $desde)
+            ->orderBy('reference_month')
             ->get();
 
-        $pontos = $linhas->map(function ($l) {
-            [$ano, $mes] = array_pad(explode('-', (string) $l->mes), 2, '01');
+        $pontos = $lancamentos->map(fn (ClientRevenue $r) => [
+            'mes' => $r->reference_month->format('Y-m'),
+            'rotulo' => $r->reference_month->format('m/y'),
+            'faturamento' => (float) $r->revenue,
+            'investimento' => $r->ad_spend !== null ? (float) $r->ad_spend : null,
+            'vendas' => $r->orders,
+            'roas' => $r->roas(),
+            'ticket' => $r->averageTicket(),
+        ])->values();
 
-            return [
-                'mes' => $l->mes,
-                'rotulo' => str_pad($mes, 2, '0', STR_PAD_LEFT).'/'.substr($ano, 2),
-                'total' => (float) $l->total,
-                'recebido' => (float) $l->recebido,
-                'aberto' => (float) $l->total - (float) $l->recebido,
-                'cobrancas' => (int) $l->cobrancas,
-            ];
-        })->values();
+        $total = (float) $lancamentos->sum('revenue');
+        $investido = (float) $lancamentos->sum('ad_spend');
 
-        $faturado = $pontos->sum('total');
-        $recebido = $pontos->sum('recebido');
+        // Variação entre o primeiro e o último mês lançado: é o que responde
+        // "o faturamento dele cresceu desde que começamos?".
+        $variacao = null;
+        if ($lancamentos->count() > 1) {
+            $primeiro = (float) $lancamentos->first()->revenue;
+            $ultimo = (float) $lancamentos->last()->revenue;
+
+            if ($primeiro > 0) {
+                $variacao = round(($ultimo - $primeiro) / $primeiro * 100, 1);
+            }
+        }
 
         return [
             'pontos' => $pontos,
-            'faturado' => $faturado,
-            'recebido' => $recebido,
-            'aberto' => $faturado - $recebido,
-            'media' => $pontos->isNotEmpty() ? $faturado / $pontos->count() : 0.0,
-            'meses' => $pontos->count(),
+            'total' => $total,
+            'investido' => $investido,
+            'roas' => $investido > 0 ? round($total / $investido, 2) : null,
+            'media' => $lancamentos->isNotEmpty() ? $total / $lancamentos->count() : 0.0,
+            'variacao' => $variacao,
+            'vendas' => (int) $lancamentos->sum('orders'),
+            'meses' => $lancamentos->count(),
+            'lancamentos' => $lancamentos->sortByDesc('reference_month')->values(),
         ];
     }
 

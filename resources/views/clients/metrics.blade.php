@@ -24,7 +24,7 @@
         </div>
     </x-slot>
 
-    <div class="p-4 sm:p-6 space-y-6" x-data="{ modal: false }" @abrir-metrica.window="modal = true">
+    <div class="p-4 sm:p-6 space-y-6" x-data="{ modal: false, modalFat: false }" @abrir-metrica.window="modal = true">
 
         {{-- Filtros --}}
         <form method="GET" class="flex flex-wrap items-end gap-3 rounded-xl border border-ink-600 bg-ink-800/60 p-4">
@@ -202,72 +202,123 @@
             @endif
         </div>
 
-        {{-- ============================ FATURAMENTO ============================ --}}
-        @if($faturamento !== null)
+        {{-- ==================== FATURAMENTO DO CLIENTE ==================== --}}
         <div>
-            <div class="mb-3 flex items-center justify-between">
-                <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Faturamento mensal</h2>
-                <a href="{{ route('financial.index') }}" class="text-[12px] text-slate-500 hover:text-brand-400">Ver no Financeiro →</a>
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Faturamento do cliente</h2>
+                    <p class="text-[11.5px] text-slate-500">
+                        Quanto o negócio dele faturou — informado pelo cliente. Não é a cobrança da agência.
+                    </p>
+                </div>
+                @can('update', $client)
+                    <button @click="modalFat = true"
+                            class="inline-flex items-center gap-1.5 rounded-lg border border-ink-600 px-3 py-1.5 text-[12.5px] font-semibold text-slate-200 hover:bg-ink-700 transition">
+                        ＋ Lançar mês
+                    </button>
+                @endcan
             </div>
 
             @if($faturamento['meses'] === 0)
                 <div class="rounded-xl border border-dashed border-ink-600 bg-ink-800/60 p-10 text-center">
                     <div class="text-2xl mb-2">💰</div>
-                    <h3 class="text-slate-200 font-medium mb-1">Nenhuma cobrança no período</h3>
-                    <p class="text-sm text-slate-400">
-                        Os valores vêm das cobranças lançadas no Financeiro — não precisa digitar de novo aqui.
+                    <h3 class="text-slate-200 font-medium mb-1">Nenhum faturamento lançado</h3>
+                    <p class="text-sm text-slate-400 mb-4">
+                        Quando o cliente compartilhar o faturamento dele, lance aqui mês a mês.<br>
+                        Com o investimento em mídia junto, o sistema calcula o retorno.
                     </p>
+                    @can('update', $client)
+                        <button @click="modalFat = true" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500">
+                            Lançar o primeiro mês
+                        </button>
+                    @endcan
                 </div>
             @else
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Faturado</div>
-                            <div class="text-2xl font-bold text-slate-100">R$ {{ number_format($faturamento['faturado'], 2, ',', '.') }}</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Faturamento</div>
+                            <div class="text-2xl font-bold text-slate-100">R$ {{ number_format($faturamento['total'], 2, ',', '.') }}</div>
                             <div class="text-xs text-slate-500 mt-2">{{ $faturamento['meses'] }} {{ $faturamento['meses'] === 1 ? 'mês' : 'meses' }}</div>
                         </div>
+
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Recebido</div>
-                            <div class="text-2xl font-bold text-emerald-400">R$ {{ number_format($faturamento['recebido'], 2, ',', '.') }}</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Crescimento</div>
+                            @if($faturamento['variacao'] === null)
+                                <div class="text-2xl font-bold text-slate-500">—</div>
+                                <div class="text-xs text-slate-500 mt-2">precisa de 2 meses</div>
+                            @else
+                                <div class="text-2xl font-bold {{ $faturamento['variacao'] >= 0 ? 'text-emerald-400' : 'text-rose-400' }}">
+                                    {{ $faturamento['variacao'] >= 0 ? '+' : '' }}{{ number_format($faturamento['variacao'], 1, ',', '.') }}%
+                                </div>
+                                <div class="text-xs text-slate-500 mt-2">do 1º ao último mês</div>
+                            @endif
                         </div>
+
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Em aberto</div>
-                            <div class="text-2xl font-bold {{ $faturamento['aberto'] > 0 ? 'text-amber-400' : 'text-slate-500' }}">R$ {{ number_format($faturamento['aberto'], 2, ',', '.') }}</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Retorno (ROAS)</div>
+                            @if($faturamento['roas'] === null)
+                                <div class="text-2xl font-bold text-slate-500">—</div>
+                                <div class="text-xs text-slate-500 mt-2">informe o investimento</div>
+                            @else
+                                <div class="text-2xl font-bold text-emerald-400">{{ number_format($faturamento['roas'], 2, ',', '.') }}x</div>
+                                <div class="text-xs text-slate-500 mt-2">para cada R$ 1 investido</div>
+                            @endif
                         </div>
+
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
                             <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Média mensal</div>
                             <div class="text-2xl font-bold text-brand-400">R$ {{ number_format($faturamento['media'], 2, ',', '.') }}</div>
+                            @if($faturamento['vendas'] > 0)
+                                <div class="text-xs text-slate-500 mt-2">{{ number_format($faturamento['vendas'], 0, ',', '.') }} vendas no período</div>
+                            @endif
                         </div>
                     </div>
 
                     <div class="grid gap-4 lg:grid-cols-3">
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5 lg:col-span-2">
-                            <h3 class="text-sm font-semibold text-slate-200 mb-4">Receita por mês</h3>
+                            <h3 class="text-sm font-semibold text-slate-200 mb-1">Faturamento e investimento por mês</h3>
+                            <p class="text-[11.5px] text-slate-500 mb-3">a distância entre as barras é o retorno gerado</p>
                             <div class="h-64"><canvas id="graficoFaturamento"></canvas></div>
                         </div>
 
                         <div class="rounded-xl border border-ink-600 bg-ink-800 overflow-hidden">
                             <div class="px-5 py-4 border-b border-ink-700">
-                                <h3 class="text-sm font-semibold text-slate-200">Por mês</h3>
+                                <h3 class="text-sm font-semibold text-slate-200">Lançamentos</h3>
                             </div>
-                            <div class="max-h-64 overflow-y-auto">
-                                <table class="w-full text-sm">
-                                    <tbody class="divide-y divide-ink-700">
-                                        @foreach($faturamento['pontos']->reverse() as $ponto)
-                                            <tr class="hover:bg-ink-700/30">
-                                                <td class="px-4 py-2.5 text-slate-300">{{ $ponto['rotulo'] }}</td>
-                                                <td class="px-4 py-2.5 text-right text-slate-200 font-medium">R$ {{ number_format($ponto['total'], 2, ',', '.') }}</td>
-                                                <td class="px-4 py-2.5 text-right">
-                                                    @if($ponto['aberto'] > 0.009)
-                                                        <span class="text-[11px] text-amber-400">R$ {{ number_format($ponto['aberto'], 2, ',', '.') }} aberto</span>
-                                                    @else
-                                                        <span class="text-[11px] text-emerald-400">quitado</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
+                            <div class="max-h-72 overflow-y-auto divide-y divide-ink-700">
+                                @foreach($faturamento['lancamentos'] as $lanc)
+                                    <div class="px-4 py-3 hover:bg-ink-700/30 group">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <span class="text-[13px] font-medium text-slate-200">{{ $lanc->reference_month->format('m/Y') }}</span>
+                                            <span class="text-[13px] font-semibold text-slate-100">R$ {{ number_format($lanc->revenue, 2, ',', '.') }}</span>
+                                        </div>
+                                        <div class="mt-1 flex flex-wrap items-center gap-x-3 text-[11px] text-slate-500">
+                                            @if($lanc->ad_spend !== null)
+                                                <span>invest. R$ {{ number_format($lanc->ad_spend, 2, ',', '.') }}</span>
+                                            @endif
+                                            @if($lanc->roas() !== null)
+                                                <span class="text-emerald-400">{{ number_format($lanc->roas(), 2, ',', '.') }}x</span>
+                                            @endif
+                                            @if($lanc->orders)
+                                                <span>{{ $lanc->orders }} vendas</span>
+                                            @endif
+                                            @if($lanc->averageTicket() !== null)
+                                                <span>ticket R$ {{ number_format($lanc->averageTicket(), 2, ',', '.') }}</span>
+                                            @endif
+                                            @can('update', $client)
+                                                <form method="POST" action="{{ route('revenues.destroy', $lanc) }}" class="ml-auto opacity-0 group-hover:opacity-100 transition"
+                                                      onsubmit="return confirm('Remover o lançamento de {{ $lanc->reference_month->format('m/Y') }}?')">
+                                                    @csrf @method('DELETE')
+                                                    <button type="submit" class="text-[11px] text-slate-500 hover:text-rose-400">remover</button>
+                                                </form>
+                                            @endcan
+                                        </div>
+                                        @if($lanc->notes)
+                                            <p class="mt-1 text-[11px] text-slate-500 italic">{{ $lanc->notes }}</p>
+                                        @endif
+                                    </div>
+                                @endforeach
                             </div>
                         </div>
                     </div>
@@ -275,7 +326,69 @@
             @endif
         </div>
 
-        @endif
+        {{-- Formulário do faturamento do cliente --}}
+        @can('update', $client)
+            <div x-show="modalFat" x-cloak class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-4 sm:p-8"
+                 @click.self="modalFat = false" @keydown.escape.window="modalFat = false">
+                <div class="w-full max-w-lg rounded-xl border border-ink-600 bg-ink-800 shadow-2xl">
+                    <div class="flex items-center justify-between border-b border-ink-700 px-5 py-4">
+                        <h3 class="font-semibold text-slate-200">Faturamento do cliente</h3>
+                        <button @click="modalFat = false" class="text-slate-500 hover:text-slate-200 text-xl leading-none">&times;</button>
+                    </div>
+
+                    <form method="POST" action="{{ route('clients.revenues.store', $client) }}" class="p-5 space-y-4">
+                        @csrf
+
+                        <div class="rounded-lg border border-ink-700 bg-ink-900/40 px-3 py-2 text-[12px] text-slate-400">
+                            O quanto o negócio do cliente faturou no mês, informado por ele.
+                            Não tem relação com as cobranças da agência no Financeiro.
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Mês de referência *</label>
+                                <input type="month" name="reference_month" required max="{{ now()->format('Y-m') }}"
+                                       value="{{ old('reference_month', now()->format('Y-m')) }}"
+                                       class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Faturamento (R$) *</label>
+                                <input type="number" name="revenue" step="0.01" min="0" required placeholder="0,00"
+                                       value="{{ old('revenue') }}"
+                                       class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Investimento em mídia (R$)</label>
+                                <input type="number" name="ad_spend" step="0.01" min="0" placeholder="—"
+                                       value="{{ old('ad_spend') }}"
+                                       class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Nº de vendas</label>
+                                <input type="number" name="orders" min="0" placeholder="—"
+                                       value="{{ old('orders') }}"
+                                       class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">
+                            </div>
+                        </div>
+
+                        <p class="text-[11.5px] text-slate-500">
+                            Com investimento e vendas preenchidos, o sistema calcula o ROAS e o ticket médio.
+                        </p>
+
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Observação</label>
+                            <textarea name="notes" rows="2" maxlength="1000" placeholder="Ex.: mês com Black Friday"
+                                      class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">{{ old('notes') }}</textarea>
+                        </div>
+
+                        <div class="flex justify-end gap-2 pt-1">
+                            <button type="button" @click="modalFat = false" class="rounded-lg border border-ink-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-ink-700">Cancelar</button>
+                            <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500">Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endcan
 
         {{-- Formulário de lançamento --}}
         @can('update', $client)
@@ -344,7 +457,7 @@
         @endcan
     </div>
 
-    @if($registros->isNotEmpty() || ($faturamento['meses'] ?? 0) > 0)
+    @if($registros->isNotEmpty() || $faturamento['meses'] > 0)
         @push('scripts')
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
         <script>
@@ -470,7 +583,7 @@
             }
 
             /* ---------------- Faturamento ---------------- */
-            var faturamento = @json($faturamento['pontos'] ?? []);
+            var faturamento = @json($faturamento['pontos']);
 
             if (faturamento.length) {
                 new Chart(document.getElementById('graficoFaturamento'), {
@@ -478,8 +591,8 @@
                     data: {
                         labels: faturamento.map(function (p) { return p.rotulo; }),
                         datasets: [
-                            { label: 'Recebido', data: faturamento.map(function (p) { return p.recebido; }), backgroundColor: '#34d399' },
-                            { label: 'Em aberto', data: faturamento.map(function (p) { return p.aberto; }), backgroundColor: '#fbbf24' },
+                            { label: 'Faturamento', data: faturamento.map(function (p) { return p.faturamento; }), backgroundColor: '#34d399' },
+                            { label: 'Investimento', data: faturamento.map(function (p) { return p.investimento; }), backgroundColor: '#f472b6' },
                         ],
                     },
                     options: Object.assign({}, base, {
@@ -488,21 +601,27 @@
                             tooltip: {
                                 callbacks: {
                                     label: function (ctx) {
+                                        if (ctx.parsed.y === null) {
+                                            return ctx.dataset.label + ': não informado';
+                                        }
                                         return ctx.dataset.label + ': R$ ' +
                                             ctx.parsed.y.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                                     },
                                 },
                             },
                         },
+                        // Barras LADO A LADO, não empilhadas: faturamento e
+                        // investimento são grandezas a comparar, não partes de
+                        // um todo — empilhar somaria uma na outra e mentiria.
                         scales: {
                             y: {
-                                beginAtZero: true, stacked: true,
+                                beginAtZero: true,
                                 ticks: {
                                     font: { size: 11 },
                                     callback: function (v) { return 'R$ ' + v.toLocaleString('pt-BR'); },
                                 },
                             },
-                            x: { stacked: true, ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true } },
+                            x: { ticks: { font: { size: 11 }, maxRotation: 0, autoSkip: true } },
                         },
                     }),
                 });
