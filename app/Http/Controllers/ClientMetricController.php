@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\ClientMetric;
+use App\Models\Payment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -42,6 +43,11 @@ class ClientMetricController extends Controller
             'series' => $this->series($registros),
             'resumo' => $this->resumo($registros),
             'redesUsadas' => $registros->pluck('network')->unique()->values(),
+            // O modulo Financeiro e restrito a admin; o faturamento aqui
+            // respeita a mesma regra — nem a consulta roda para os demais.
+            'faturamento' => $request->user()->isAdmin()
+                ? $this->faturamento($client, $periodo)
+                : null,
             'filtros' => ['network' => $rede, 'periodo' => $periodo],
         ]);
     }
@@ -95,14 +101,82 @@ class ClientMetricController extends Controller
             'network' => ['required', 'string', 'in:'.implode(',', array_keys(ClientMetric::NETWORKS))],
             'reference_date' => ['required', 'date', 'before_or_equal:today'],
             'followers' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'reach' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'impressions' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'engagement' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
+            'avg_likes' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
+            'avg_comments' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
+            'avg_shares' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
+            'views' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
             'profile_visits' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
             'link_clicks' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
             'posts_count' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ]);
+    }
+
+    /**
+     * Faturamento mensal do cliente.
+     *
+     * Sai dos pagamentos que já existem no módulo Financeiro, e não de um
+     * lançamento manual à parte — assim os números nunca divergem do que a
+     * gestão vê lá. O mês vem de `reference_month` quando preenchido; senão,
+     * do vencimento.
+     *
+     * É UMA consulta agregada, feita pelo banco.
+     *
+     * @return array<string, mixed>
+     */
+    private function faturamento(Client $client, string $periodo): array
+    {
+        $meses = match ($periodo) {
+            '90' => 3,
+            '180' => 6,
+            'todos' => 36,
+            default => 12,
+        };
+
+        $desde = now()->subMonths($meses)->startOfMonth()->toDateString();
+
+        $mesSql = "COALESCE(NULLIF(reference_month, ''), DATE_FORMAT(due_date, '%Y-%m'))";
+
+        $linhas = Payment::query()
+            ->where('client_id', $client->id)
+            ->where('status', '!=', Payment::STATUS_CANCELLED)
+            ->whereDate('due_date', '>=', $desde)
+            ->selectRaw("{$mesSql} as mes")
+            ->selectRaw('SUM(amount) as total')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN amount ELSE 0 END) as recebido', [Payment::STATUS_PAID])
+            ->selectRaw('COUNT(*) as cobrancas')
+            // Agrupa pelo ALIAS, não pela expressão repetida: com
+            // ONLY_FULL_GROUP_BY (padrão no MySQL 8) o servidor não reconhece
+            // as duas ocorrências de COALESCE(...) como a mesma coisa e
+            // recusa a query.
+            ->groupBy('mes')
+            ->orderBy('mes')
+            ->get();
+
+        $pontos = $linhas->map(function ($l) {
+            [$ano, $mes] = array_pad(explode('-', (string) $l->mes), 2, '01');
+
+            return [
+                'mes' => $l->mes,
+                'rotulo' => str_pad($mes, 2, '0', STR_PAD_LEFT).'/'.substr($ano, 2),
+                'total' => (float) $l->total,
+                'recebido' => (float) $l->recebido,
+                'aberto' => (float) $l->total - (float) $l->recebido,
+                'cobrancas' => (int) $l->cobrancas,
+            ];
+        })->values();
+
+        $faturado = $pontos->sum('total');
+        $recebido = $pontos->sum('recebido');
+
+        return [
+            'pontos' => $pontos,
+            'faturado' => $faturado,
+            'recebido' => $recebido,
+            'aberto' => $faturado - $recebido,
+            'media' => $pontos->isNotEmpty() ? $faturado / $pontos->count() : 0.0,
+            'meses' => $pontos->count(),
+        ];
     }
 
     /**
@@ -133,9 +207,13 @@ class ClientMetricController extends Controller
                     'iso' => $l->reference_date->toDateString(),
                     'seguidores' => $l->followers,
                     'ganho' => $ganho,
-                    'alcance' => $l->reach,
-                    'impressoes' => $l->impressions,
-                    'engajamento' => $l->engagement,
+                    'curtidas' => $l->avg_likes,
+                    'comentarios' => $l->avg_comments,
+                    'compartilhamentos' => $l->avg_shares,
+                    'interacoes' => $l->engagementPerPost(),
+                    'visualizacoes' => $l->views,
+                    'visitas' => $l->profile_visits,
+                    'cliques' => $l->link_clicks,
                     'taxa' => $l->engagementRate(),
                 ];
 
@@ -180,12 +258,21 @@ class ClientMetricController extends Controller
             }
         }
 
+        // A taxa de engajamento média do período usa o último lançamento de
+        // cada rede — média de médias antigas não diz nada útil.
+        $taxas = $registros->groupBy('network')
+            ->map(fn ($l) => $l->sortBy('reference_date')->last()?->engagementRate())
+            ->filter()
+            ->values();
+
         return [
             'seguidores' => $seguidoresAtuais,
             'ganho' => $temBase ? $ganhoPeriodo : null,
-            'alcance' => (int) $registros->sum('reach'),
-            'engajamento' => (int) $registros->sum('engagement'),
+            'visualizacoes' => (int) $registros->sum('views'),
+            'taxa' => $taxas->isNotEmpty() ? round($taxas->avg(), 2) : null,
             'publicacoes' => (int) $registros->sum('posts_count'),
+            'visitas' => (int) $registros->sum('profile_visits'),
+            'cliques' => (int) $registros->sum('link_clicks'),
             'lancamentos' => $registros->count(),
         ];
     }

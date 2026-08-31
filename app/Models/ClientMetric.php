@@ -30,12 +30,18 @@ class ClientMetric extends Model
         'google' => ['label' => 'Google Meu Negócio', 'color' => '#34A853'],
     ];
 
-    /** Campos numéricos, com rótulo — usados no formulário e nos cards. */
+    /**
+     * Campos numéricos, com rótulo — usados no formulário e nos cards.
+     *
+     * As três médias são POR PUBLICAÇÃO. O engajamento total não é digitado:
+     * sai da soma delas (ver engagementPerPost).
+     */
     public const FIELDS = [
         'followers' => 'Seguidores (total)',
-        'reach' => 'Alcance',
-        'impressions' => 'Impressões',
-        'engagement' => 'Interações',
+        'avg_likes' => 'Média de curtidas',
+        'avg_comments' => 'Média de comentários',
+        'avg_shares' => 'Média de compartilhamentos',
+        'views' => 'Visualizações',
         'profile_visits' => 'Visitas ao perfil',
         'link_clicks' => 'Cliques no link',
         'posts_count' => 'Publicações',
@@ -43,7 +49,7 @@ class ClientMetric extends Model
 
     protected $fillable = [
         'company_id', 'client_id', 'network', 'reference_date',
-        'followers', 'reach', 'impressions', 'engagement',
+        'followers', 'avg_likes', 'avg_comments', 'avg_shares', 'views',
         'profile_visits', 'link_clicks', 'posts_count',
         'notes', 'created_by',
     ];
@@ -53,9 +59,10 @@ class ClientMetric extends Model
         return [
             'reference_date' => 'date',
             'followers' => 'integer',
-            'reach' => 'integer',
-            'impressions' => 'integer',
-            'engagement' => 'integer',
+            'avg_likes' => 'integer',
+            'avg_comments' => 'integer',
+            'avg_shares' => 'integer',
+            'views' => 'integer',
             'profile_visits' => 'integer',
             'link_clicks' => 'integer',
             'posts_count' => 'integer',
@@ -101,14 +108,33 @@ class ClientMetric extends Model
     }
 
     /**
-     * Taxa de engajamento sobre o alcance, quando os dois foram informados.
+     * Interações médias por publicação = curtidas + comentários +
+     * compartilhamentos. Null quando nenhuma das três foi informada.
      */
-    public function engagementRate(): ?float
+    public function engagementPerPost(): ?int
     {
-        if (! $this->engagement || ! $this->reach) {
+        $partes = [$this->avg_likes, $this->avg_comments, $this->avg_shares];
+
+        if (count(array_filter($partes, fn ($v) => $v !== null)) === 0) {
             return null;
         }
 
-        return round($this->engagement / $this->reach * 100, 2);
+        return (int) array_sum($partes);
+    }
+
+    /**
+     * Taxa de engajamento: interações médias por publicação sobre o total de
+     * seguidores. É a fórmula que o mercado usa para comparar perfis de
+     * tamanhos diferentes.
+     */
+    public function engagementRate(): ?float
+    {
+        $interacoes = $this->engagementPerPost();
+
+        if (! $interacoes || ! $this->followers) {
+            return null;
+        }
+
+        return round($interacoes / $this->followers * 100, 2);
     }
 }
