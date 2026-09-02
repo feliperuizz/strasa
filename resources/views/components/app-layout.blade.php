@@ -455,9 +455,11 @@
             e.preventDefault();
             e.stopPropagation();
         }
-        
+
+        var iconeOriginal = btn.innerHTML;
+
         btn.innerHTML = `<svg class="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>`;
-        
+
         fetch(`{{ url('/tasks') }}/${taskId}/complete`, {
             method: 'POST',
             headers: {
@@ -465,22 +467,38 @@
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 'Accept': 'application/json'
             }
-        }).then(res => {
-            if(res.ok) {
-                // Se estiver no board kanban, tenta mover o card
-                const columns = document.querySelectorAll('.kanban-list');
-                const card = btn.closest('.task-card');
-                if(columns.length > 0 && card) {
-                    columns[columns.length - 1].appendChild(card);
-                } else if (card) {
-                    if (window.saveScrollPositions) window.saveScrollPositions();
-                    setTimeout(() => window.location.reload(), 300);
-                }
-            } else {
-                alert('Erro ao completar tarefa. Tente recarregar a página.');
+        })
+        .then(res => res.json().then(data => ({ ok: res.ok, data })))
+        .then(({ ok, data }) => {
+            if (!ok) {
+                btn.innerHTML = iconeOriginal;
+                alert(data.message || 'Erro ao concluir a tarefa. Tente recarregar a página.');
+                return;
             }
-        }).catch(() => {
-            alert('Erro de conexão ao completar tarefa.');
+
+            var card = btn.closest('.task-card');
+            if (!card) { return; }
+
+            // Move o card para a coluna que o SERVIDOR escolheu. Antes daqui o
+            // card ia para a ultima coluna do DOM, que podia nao ser a mesma —
+            // e a tela ficava mentindo ate o proximo F5.
+            var destino = data.column_id
+                ? document.querySelector(`.kanban-list[data-column-id="${data.column_id}"]`)
+                : null;
+
+            if (destino) {
+                destino.appendChild(card);
+                window.dispatchEvent(new CustomEvent('kanban-recontar'));
+                return;
+            }
+
+            // Fora do quadro (Minhas Tarefas, por exemplo): recarrega.
+            if (window.saveScrollPositions) { window.saveScrollPositions(); }
+            setTimeout(() => window.location.reload(), 300);
+        })
+        .catch(() => {
+            btn.innerHTML = iconeOriginal;
+            alert('Erro de conexão ao concluir a tarefa.');
         });
     };
 

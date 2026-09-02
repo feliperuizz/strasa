@@ -149,6 +149,10 @@
                 });
             }
 
+            // Concluir uma tarefa move o card por fora do drag-and-drop; o
+            // botao avisa por aqui para os contadores nao ficarem defasados.
+            window.addEventListener('kanban-recontar', updateColumnCounts);
+
             // Drag to scroll no Kanban (clique no espaço vazio, incluindo no topo)
             const scrollContainer = document.getElementById('kanban-scroll-container');
             const wrapper = document.getElementById('kanban-wrapper');

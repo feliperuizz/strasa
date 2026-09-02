@@ -5,6 +5,7 @@
     // escuro, borda âmbar e etiqueta no cabeçalho — para ninguém arrastar um
     // card para lá sem perceber que isso dispara o painel do cliente.
     $ehAprovacao = $column->is_approval_column;
+    $ehConcluido = $column->marks_published;
 @endphp
 
 <div class="flex w-[280px] shrink-0 flex-col backdrop-blur-md rounded-xl p-2 h-full shadow-md transition-colors
@@ -21,8 +22,13 @@
                 <svg class="w-3.5 h-3.5 shrink-0 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
+            @elseif($ehConcluido)
+                <svg class="w-3.5 h-3.5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
+                     title="Destino do botão de concluir">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
             @endif
-            <span class="text-[13px] font-semibold uppercase tracking-wide truncate {{ $ehAprovacao ? 'text-amber-300' : 'text-slate-300' }}">{{ $column->name }}</span>
+            <span class="text-[13px] font-semibold uppercase tracking-wide truncate {{ $ehAprovacao ? 'text-amber-300' : ($ehConcluido ? 'text-emerald-300' : 'text-slate-300') }}">{{ $column->name }}</span>
             <span class="column-count text-[13px] font-medium {{ $ehAprovacao ? 'text-amber-500/70' : 'text-slate-500' }}">{{ $tasks->count() }}</span>
         </div>
         <div class="relative flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -41,7 +47,14 @@
                         <input name="name" value="{{ $column->name }}" class="w-full rounded bg-ink-900 px-2 py-1 text-sm border border-ink-600" />
                         <input name="color" type="color" value="{{ $column->color }}" class="h-7 w-full rounded bg-ink-900 border border-ink-600" />
                         
-                        <label class="flex items-center gap-2 mt-2">
+                        {{-- Destino do botao de concluir (a bolinha do card). --}}
+                        <label class="flex items-center gap-2 mt-2 rounded border border-emerald-500/25 bg-emerald-500/[0.06] px-2 py-1.5">
+                            <input type="hidden" name="marks_published" value="0">
+                            <input type="checkbox" name="marks_published" value="1" {{ $column->marks_published ? 'checked' : '' }} class="rounded border-ink-600 bg-ink-900 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-ink-800">
+                            <span class="text-[11px] leading-tight text-emerald-300">Coluna de concluído (Postado)</span>
+                        </label>
+
+                        <label class="flex items-center gap-2">
                             <input type="hidden" name="is_publish_column" value="0">
                             <input type="checkbox" name="is_publish_column" value="1" {{ $column->is_publish_column ? 'checked' : '' }} class="rounded border-ink-600 bg-ink-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-ink-800">
                             <span class="text-[11px] leading-tight text-slate-400">Notificar Postagens desta coluna hoje</span>

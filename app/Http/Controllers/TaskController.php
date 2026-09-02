@@ -266,19 +266,44 @@ class TaskController extends Controller
     {
         $this->authorize('update', $task);
 
-        $lastColumn = $task->project->columns()->orderBy('position', 'desc')->first();
+        // A coluna de destino é a que estiver marcada como "concluído" no menu
+        // da coluna. Antes daqui pegávamos a ÚLTIMA coluna por posição, o que
+        // mandava a tarefa para "Rejeitado" no template padrão — e para lugares
+        // diferentes sempre que alguém reordenava o quadro.
+        $destino = $task->project->columns()
+            ->where('marks_published', true)
+            ->orderBy('position')
+            ->first();
 
-        if (! $lastColumn) {
-            return response()->json(['ok' => false, 'message' => 'Nenhuma coluna no projeto'], 422);
+        if (! $destino) {
+            return response()->json([
+                'ok' => false,
+                'sem_coluna' => true,
+                'message' => 'Nenhuma coluna deste quadro está marcada como "concluído". '
+                    .'Abra o menu (⋯) da coluna desejada e marque a opção.',
+            ], 422);
         }
 
+        $origem = $task->column;
+
         $task->update([
-            'column_id' => $lastColumn->id,
-            'is_published' => $lastColumn->marks_published,
-            'published_at' => $lastColumn->marks_published ? ($task->published_at ?? now()) : null,
+            'column_id' => $destino->id,
+            'is_published' => true,
+            'published_at' => $task->published_at ?? now(),
         ]);
 
-        return response()->json(['ok' => true]);
+        if ($origem && $origem->id !== $destino->id) {
+            $this->log($task, TaskActivity::TYPE_COLUMN_CHANGED,
+                "concluiu e moveu para \"{$destino->name}\"");
+        }
+
+        $this->log($task, TaskActivity::TYPE_PUBLISHED, 'marcou como concluído');
+
+        return response()->json([
+            'ok' => true,
+            'column_id' => $destino->id,
+            'column_name' => $destino->name,
+        ]);
     }
 
     /** Garante que a coluna pertence ao projeto (e à empresa via scope). */

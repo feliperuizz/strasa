@@ -6,6 +6,7 @@ use App\Models\Column;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ColumnController extends Controller
 {
@@ -39,14 +40,28 @@ class ColumnController extends Controller
             'color' => ['nullable', 'string', 'max:7'],
             'is_publish_column' => ['nullable', 'boolean'],
             'is_approval_column' => ['nullable', 'boolean'],
+            'marks_published' => ['nullable', 'boolean'],
         ]);
 
-        $column->update([
-            'name' => $data['name'],
-            'color' => $data['color'] ?? $column->color,
-            'is_publish_column' => $data['is_publish_column'] ?? false,
-            'is_approval_column' => $data['is_approval_column'] ?? false,
-        ]);
+        $ehConcluido = (bool) ($data['marks_published'] ?? false);
+
+        DB::transaction(function () use ($column, $data, $ehConcluido) {
+            // Só pode existir UMA coluna de concluído por projeto: é ela que o
+            // botão de concluir usa como destino. Duas seriam ambíguas.
+            if ($ehConcluido) {
+                Column::where('project_id', $column->project_id)
+                    ->where('id', '!=', $column->id)
+                    ->update(['marks_published' => false]);
+            }
+
+            $column->update([
+                'name' => $data['name'],
+                'color' => $data['color'] ?? $column->color,
+                'is_publish_column' => $data['is_publish_column'] ?? false,
+                'is_approval_column' => $data['is_approval_column'] ?? false,
+                'marks_published' => $ehConcluido,
+            ]);
+        });
 
         $this->forgetCache($column->project);
 
