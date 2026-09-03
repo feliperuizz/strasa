@@ -129,6 +129,26 @@
                                 </div>
                             </div>
 
+                            {{-- Criar uma nova --}}
+                            <div class="border-t border-ink-800 pt-3">
+                                <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Nova flag</p>
+
+                                <input type="text" x-model="nome" placeholder="Nome da flag..." maxlength="40"
+                                       @keydown.enter.prevent="criar()"
+                                       class="w-full rounded bg-ink-800 px-2 py-1.5 text-xs border border-ink-800 focus:border-brand-500 focus:ring-0 mb-2 text-slate-200">
+
+                                <div class="flex flex-wrap gap-1.5 mb-3">
+                                    <template x-for="cor in cores" :key="cor">
+                                        <button type="button" @click="corEscolhida = cor"
+                                                :class="corEscolhida === cor ? 'ring-2 ring-white scale-110' : ''"
+                                                class="w-5 h-5 rounded-full transition-transform" :style="'background: ' + cor"></button>
+                                    </template>
+                                </div>
+
+                                <button type="button" @click="criar()"
+                                        class="w-full rounded bg-brand-600 py-1.5 text-xs font-semibold text-white hover:bg-brand-500">Adicionar</button>
+                            </div>
+
                         </div>
                     </div>
                 </div>

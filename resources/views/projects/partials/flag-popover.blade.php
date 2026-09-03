@@ -6,8 +6,9 @@
     card seria recortado pela borda da coluna. De quebra, é um nó no DOM em vez
     de um por card.
 
-    Só as flags padrão podem ser aplicadas. Flags antigas, criadas antes desse
-    padrão, aparecem apenas nos cards onde já estão — para poderem ser tiradas.
+    As quatro padrão (Programar, Captação, Edição, Programado) aparecem
+    sempre, mesmo sem existir no banco: viram registro na primeira vez que
+    alguém aplica uma. A equipe também pode criar as suas.
 --}}
 <div id="painel-flags"
      class="fixed z-[60] hidden w-64 rounded-xl border border-ink-600 bg-ink-800 shadow-2xl"
@@ -19,7 +20,31 @@
         <button type="button" data-fechar-flags class="text-slate-500 hover:text-slate-200 text-lg leading-none">&times;</button>
     </div>
 
-    <div id="painel-flags-lista" class="max-h-72 overflow-y-auto py-1"></div>
+    <div id="painel-flags-lista" class="max-h-64 overflow-y-auto py-1"></div>
+
+    {{-- Criar uma flag nova --}}
+    <div class="border-t border-ink-700 p-3">
+        <div id="painel-flags-nova" class="hidden space-y-2">
+            <input type="text" id="painel-flags-nome" maxlength="40" placeholder="Nome da flag"
+                   class="w-full rounded-lg border-ink-600 bg-ink-900 px-2.5 py-1.5 text-[13px] text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-0">
+
+            <div class="flex flex-wrap gap-1.5" id="painel-flags-cores"></div>
+
+            <div class="flex gap-2">
+                <button type="button" id="painel-flags-salvar"
+                        class="flex-1 rounded-lg bg-brand-600 py-1.5 text-[12px] font-semibold text-white hover:bg-brand-500">Criar</button>
+                <button type="button" id="painel-flags-cancelar"
+                        class="rounded-lg border border-ink-600 px-3 py-1.5 text-[12px] font-medium text-slate-300 hover:bg-ink-700">Cancelar</button>
+            </div>
+
+            <p id="painel-flags-erro" class="hidden text-[11.5px] text-rose-400"></p>
+        </div>
+
+        <button type="button" id="painel-flags-abrir-nova"
+                class="w-full rounded-lg border border-dashed border-ink-600 py-1.5 text-[12px] font-medium text-slate-400 hover:border-ink-500 hover:text-slate-200">
+            ＋ Nova flag
+        </button>
+    </div>
 </div>
 
 @push('scripts')
@@ -30,10 +55,12 @@
     // Os elementos são buscados sob demanda, e não no carregamento. Se este
     // script rodar antes do painel existir no DOM, a função continua sendo
     // definida e o clique funciona assim que o elemento aparece.
-    var painel, lista;
+    var painel, lista, blocoNova, botaoNova, campoNome, paletaEl, erroEl;
     var ligado = false;
 
     var flags = @json($tags);
+    var paleta = @json(\App\Models\Tag::CORES);
+    var corEscolhida = paleta[0];
     var taskAtual = null;
     var botaoAtual = null;
 
@@ -44,13 +71,87 @@
         if (!painel) { return false; }
 
         lista = document.getElementById('painel-flags-lista');
+        blocoNova = document.getElementById('painel-flags-nova');
+        botaoNova = document.getElementById('painel-flags-abrir-nova');
+        campoNome = document.getElementById('painel-flags-nome');
+        paletaEl = document.getElementById('painel-flags-cores');
+        erroEl = document.getElementById('painel-flags-erro');
 
-        if (!ligado) {
-            painel.querySelector('[data-fechar-flags]').addEventListener('click', fechar);
-            ligado = true;
-        }
+        if (!ligado) { ligarEventos(); ligado = true; }
 
         return true;
+    }
+
+    function ligarEventos() {
+        painel.querySelector('[data-fechar-flags]').addEventListener('click', fechar);
+
+        botaoNova.addEventListener('click', function () {
+            blocoNova.classList.remove('hidden');
+            botaoNova.classList.add('hidden');
+            campoNome.focus();
+        });
+
+        document.getElementById('painel-flags-cancelar').addEventListener('click', esconderNova);
+        document.getElementById('painel-flags-salvar').addEventListener('click', criarFlag);
+
+        campoNome.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); criarFlag(); }
+        });
+    }
+
+    function esconderNova() {
+        blocoNova.classList.add('hidden');
+        botaoNova.classList.remove('hidden');
+        erroEl.classList.add('hidden');
+        campoNome.value = '';
+    }
+
+    function desenharPaleta() {
+        paletaEl.innerHTML = '';
+
+        paleta.forEach(function (cor) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'h-5 w-5 rounded-full transition-transform' +
+                (cor === corEscolhida ? ' ring-2 ring-white scale-110' : '');
+            b.style.background = cor;
+            b.addEventListener('click', function () {
+                corEscolhida = cor;
+                desenharPaleta();
+            });
+            paletaEl.appendChild(b);
+        });
+    }
+
+    function criarFlag() {
+        var nome = campoNome.value.trim();
+        erroEl.classList.add('hidden');
+
+        if (!nome) { campoNome.focus(); return; }
+
+        pedir(painel.dataset.urlTags, 'POST', { name: nome, color: corEscolhida }).then(function (r) {
+            if (!r.ok) {
+                erroEl.textContent = (r.dados.errors && r.dados.errors.name)
+                    ? r.dados.errors.name[0]
+                    : (r.dados.message || 'Não foi possível criar a flag.');
+                erroEl.classList.remove('hidden');
+                return;
+            }
+
+            var nova = r.dados.tag;
+            nova.sugestao = false;
+            nova.padrao = false;
+
+            flags.push(nova);
+            flags.sort(function (a, b) { return a.name.localeCompare(b.name, 'pt-BR'); });
+
+            esconderNova();
+            desenharLista();
+
+            // Ja aplica no card aberto: e o que se espera ao criar uma flag
+            // estando com um card em maos.
+            alternarFlag(nova);
+        });
     }
 
     function pedir(url, metodo, corpo) {
@@ -105,11 +206,7 @@
         var aplicadas = idsDoCard();
         lista.innerHTML = '';
 
-        // As padrão sempre; as antigas só quando já estão neste card, senão
-        // ficariam presas — visíveis no card e sem como tirar.
-        var visiveis = flags.filter(function (f) {
-            return f.padrao || (f.id && aplicadas.indexOf(f.id) !== -1);
-        });
+        var visiveis = flags;
 
         if (!visiveis.length) {
             lista.innerHTML = '<p class="px-3 py-4 text-center text-[12px] text-slate-500">Nenhuma flag disponível.</p>';
@@ -133,14 +230,13 @@
                 '</span>' +
                 '<span class="h-2 w-2 shrink-0 rounded-full" style="background:' + flag.color + '"></span>' +
                 '<span class="truncate text-[13px] ' + (ativa ? 'text-slate-100' : 'text-slate-300') + '">' + flag.name + '</span>' +
-                (!flag.padrao ? '<span class="ml-auto shrink-0 text-[9.5px] uppercase tracking-wide text-amber-600/80">antiga</span>' : '');
+                (flag.sugestao ? '<span class="ml-auto shrink-0 text-[9.5px] uppercase tracking-wide text-slate-600">padrão</span>' : '');
 
             alternar.addEventListener('click', function () { alternarFlag(flag); });
             linha.appendChild(alternar);
 
-            // Só as antigas podem ser excluídas: apagar uma padrão não
-            // adiantaria, ela voltaria na lista como sugestão.
-            if (!flag.padrao && flag.id) {
+            // Sugestão ainda não existe no banco: não há o que excluir.
+            if (flag.id) {
                 var excluir = document.createElement('button');
                 excluir.type = 'button';
                 excluir.title = 'Excluir esta flag de todos os cards';
@@ -239,7 +335,9 @@
         taskAtual = String(taskId);
 
         painel.classList.remove('hidden');
+        esconderNova();
         desenharLista();
+        desenharPaleta();
         posicionar(botao);
     };
 
@@ -269,6 +367,7 @@
     function fechar() {
         if (!painel) { return; }
         painel.classList.add('hidden');
+        if (blocoNova) { esconderNova(); }
         taskAtual = null;
         botaoAtual = null;
     }

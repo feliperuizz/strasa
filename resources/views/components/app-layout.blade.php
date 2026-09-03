@@ -465,19 +465,36 @@
             corEscolhida: cores[0],
             todas: todas,
 
-            /**
-             * So as flags padrao entram na lista de escolha, e apenas as que
-             * ainda nao estao neste card. Flags antigas continuam visiveis no
-             * card e podem ser removidas pelo x de cada uma.
-             */
+            /** As que ainda nao estao neste card. */
             get disponiveis() {
                 var jaNoCard = Array.prototype.slice
                     .call(document.querySelectorAll('#tags-container input[name="tags[]"]'))
                     .map(function (i) { return i.value.split('|')[0].toLowerCase(); });
 
                 return this.todas.filter(function (f) {
-                    return f.padrao && jaNoCard.indexOf(f.name.toLowerCase()) === -1;
+                    return jaNoCard.indexOf(f.name.toLowerCase()) === -1;
                 });
+            },
+
+            criar: function () {
+                var nome = this.nome.trim();
+                if (!nome) { return; }
+
+                // Se ja existe uma flag com esse nome, reaproveita a cor dela
+                // em vez de criar uma duplicata com cor diferente.
+                var igual = this.todas.find(function (f) {
+                    return f.name.toLowerCase() === nome.toLowerCase();
+                });
+
+                if (igual) {
+                    this.adicionarSelo(igual.name, igual.color);
+                } else {
+                    this.adicionarSelo(nome, this.corEscolhida);
+                    this.todas.push({ id: null, name: nome, color: this.corEscolhida, sugestao: false, padrao: false });
+                }
+
+                this.nome = '';
+                this.abrir = false;
             },
 
             aplicar: function (flag) {
