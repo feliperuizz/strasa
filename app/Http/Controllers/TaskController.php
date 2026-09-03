@@ -258,7 +258,8 @@ class TaskController extends Controller
             'project' => $project->load('client', 'columns'),
             'members' => User::where('company_id', $project->company_id)->orderBy('name')->get(),
             'contentTypes' => Task::CONTENT_TYPES,
-            'allTags' => Tag::orderBy('name')->get(),
+            // Inclui as predefinidas que ainda nao viraram registro.
+            'allTags' => Tag::comPredefinidas(),
         ];
     }
 

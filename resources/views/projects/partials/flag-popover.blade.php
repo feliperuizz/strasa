@@ -140,11 +140,13 @@
                 (ativa ? '<svg class="h-3 w-3 text-white" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>' : '') +
                 '</span>' +
                 '<span class="h-2 w-2 shrink-0 rounded-full" style="background:' + flag.color + '"></span>' +
-                '<span class="truncate text-[13px] ' + (ativa ? 'text-slate-100' : 'text-slate-300') + '">' + flag.name + '</span>';
+                '<span class="truncate text-[13px] ' + (ativa ? 'text-slate-100' : 'text-slate-300') + '">' + flag.name + '</span>' +
+                (flag.sugestao ? '<span class="ml-auto shrink-0 text-[9.5px] uppercase tracking-wide text-slate-600">padrão</span>' : '');
 
             alternar.addEventListener('click', function () { alternarFlag(flag); });
 
             var excluir = document.createElement('button');
+            if (flag.sugestao) { excluir.style.display = 'none'; }
             excluir.type = 'button';
             excluir.title = 'Excluir esta flag de todos os cards';
             excluir.className = 'shrink-0 text-slate-600 opacity-0 transition hover:text-rose-400 group-hover:opacity-100';
@@ -179,19 +181,31 @@
 
     /* ---------------- Ações ---------------- */
     function alternarFlag(flag) {
-        var url = painel.dataset.urlToggle + '/' + taskAtual + '/tags/' + flag.id;
+        // Sempre por NOME: cobre tanto a flag que ja existe quanto a
+        // predefinida que ainda nao virou registro no banco. O servidor cria
+        // se precisar e devolve o id definitivo.
+        var url = painel.dataset.urlToggle + '/' + taskAtual + '/flags';
 
-        pedir(url, 'POST').then(function (r) {
+        pedir(url, 'POST', { name: flag.name, color: flag.color }).then(function (r) {
             if (!r.ok) {
                 alert(r.dados.message || 'Não foi possível alterar a flag.');
                 return;
             }
 
+            // Sugestao virou flag de verdade: guarda o id que voltou.
+            var salva = r.dados.tag;
+            var registro = flags.find(function (f) { return f.name === salva.name; });
+            if (registro) {
+                registro.id = salva.id;
+                registro.color = salva.color;
+                registro.sugestao = false;
+            }
+
             var ids = idsDoCard();
             if (r.dados.aplicada) {
-                ids.push(flag.id);
+                ids.push(salva.id);
             } else {
-                ids = ids.filter(function (id) { return id !== flag.id; });
+                ids = ids.filter(function (id) { return id !== salva.id; });
             }
 
             gravarIdsNoCard(ids);

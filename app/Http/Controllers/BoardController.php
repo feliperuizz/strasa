@@ -41,7 +41,7 @@ class BoardController extends Controller
         return view('projects.board', [
             // Uma consulta para o quadro inteiro: o painel de flags e todos os
             // cards leem desta mesma lista.
-            'tags' => \App\Models\Tag::orderBy('name')->get(['id', 'name', 'color']),
+            'tags' => \App\Models\Tag::comPredefinidas(),
             'project' => $project,
             'client' => $project->client,
             'columns' => $columns,

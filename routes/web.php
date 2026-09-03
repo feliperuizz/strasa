@@ -168,6 +168,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::patch('tags/{tag}', [TagController::class, 'update'])->name('tags.update');
     Route::delete('tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
     Route::post('tasks/{task}/tags/{tag}', [TagController::class, 'toggle'])->name('tags.toggle');
+    Route::post('tasks/{task}/flags', [TagController::class, 'apply'])->name('tags.apply');
 
     /* Demandas da equipe -------------------------------------------------- */
     Route::get('demandas', [DemandsController::class, 'index'])->name('demands.index');

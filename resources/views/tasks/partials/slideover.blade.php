@@ -107,33 +107,47 @@
                         @endforeach
                     </div>
                     
-                    <div x-data="{ open: false, tagText: '', tagColor: '#ef4444' }" class="relative">
-                        <button type="button" @click="open = !open" class="text-xs text-brand-400 hover:text-brand-300 transition font-medium">＋ Adicionar flag</button>
-                        
-                        <div x-show="open" @click.outside="open = false" style="display: none;" class="absolute left-0 mt-2 w-56 rounded-lg border border-ink-800 bg-ink-900 p-3 shadow-xl z-50">
-                            <input type="text" x-model="tagText" placeholder="Nome da flag..." @keydown.enter.prevent="$refs.addBtn.click()" class="w-full rounded bg-ink-800 px-2 py-1.5 text-xs border border-ink-800 focus:border-brand-500 focus:ring-0 mb-3 text-slate-200">
-                            
-                            <div class="flex flex-wrap gap-1.5 mb-3">
-                                <template x-for="color in ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8']">
-                                    <button type="button" @click="tagColor = color" :class="tagColor === color ? 'ring-2 ring-white scale-110' : ''" class="w-5 h-5 rounded-full transition-transform" :style="'background: ' + color"></button>
-                                </template>
+                    <div x-data="seletorDeFlags(@js($allTags ?? []), @js(\App\Models\Tag::CORES))" class="relative">
+                        <button type="button" @click="abrir = !abrir" class="text-xs text-brand-400 hover:text-brand-300 transition font-medium">＋ Adicionar flag</button>
+
+                        <div x-show="abrir" @click.outside="abrir = false" style="display: none;"
+                             class="absolute left-0 mt-2 w-64 rounded-lg border border-ink-800 bg-ink-900 p-3 shadow-xl z-50">
+
+                            {{-- Flags disponíveis: as da empresa mais as padrão --}}
+                            <div class="mb-3">
+                                <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Disponíveis</p>
+                                <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                                    <template x-for="flag in disponiveis" :key="flag.name">
+                                        <button type="button" @click="aplicar(flag)"
+                                                class="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition hover:brightness-125"
+                                                :style="'background:' + flag.color + '22; color:' + flag.color">
+                                            <span class="h-1.5 w-1.5 rounded-full" :style="'background:' + flag.color"></span>
+                                            <span x-text="flag.name"></span>
+                                        </button>
+                                    </template>
+                                    <p x-show="!disponiveis.length" class="text-[11.5px] text-slate-500">Todas já estão neste card.</p>
+                                </div>
                             </div>
-                            
-                            <button type="button" x-ref="addBtn" @click="
-                                if(tagText.trim() === '') return;
-                                const div = document.createElement('div');
-                                div.className = 'inline-flex items-center gap-1 rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 border border-ink-600';
-                                div.innerHTML = `
-                                    <span class=\'w-2 h-2 rounded-full\' style=\'background: ${tagColor}\'></span>
-                                    ${tagText}
-                                    <input type=\'hidden\' name=\'tags[]\' value=\'${tagText}|${tagColor}\'>
-                                    <button type=\'button\' onclick=\'this.parentElement.remove(); document.getElementById(\`task-auto-form\`).dispatchEvent(new Event(\`change\`, {bubbles: true}))\' class=\'text-slate-500 hover:text-rose-400 ml-1\'>&times;</button>
-                                `;
-                                document.getElementById('tags-container').appendChild(div);
-                                open = false;
-                                tagText = '';
-                                document.getElementById('task-auto-form').dispatchEvent(new Event('change', {bubbles: true}));
-                            " class="w-full rounded bg-brand-600 py-1.5 text-xs font-semibold text-white hover:bg-brand-500">Adicionar</button>
+
+                            {{-- Criar uma nova --}}
+                            <div class="border-t border-ink-800 pt-3">
+                                <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Nova flag</p>
+
+                                <input type="text" x-model="nome" placeholder="Nome da flag..." maxlength="40"
+                                       @keydown.enter.prevent="criar()"
+                                       class="w-full rounded bg-ink-800 px-2 py-1.5 text-xs border border-ink-800 focus:border-brand-500 focus:ring-0 mb-2 text-slate-200">
+
+                                <div class="flex flex-wrap gap-1.5 mb-3">
+                                    <template x-for="cor in cores" :key="cor">
+                                        <button type="button" @click="corEscolhida = cor"
+                                                :class="corEscolhida === cor ? 'ring-2 ring-white scale-110' : ''"
+                                                class="w-5 h-5 rounded-full transition-transform" :style="'background: ' + cor"></button>
+                                    </template>
+                                </div>
+
+                                <button type="button" @click="criar()"
+                                        class="w-full rounded bg-brand-600 py-1.5 text-xs font-semibold text-white hover:bg-brand-500">Adicionar</button>
+                            </div>
                         </div>
                     </div>
                 </div>

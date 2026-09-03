@@ -86,6 +86,35 @@ class TagController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * Aplica uma flag pelo NOME, criando-a se ainda não existir.
+     *
+     * É o caminho das predefinidas: elas aparecem na lista mesmo sem existir
+     * no banco, e só viram registro quando alguém realmente usa uma.
+     */
+    public function apply(Request $request, Task $task): JsonResponse
+    {
+        $this->authorize('update', $task);
+
+        $dados = $request->validate([
+            'name' => ['required', 'string', 'max:40'],
+            'color' => ['required', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+        ]);
+
+        $tag = Tag::firstOrCreate(
+            ['company_id' => $task->company_id, 'name' => $dados['name']],
+            ['color' => $dados['color']]
+        );
+
+        $resultado = $task->tags()->toggle($tag->id);
+
+        return response()->json([
+            'ok' => true,
+            'aplicada' => ! empty($resultado['attached']),
+            'tag' => ['id' => $tag->id, 'name' => $tag->name, 'color' => $tag->color],
+        ]);
+    }
+
     /** Aplica ou tira a flag de um card. */
     public function toggle(Request $request, Task $task, Tag $tag): JsonResponse
     {

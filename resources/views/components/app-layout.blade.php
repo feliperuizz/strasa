@@ -450,6 +450,103 @@
         document.addEventListener('alpine:init', () => applyScrollWithRetry(12));
     })();
 
+    /**
+     * Seletor de flags do slideover da tarefa.
+     *
+     * Fica aqui, e nao no proprio slideover, porque ele e carregado por AJAX:
+     * um <script> injetado por innerHTML nao executa, e a pilha de scripts
+     * do Blade nao chega ao layout. Os dados vem pelo x-data do partial.
+     */
+    window.seletorDeFlags = function (todas, cores) {
+        return {
+            abrir: false,
+            nome: '',
+            cores: cores,
+            corEscolhida: cores[0],
+            todas: todas,
+
+            /** As que ainda nao estao neste card. */
+            get disponiveis() {
+                var jaNoCard = Array.prototype.slice
+                    .call(document.querySelectorAll('#tags-container input[name="tags[]"]'))
+                    .map(function (i) { return i.value.split('|')[0].toLowerCase(); });
+
+                return this.todas.filter(function (f) {
+                    return jaNoCard.indexOf(f.name.toLowerCase()) === -1;
+                });
+            },
+
+            aplicar: function (flag) {
+                this.adicionarSelo(flag.name, flag.color);
+                this.abrir = false;
+            },
+
+            criar: function () {
+                var nome = this.nome.trim();
+                if (!nome) { return; }
+
+                // Se ja existe uma flag com esse nome, reaproveita a cor dela
+                // em vez de criar uma duplicata com cor diferente.
+                var igual = this.todas.find(function (f) {
+                    return f.name.toLowerCase() === nome.toLowerCase();
+                });
+
+                if (igual) {
+                    this.adicionarSelo(igual.name, igual.color);
+                } else {
+                    this.adicionarSelo(nome, this.corEscolhida);
+                    this.todas.push({ id: null, name: nome, color: this.corEscolhida, sugestao: false });
+                }
+
+                this.nome = '';
+                this.abrir = false;
+            },
+
+            /**
+             * O formulario da tarefa salva as flags como "nome|cor" em inputs
+             * escondidos; o autosave dispara no evento de change.
+             */
+            adicionarSelo: function (nome, cor) {
+                var container = document.getElementById('tags-container');
+                if (!container) { return; }
+
+                var div = document.createElement('div');
+                div.className = 'inline-flex items-center gap-1 rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 border border-ink-600';
+
+                var ponto = document.createElement('span');
+                ponto.className = 'w-2 h-2 rounded-full';
+                ponto.style.background = cor;
+
+                var campo = document.createElement('input');
+                campo.type = 'hidden';
+                campo.name = 'tags[]';
+                campo.value = nome + '|' + cor;
+
+                var remover = document.createElement('button');
+                remover.type = 'button';
+                remover.className = 'text-slate-500 hover:text-rose-400 ml-1';
+                remover.innerHTML = '&times;';
+                remover.addEventListener('click', function () {
+                    div.remove();
+                    avisarFormulario();
+                });
+
+                div.appendChild(ponto);
+                div.appendChild(document.createTextNode(' ' + nome + ' '));
+                div.appendChild(campo);
+                div.appendChild(remover);
+                container.appendChild(div);
+
+                avisarFormulario();
+            },
+        };
+
+        function avisarFormulario() {
+            var form = document.getElementById('task-auto-form');
+            if (form) { form.dispatchEvent(new Event('change', { bubbles: true })); }
+        }
+    };
+
     window.completeTask = function(btn, taskId, e) {
         if (e) {
             e.preventDefault();

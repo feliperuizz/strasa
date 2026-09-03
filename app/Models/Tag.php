@@ -33,4 +33,42 @@ class Tag extends Model
     {
         return $this->belongsToMany(Task::class, 'task_tag');
     }
+
+    /**
+     * Flags da empresa mais as predefinidas que ainda não existem.
+     *
+     * As padrão aparecem sempre, mesmo em empresa nova ou onde a migration
+     * de seed não tenha rodado — vêm com id nulo e viram registro de verdade
+     * na primeira vez que alguém aplica uma. Assim a lista nunca depende de
+     * um passo de deploy ter dado certo.
+     *
+     * @return \Illuminate\Support\Collection<int, array{id:?int, name:string, color:string, sugestao:bool}>
+     */
+    public static function comPredefinidas(): \Illuminate\Support\Collection
+    {
+        $existentes = self::orderBy('name')->get(['id', 'name', 'color']);
+
+        $nomes = $existentes->map(fn ($t) => mb_strtolower($t->name));
+
+        $sugestoes = collect(self::PREDEFINIDAS)
+            ->reject(fn ($cor, $nome) => $nomes->contains(mb_strtolower($nome)))
+            ->map(fn ($cor, $nome) => [
+                'id' => null,
+                'name' => $nome,
+                'color' => $cor,
+                'sugestao' => true,
+            ])
+            ->values();
+
+        return $existentes
+            ->map(fn ($t) => [
+                'id' => $t->id,
+                'name' => $t->name,
+                'color' => $t->color,
+                'sugestao' => false,
+            ])
+            ->concat($sugestoes)
+            ->sortBy(fn ($f) => mb_strtolower($f['name']))
+            ->values();
+    }
 }
