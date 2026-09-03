@@ -476,6 +476,48 @@
                 });
             },
 
+            /**
+             * Exclui a flag da empresa inteira. Some de todos os cards, entao
+             * confirma antes — e tira tambem o selo deste card, se estiver
+             * aplicada, para a tela nao mostrar algo que ja nao existe.
+             */
+            excluir: function (flag) {
+                if (!flag.id) { return; }
+
+                if (!confirm('Excluir a flag "' + flag.name + '"? Ela sai de todos os cards que a usam.')) {
+                    return;
+                }
+
+                var self = this;
+
+                fetch('{{ url('/tags') }}/' + flag.id, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function (res) { return res.json().catch(function () { return {}; })
+                    .then(function (d) { return { ok: res.ok, dados: d }; }); })
+                .then(function (r) {
+                    if (!r.ok) {
+                        alert(r.dados.message || 'Não foi possível excluir a flag.');
+                        return;
+                    }
+
+                    self.todas = self.todas.filter(function (f) { return f.id !== flag.id; });
+
+                    // Se estava aplicada neste card, tira o selo tambem.
+                    document.querySelectorAll('#tags-container input[name="tags[]"]').forEach(function (campo) {
+                        if (campo.value.split('|')[0].toLowerCase() === flag.name.toLowerCase()) {
+                            campo.parentElement.remove();
+                        }
+                    });
+                })
+                .catch(function () { alert('Falha de conexão ao excluir a flag.'); });
+            },
+
             criar: function () {
                 var nome = this.nome.trim();
                 if (!nome) { return; }

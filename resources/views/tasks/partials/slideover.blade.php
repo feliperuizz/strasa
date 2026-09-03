@@ -118,12 +118,19 @@
                                 <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500">Disponíveis</p>
                                 <div class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
                                     <template x-for="flag in disponiveis" :key="flag.name">
-                                        <button type="button" @click="aplicar(flag)"
-                                                class="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium transition hover:brightness-125"
-                                                :style="'background:' + flag.color + '22; color:' + flag.color">
-                                            <span class="h-1.5 w-1.5 rounded-full" :style="'background:' + flag.color"></span>
-                                            <span x-text="flag.name"></span>
-                                        </button>
+                                        <span class="group inline-flex items-center rounded transition hover:brightness-125"
+                                              :style="'background:' + flag.color + '22'">
+                                            <button type="button" @click="aplicar(flag)"
+                                                    class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium"
+                                                    :style="'color:' + flag.color">
+                                                <span class="h-1.5 w-1.5 rounded-full" :style="'background:' + flag.color"></span>
+                                                <span x-text="flag.name"></span>
+                                            </button>
+                                            {{-- Sugestão ainda não existe no banco: não há o que excluir. --}}
+                                            <button type="button" x-show="flag.id" @click.stop="excluir(flag)"
+                                                    title="Excluir esta flag de todos os cards"
+                                                    class="px-1.5 py-1 text-[11px] leading-none text-slate-500 opacity-0 transition hover:text-rose-400 group-hover:opacity-100">&times;</button>
+                                        </span>
                                     </template>
                                     <p x-show="!disponiveis.length" class="text-[11.5px] text-slate-500">Todas já estão neste card.</p>
                                 </div>
