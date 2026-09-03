@@ -49,15 +49,28 @@
 (function () {
     'use strict';
 
-    var painel = document.getElementById('painel-flags');
-    if (!painel) { return; }
+    // Os elementos sao buscados sob demanda, e nao aqui em cima. Se este
+    // script rodar antes do painel existir no DOM (ja aconteceu: o include
+    // tinha caido dentro da pilha de scripts), a funcao continua sendo
+    // definida e o clique funciona assim que o elemento aparece.
+    var painel, lista, blocoNova, botaoNova, campoNome, paletaEl, erroEl;
+    var ligado = false;
 
-    var lista = document.getElementById('painel-flags-lista');
-    var blocoNova = document.getElementById('painel-flags-nova');
-    var botaoNova = document.getElementById('painel-flags-abrir-nova');
-    var campoNome = document.getElementById('painel-flags-nome');
-    var paletaEl = document.getElementById('painel-flags-cores');
-    var erroEl = document.getElementById('painel-flags-erro');
+    function elementos() {
+        painel = document.getElementById('painel-flags');
+        if (!painel) { return false; }
+
+        lista = document.getElementById('painel-flags-lista');
+        blocoNova = document.getElementById('painel-flags-nova');
+        botaoNova = document.getElementById('painel-flags-abrir-nova');
+        campoNome = document.getElementById('painel-flags-nome');
+        paletaEl = document.getElementById('painel-flags-cores');
+        erroEl = document.getElementById('painel-flags-erro');
+
+        if (!ligado) { ligarEventos(); ligado = true; }
+
+        return true;
+    }
 
     var flags = @json($tags);
     var paleta = @json(\App\Models\Tag::CORES);
@@ -277,6 +290,11 @@
 
     /* ---------------- Abrir e fechar ---------------- */
     window.abrirPainelFlags = function (botao, taskId) {
+        if (!elementos()) {
+            console.warn('Painel de flags não encontrado nesta página.');
+            return;
+        }
+
         // Clicar no mesmo botão fecha.
         if (taskAtual === String(taskId) && !painel.classList.contains('hidden')) {
             fechar();
@@ -324,6 +342,7 @@
         botaoAtual = null;
     }
 
+    function ligarEventos() {
     painel.querySelector('[data-fechar-flags]').addEventListener('click', fechar);
 
     botaoNova.addEventListener('click', function () {
@@ -357,6 +376,7 @@
     // O painel é fixo na tela; se a coluna rolar, ele descolaria do card.
     window.addEventListener('scroll', fechar, true);
     window.addEventListener('resize', fechar);
+    }
 })();
 </script>
 @endpush

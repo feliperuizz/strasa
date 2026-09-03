@@ -134,8 +134,12 @@
         </div>
     </div>
 
-    @push('scripts')
+    {{-- Fora do @push: o painel precisa existir no corpo da pagina antes do
+         script que o procura. Dentro da pilha de scripts, o <div> saia depois
+         do JS e a funcao de abrir nunca chegava a ser definida. --}}
     @include('projects.partials.flag-popover')
+
+    @push('scripts')
 
     <script>
         document.addEventListener('alpine:init', () => {
