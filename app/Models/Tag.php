@@ -57,8 +57,11 @@ class Tag extends Model
                 'name' => $nome,
                 'color' => $cor,
                 'sugestao' => true,
+                'padrao' => true,
             ])
             ->values();
+
+        $nomesPadrao = collect(self::PREDEFINIDAS)->keys()->map(fn ($n) => mb_strtolower($n));
 
         return $existentes
             ->map(fn ($t) => [
@@ -66,6 +69,9 @@ class Tag extends Model
                 'name' => $t->name,
                 'color' => $t->color,
                 'sugestao' => false,
+                // Só as padrão entram na lista de escolha; as demais aparecem
+                // apenas nos cards onde já estão, para poderem ser retiradas.
+                'padrao' => $nomesPadrao->contains(mb_strtolower($t->name)),
             ])
             ->concat($sugestoes)
             ->sortBy(fn ($f) => mb_strtolower($f['name']))
