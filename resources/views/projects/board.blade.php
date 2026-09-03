@@ -135,6 +135,8 @@
     </div>
 
     @push('scripts')
+    @include('projects.partials.flag-popover')
+
     <script>
         document.addEventListener('alpine:init', () => {
             // Recalcula o número exibido no cabeçalho de cada coluna a partir dos cards

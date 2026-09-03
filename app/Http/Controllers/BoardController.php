@@ -39,6 +39,9 @@ class BoardController extends Controller
         $myNote = \App\Models\ProjectNote::where('project_id', $project->id)->where('user_id', auth()->id())->first();
 
         return view('projects.board', [
+            // Uma consulta para o quadro inteiro: o painel de flags e todos os
+            // cards leem desta mesma lista.
+            'tags' => \App\Models\Tag::orderBy('name')->get(['id', 'name', 'color']),
             'project' => $project,
             'client' => $project->client,
             'columns' => $columns,

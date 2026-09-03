@@ -16,6 +16,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FinancialController;
 use App\Http\Controllers\Portal\ApprovalPortalController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaskAttachmentController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskController;
@@ -161,6 +162,12 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('tasks/{task}/approval', [ApprovalsController::class, 'cancel'])->name('approvals.cancel');
     Route::post('comments/{comment}/visibility', [ApprovalsController::class, 'toggleCommentVisibility'])
         ->name('comments.visibility');
+
+    /* Flags (tags) dos cards ---------------------------------------------- */
+    Route::post('tags', [TagController::class, 'store'])->name('tags.store');
+    Route::patch('tags/{tag}', [TagController::class, 'update'])->name('tags.update');
+    Route::delete('tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+    Route::post('tasks/{task}/tags/{tag}', [TagController::class, 'toggle'])->name('tags.toggle');
 
     /* Demandas da equipe -------------------------------------------------- */
     Route::get('demandas', [DemandsController::class, 'index'])->name('demands.index');

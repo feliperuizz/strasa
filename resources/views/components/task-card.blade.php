@@ -69,12 +69,26 @@
                         {{ $task->items->where('is_completed', true)->count() }}/{{ $task->items->count() }}
                     </span>
                 @endif
-                @if($task->tags->isNotEmpty())
+                {{-- As flags do card. O painel reescreve este bloco ao aplicar
+                     ou tirar uma flag, por isso o data-flags com o id. --}}
+                <span class="contents" data-flags="{{ $task->id }}">
                     @foreach($task->tags as $tag)
                         <span class="rounded px-1.5 py-0.5 text-[10px] font-medium"
                               style="background: {{ $tag->color }}22; color: {{ $tag->color }}">#{{ $tag->name }}</span>
                     @endforeach
-                @endif
+                </span>
+
+                {{-- Abre o painel de flags sem precisar entrar no card. --}}
+                <button type="button"
+                        title="Flags"
+                        data-abrir-flags="{{ $task->id }}"
+                        data-flags-atuais="{{ $task->tags->pluck('id')->implode(',') }}"
+                        @click.stop="$event.preventDefault(); window.abrirPainelFlags($el, {{ $task->id }})"
+                        class="relative z-10 rounded px-1 py-0.5 text-[10px] font-medium text-slate-500 opacity-0 transition hover:bg-ink-700 hover:text-slate-200 group-hover:opacity-100 focus:opacity-100">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 2H21l-3 6 3 6h-8.5l-1-2H5a2 2 0 00-2 2z"/>
+                    </svg>
+                </button>
             </div>
             <div class="relative z-10 flex items-center gap-2">
                 @if($task->publish_date)
