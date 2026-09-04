@@ -130,6 +130,8 @@
         if (!nome) { campoNome.focus(); return; }
 
         pedir(painel.dataset.urlTags, 'POST', { name: nome, color: corEscolhida }).then(function (r) {
+            if (window.sessaoExpirou(r.status)) { return; }
+
             if (!r.ok) {
                 erroEl.textContent = (r.dados.errors && r.dados.errors.name)
                     ? r.dados.errors.name[0]
@@ -166,7 +168,7 @@
             body: corpo ? JSON.stringify(corpo) : undefined
         }).then(function (res) {
             return res.json().catch(function () { return {}; })
-                .then(function (dados) { return { ok: res.ok, dados: dados }; });
+                .then(function (dados) { return { ok: res.ok, status: res.status, dados: dados }; });
         });
     }
 
@@ -261,6 +263,8 @@
         var url = painel.dataset.urlToggle + '/' + taskAtual + '/flags';
 
         pedir(url, 'POST', { name: flag.name, color: flag.color }).then(function (r) {
+            if (window.sessaoExpirou(r.status)) { return; }
+
             if (!r.ok) {
                 alert(r.dados.message || 'Não foi possível alterar a flag.');
                 return;
@@ -293,6 +297,8 @@
         }
 
         pedir(painel.dataset.urlTags + '/' + flag.id, 'DELETE').then(function (r) {
+            if (window.sessaoExpirou(r.status)) { return; }
+
             if (!r.ok) {
                 alert(r.dados.message || 'Não foi possível excluir a flag.');
                 return;

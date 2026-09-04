@@ -265,6 +265,11 @@
                                 })
                             })
                             .then(async res => {
+                                if (res.status === 419) {
+                                    // Sessao expirada: o card volta pelo catch
+                                    // e a pagina recarrega para novo login.
+                                    throw new Error('__sessao__');
+                                }
                                 if (!res.ok) {
                                     let detail = '';
                                     try { const j = await res.json(); detail = j.message || JSON.stringify(j.errors || j); }
@@ -284,6 +289,12 @@
                                 const ref = fromList.children[evt.oldIndex] || null;
                                 fromList.insertBefore(itemEl, ref);
                                 updateColumnCounts();
+
+                                if (err && err.message === '__sessao__') {
+                                    window.sessaoExpirou(419);
+                                    return;
+                                }
+
                                 console.error('Erro ao mover card:', err);
                                 alert('Não foi possível mover o card.\n\nDetalhe técnico: ' + (err && err.message ? err.message : err));
                             });

@@ -589,6 +589,25 @@
         }
     };
 
+    /**
+     * Trata sessao expirada em qualquer chamada AJAX.
+     *
+     * O token CSRF fica gravado no HTML no momento em que a pagina carrega.
+     * Se a aba ficar aberta ate a sessao expirar, esse token vira invalido e
+     * o servidor responde 419 — que sem tratamento aparece como um erro
+     * tecnico incompreensivel no meio de um arrastar de card.
+     *
+     * @return {boolean} true se tratou (quem chamou deve parar por aqui)
+     */
+    window.sessaoExpirou = function (status) {
+        if (status !== 419) { return false; }
+
+        alert('Sua sessão expirou por inatividade.' + String.fromCharCode(10, 10) + 'A página vai recarregar para você entrar de novo. Nada do que já estava salvo se perde.');
+        window.location.reload();
+
+        return true;
+    };
+
     window.completeTask = function(btn, taskId, e) {
         if (e) {
             e.preventDefault();
@@ -607,8 +626,11 @@
                 'Accept': 'application/json'
             }
         })
-        .then(res => res.json().then(data => ({ ok: res.ok, data })))
-        .then(({ ok, data }) => {
+        .then(res => res.json().catch(() => ({}))
+            .then(data => ({ ok: res.ok, status: res.status, data })))
+        .then(({ ok, status, data }) => {
+            if (window.sessaoExpirou(status)) { return; }
+
             if (!ok) {
                 btn.innerHTML = iconeOriginal;
                 alert(data.message || 'Erro ao concluir a tarefa. Tente recarregar a página.');
