@@ -1,7 +1,17 @@
 <x-app-layout title="Minhas Tarefas">
     <x-slot name="header">
-        <div class="flex items-center gap-3">
-            <h1 class="text-xl font-bold text-slate-200 tracking-wide">Minhas Tarefas</h1>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+                <h1 class="text-xl font-bold text-slate-200 tracking-wide">Minhas Tarefas</h1>
+                <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
+                    O que ainda falta entregar. Tarefas concluídas saem da lista.
+                </p>
+            </div>
+            @if($tasks->isNotEmpty())
+                <span class="self-start rounded-full bg-ink-700 px-2.5 py-1 text-[12px] font-semibold text-slate-300">
+                    {{ $tasks->count() }} {{ $tasks->count() === 1 ? 'pendente' : 'pendentes' }}
+                </span>
+            @endif
         </div>
     </x-slot>
 
@@ -52,7 +62,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-6 text-center text-sm text-slate-500">Você não tem nenhuma tarefa atribuída a você no momento.</td>
+                                <td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">
+                                    <span class="block text-2xl mb-2">🎉</span>
+                                    Nada pendente por aqui.<br>
+                                    <span class="text-[12.5px]">As tarefas que você concluiu continuam no quadro do projeto.</span>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
