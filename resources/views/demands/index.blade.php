@@ -153,7 +153,12 @@
                                               title="{{ $tarefa->column?->name }}"></span>
 
                                         <div class="flex-1 min-w-0">
-                                            <a href="{{ route('projects.board', $tarefa->project_id) }}"
+                                            {{-- Abre a TAREFA no slideover, e nao o quadro.
+                                                 O href continua real para ctrl+clique e para o
+                                                 caso de o JS falhar; tasks.show devolve a pagina
+                                                 inteira na navegacao normal. --}}
+                                            <a href="{{ route('tasks.show', $tarefa) }}"
+                                               @click.prevent="$dispatch('open-task-modal', '{{ route('tasks.show', $tarefa) }}')"
                                                class="text-[13.5px] font-medium text-slate-200 hover:text-brand-400 transition
                                                       {{ $tarefa->is_published ? 'line-through opacity-60' : '' }}">
                                                 {{ $tarefa->title }}
@@ -165,7 +170,11 @@
                                                         {{ $tarefa->client->name }}
                                                     </span>
                                                 @endif
-                                                @if($tarefa->project)<span>{{ $tarefa->project->name }}</span>@endif
+                                                @if($tarefa->project)
+                                                    {{-- Quem quiser o quadro chega por aqui. --}}
+                                                    <a href="{{ route('projects.board', $tarefa->project_id) }}"
+                                                       class="hover:text-brand-400 transition">{{ $tarefa->project->name }}</a>
+                                                @endif
                                                 @if($tarefa->column)<span>{{ $tarefa->column->name }}</span>@endif
                                                 @if($tarefa->publish_time)
                                                     <span>{{ \Carbon\Carbon::parse($tarefa->publish_time)->format('H:i') }}</span>
@@ -203,7 +212,8 @@
                                 <div class="flex items-start gap-3 px-5 py-3 border-b border-amber-500/10 last:border-0">
                                     <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full" style="background: {{ $tarefa->column?->color ?: '#64748b' }}"></span>
                                     <div class="flex-1 min-w-0">
-                                        <a href="{{ route('projects.board', $tarefa->project_id) }}"
+                                        <a href="{{ route('tasks.show', $tarefa) }}"
+                                           @click.prevent="$dispatch('open-task-modal', '{{ route('tasks.show', $tarefa) }}')"
                                            class="text-[13.5px] font-medium text-slate-200 hover:text-brand-400 transition">{{ $tarefa->title }}</a>
                                         <div class="mt-0.5 flex flex-wrap items-center gap-x-2.5 text-[11.5px] text-slate-500">
                                             @if($tarefa->client)<span>{{ $tarefa->client->name }}</span>@endif
