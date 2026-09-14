@@ -32,13 +32,25 @@
                     </thead>
                     <tbody class="divide-y divide-ink-700">
                         @forelse($tasks as $task)
-                            <tr class="hover:bg-ink-700/50 cursor-pointer group">
+                            {{-- A linha inteira abre a tarefa no slideover. As celulas que
+                                 tem acao propria (concluir, link do projeto) usam @click.stop
+                                 para nao disparar isto junto. --}}
+                            <tr class="hover:bg-ink-700/50 cursor-pointer group"
+                                @click="$dispatch('open-task-modal', '{{ route('tasks.show', $task) }}')">
                                 <td class="px-4 py-3" @click.stop>
                                     <button type="button" onclick="window.completeTask(this, {{ $task->id }}, event)" class="mt-0.5 text-slate-500 hover:text-emerald-400 focus:outline-none transition-colors">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     </button>
                                 </td>
-                                <td class="px-4 py-3 font-medium text-slate-200">{{ $task->title }}</td>
+                                <td class="px-4 py-3 font-medium text-slate-200">
+                                    {{-- href real para ctrl+clique abrir em outra aba. Clique normal
+                                         nao navega: deixa subir ate a linha, que abre o slideover. --}}
+                                    <a href="{{ route('tasks.show', $task) }}"
+                                       class="hover:text-brand-400 transition"
+                                       @click="if ($event.ctrlKey || $event.metaKey) { $event.stopPropagation(); } else { $event.preventDefault(); }">
+                                        {{ $task->title }}
+                                    </a>
+                                </td>
                                 <td class="px-4 py-3 text-slate-400">
                                     <a href="{{ route('projects.board', $task->project_id) }}" class="hover:text-slate-200" @click.stop>
                                         {{ optional($task->project->client)->name }} - {{ optional($task->project)->name }}
