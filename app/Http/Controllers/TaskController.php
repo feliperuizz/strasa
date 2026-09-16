@@ -49,6 +49,7 @@ class TaskController extends Controller
                 'description' => $request->validated('description'),
                 'content_type' => $request->validated('content_type'),
                 'publish_date' => $request->validated('publish_date'),
+                'publish_time' => $request->validated('publish_time'),
                 'position' => (int) $project->tasks()->where('column_id', $column->id)->max('position') + 1,
                 'is_published' => $column->marks_published,
                 'published_at' => $column->marks_published ? now() : null,
@@ -136,6 +137,7 @@ class TaskController extends Controller
                 'description' => $request->validated('description'),
                 'content_type' => $request->validated('content_type'),
                 'publish_date' => $request->validated('publish_date'),
+                'publish_time' => $request->validated('publish_time'),
                 'is_published' => $column->marks_published,
                 'published_at' => $column->marks_published ? ($task->published_at ?? now()) : null,
             ]);
