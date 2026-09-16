@@ -330,89 +330,26 @@
 
 
         {{-- Checklist --}}
-        {{-- Cada item tem responsável e prazo próprios: a peça costuma ser dividida
-             em etapas (roteiro, captação, edição...) que pessoas diferentes entregam
-             em dias diferentes. Os controles salvam sozinhos ao mudar. --}}
-        <div class="mb-6" x-data="{
-            newItem: '',
-            newAssignee: null,
-            newDueDate: '',
-            adding: false,
-            hoje: (function () { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(),
-            items: {{ json_encode($task->items ?? []) }},
-            cabecalhos() {
-                return {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                    'Accept': 'application/json'
-                };
-            },
-            async addItem() {
-                if(!this.newItem.trim()) return;
-                this.adding = true;
-                try {
-                    const res = await fetch('{{ route('items.store', $task) }}', {
-                        method: 'POST',
-                        headers: this.cabecalhos(),
-                        body: JSON.stringify({
-                            description: this.newItem,
-                            assignee_id: this.newAssignee || null,
-                            due_date: this.newDueDate || null
-                        })
-                    });
-                    const data = await res.json();
-                    if(res.ok) {
-                        this.items.push(data.item);
-                        this.newItem = '';
-                        this.newAssignee = null;
-                        this.newDueDate = '';
-                    } else if (!window.sessaoExpirou(res.status)) {
-                        alert(data.message || 'Não foi possível adicionar o item.');
-                    }
-                } finally {
-                    this.adding = false;
-                }
-            },
-            async salvarItem(item, campos) {
-                try {
-                    const res = await fetch('/items/' + item.id, {
-                        method: 'PATCH',
-                        headers: this.cabecalhos(),
-                        body: JSON.stringify(campos)
-                    });
-                    const data = await res.json().catch(() => ({}));
-                    if (res.ok && data.item) {
-                        Object.assign(item, data.item);
-                    } else if (!window.sessaoExpirou(res.status)) {
-                        alert(data.message || 'Não foi possível salvar o item.');
-                    }
-                } catch (e) {
-                    alert('Erro de conexão ao salvar o item.');
-                }
-            },
-            toggleItem(item) {
-                item.is_completed = !item.is_completed;
-                this.salvarItem(item, { is_completed: item.is_completed });
-            },
-            async deleteItem(item) {
-                if(!confirm('Excluir item?')) return;
-                this.items = this.items.filter(i => i.id !== item.id);
-                fetch('/items/' + item.id, {
-                    method: 'DELETE',
-                    headers: this.cabecalhos()
-                });
-            },
-            atrasado(item) {
-                return !!item.due_date && !item.is_completed && item.due_date < this.hoje;
-            },
-            paraHoje(item) {
-                return !!item.due_date && !item.is_completed && item.due_date === this.hoje;
-            },
-            get progress() {
-                if(this.items.length === 0) return 0;
-                return Math.round((this.items.filter(i => i.is_completed).length / this.items.length) * 100);
-            }
-        }">
+        {{-- Estilo Trello: linha limpa com prazo e foto do responsavel a direita,
+             texto que vira editor ao clicar, "adicionar" que so pergunta o nome.
+             Responsavel e prazo entram depois, pela propria linha. A logica
+             (checklistDoCard) mora no layout porque este partial chega por AJAX. --}}
+        @php
+            $membrosDoChecklist = $members->map(fn ($m) => [
+                'id' => $m->id,
+                'name' => $m->name,
+                'initials' => $m->initials(),
+                'color' => $m->avatar_color ?? '#6366f1',
+                'avatar_url' => $m->avatar_url,
+            ])->values();
+        @endphp
+        <div class="mb-6" x-data="checklistDoCard(@js([
+            'items' => $task->items ?? [],
+            'membros' => $membrosDoChecklist,
+            'urlCriar' => route('items.store', $task),
+            'urlItens' => url('/items'),
+            'hoje' => now()->format('Y-m-d'),
+        ]))">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-semibold text-slate-200 flex items-center gap-2">
                     <svg class="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
@@ -421,63 +358,176 @@
                 <span class="text-xs font-semibold text-slate-400" x-text="progress + '%'"></span>
             </div>
 
-            <div class="h-1.5 w-full bg-ink-800 rounded-full mb-4 overflow-hidden" x-show="items.length > 0">
-                <div class="h-full bg-brand-500 transition-all duration-500" :style="'width: ' + progress + '%'"></div>
+            <div class="h-1.5 w-full bg-ink-800 rounded-full mb-3 overflow-hidden" x-show="items.length > 0">
+                <div class="h-full rounded-full transition-all duration-500" :class="progress === 100 ? 'bg-emerald-500' : 'bg-brand-500'" :style="'width: ' + progress + '%'"></div>
             </div>
 
-            <div class="space-y-1.5 mb-3">
+            <div class="space-y-0.5">
                 <template x-for="item in items" :key="item.id">
-                    <div class="group rounded-lg px-2 py-1.5 -mx-2 transition hover:bg-ink-800/60">
-                        <div class="flex items-start gap-2">
-                            <input type="checkbox" :checked="item.is_completed" @change="toggleItem(item)" class="mt-1 rounded border-ink-600 bg-ink-800 text-brand-500 focus:ring-brand-500 cursor-pointer">
-                            <span class="flex-1 text-sm transition pt-0.5 break-words" :class="item.is_completed ? 'text-slate-500 line-through' : 'text-slate-200'" x-text="item.description"></span>
-                            <button type="button" @click="deleteItem(item)" class="text-xs text-rose-500 opacity-0 group-hover:opacity-100 transition px-2" title="Excluir item">Excluir</button>
+                    <div class="group relative -mx-2 rounded-lg px-2 py-1 transition"
+                         :class="editandoId === item.id ? 'bg-ink-800/70' : 'hover:bg-ink-800/50'">
+                        <div class="flex items-start gap-2.5">
+                            <input type="checkbox" :checked="item.is_completed" @change="alternar(item)"
+                                   class="mt-1.5 h-4 w-4 shrink-0 cursor-pointer rounded border-ink-500 bg-ink-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-ink-900">
+
+                            {{-- Leitura --}}
+                            <template x-if="editandoId !== item.id">
+                                <div class="flex min-w-0 flex-1 items-center gap-2">
+                                    <span class="min-w-0 flex-1 cursor-text break-words py-1 text-sm leading-snug"
+                                          :class="item.is_completed ? 'text-slate-500 line-through' : 'text-slate-200'"
+                                          x-text="item.description" @click="editar(item)"></span>
+
+                                    <div class="flex shrink-0 items-center gap-1">
+                                        {{-- Prazo --}}
+                                        <button type="button" data-abre-popover @click.stop="abrirPopover('data', item)"
+                                                class="inline-flex h-6 items-center gap-1 rounded-full text-[11px] font-medium transition"
+                                                :class="item.due_date
+                                                    ? (item.is_completed ? 'bg-ink-700/60 px-2 text-slate-500'
+                                                        : (atrasado(item) ? 'bg-rose-500/15 px-2 text-rose-300'
+                                                        : (paraHoje(item) ? 'bg-amber-500/15 px-2 text-amber-300' : 'bg-ink-700 px-2 text-slate-300')))
+                                                    : 'w-6 justify-center text-slate-500 opacity-0 hover:bg-ink-700 hover:text-slate-200 group-hover:opacity-100'"
+                                                :title="item.due_date ? 'Prazo: ' + dataCurta(item.due_date) : 'Definir prazo'">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span x-show="item.due_date" x-text="dataCurta(item.due_date)"></span>
+                                        </button>
+
+                                        {{-- Responsavel --}}
+                                        <button type="button" data-abre-popover @click.stop="abrirPopover('membro', item)"
+                                                class="grid h-6 w-6 place-items-center rounded-full transition"
+                                                :class="item.assignee_id ? '' : 'text-slate-500 opacity-0 hover:bg-ink-700 hover:text-slate-200 group-hover:opacity-100'"
+                                                :title="membro(item.assignee_id) ? membro(item.assignee_id).name : 'Definir responsável'">
+                                            <template x-if="membro(item.assignee_id) && membro(item.assignee_id).avatar_url">
+                                                <img :src="membro(item.assignee_id).avatar_url" :alt="membro(item.assignee_id).name" class="h-6 w-6 rounded-full object-cover ring-2 ring-ink-800">
+                                            </template>
+                                            <template x-if="membro(item.assignee_id) && !membro(item.assignee_id).avatar_url">
+                                                <span class="grid h-6 w-6 place-items-center rounded-full text-[10px] font-semibold text-slate-100 ring-2 ring-ink-800"
+                                                      :style="'background:' + membro(item.assignee_id).color" x-text="membro(item.assignee_id).initials"></span>
+                                            </template>
+                                            <template x-if="!membro(item.assignee_id)">
+                                                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                            </template>
+                                        </button>
+
+                                        {{-- Menu --}}
+                                        <button type="button" data-abre-popover @click.stop="abrirPopover('menu', item)"
+                                                class="grid h-6 w-6 place-items-center rounded-full text-slate-500 transition hover:bg-ink-700 hover:text-slate-200"
+                                                :class="popoverAberto('menu', item) ? 'bg-ink-700 text-slate-200' : 'opacity-0 group-hover:opacity-100'" title="Mais opções">
+                                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+
+                            {{-- Edicao --}}
+                            <template x-if="editandoId === item.id">
+                                <div class="min-w-0 flex-1">
+                                    <textarea :data-edicao="item.id" x-model="textoEdicao" rows="2"
+                                              @keydown.enter.prevent="salvarEdicao(item)" @keydown.escape.prevent="cancelarEdicao()"
+                                              class="w-full resize-none rounded-lg border border-brand-500 bg-ink-900 px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/30"></textarea>
+                                    <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                        <button type="button" @click="salvarEdicao(item)" class="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-500">Salvar</button>
+                                        <button type="button" @click="cancelarEdicao()" class="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-400 hover:bg-ink-700 hover:text-slate-200">Cancelar</button>
+                                        <span class="flex-1"></span>
+                                        <button type="button" data-abre-popover @click.stop="abrirPopover('membro', item)"
+                                                class="inline-flex h-7 max-w-[180px] items-center gap-1.5 rounded-md px-2 text-xs text-slate-300 transition hover:bg-ink-700 hover:text-slate-100">
+                                            <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                            <span class="truncate" x-text="membro(item.assignee_id) ? membro(item.assignee_id).name : 'Responsável'"></span>
+                                        </button>
+                                        <button type="button" data-abre-popover @click.stop="abrirPopover('data', item)"
+                                                class="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-slate-300 transition hover:bg-ink-700 hover:text-slate-100">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                            <span x-text="item.due_date ? dataCurta(item.due_date) : 'Prazo'"></span>
+                                        </button>
+                                        <button type="button" data-abre-popover @click.stop="abrirPopover('menu', item)"
+                                                class="grid h-7 w-7 place-items-center rounded-md text-slate-400 transition hover:bg-ink-700 hover:text-slate-100" title="Mais opções">
+                                            <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
-                        {{-- Responsável e prazo do item --}}
-                        <div class="mt-1 flex flex-wrap items-center gap-1.5 pl-6">
-                            <label class="relative inline-flex items-center" title="Responsável por este item">
-                                <svg class="pointer-events-none absolute left-2 h-3 w-3" :class="item.assignee_id ? 'text-brand-400' : 'text-slate-500'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                                <select x-model.number="item.assignee_id" @change="salvarItem(item, { assignee_id: item.assignee_id })"
-                                        class="h-6 cursor-pointer appearance-none rounded-full border bg-ink-800 pl-6 pr-6 text-[11px] leading-none focus:outline-none focus:ring-1 focus:ring-brand-500 [color-scheme:dark]"
-                                        :class="item.assignee_id ? 'border-ink-600 text-slate-200' : 'border-dashed border-ink-600 text-slate-500 hover:text-slate-300'">
-                                    <option value="">Responsável</option>
-                                    @foreach($members as $m)
-                                        <option value="{{ $m->id }}">{{ $m->name }}</option>
-                                    @endforeach
-                                </select>
-                                <svg class="pointer-events-none absolute right-2 h-2.5 w-2.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                            </label>
+                        {{-- Popover: responsavel --}}
+                        <template x-if="popoverAberto('membro', item)">
+                            <div class="absolute right-2 top-full z-30 mt-1 w-60 rounded-xl border border-ink-600 bg-ink-800 p-2 shadow-2xl" @click.outside="cliqueFora($event)">
+                                <input type="text" x-model="filtroMembro" data-foco-popover placeholder="Buscar pessoa…" @keydown.escape.prevent="fecharPopover()"
+                                       class="mb-1.5 w-full rounded-lg border border-ink-700 bg-ink-900 px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-brand-500 focus:outline-none">
+                                <div class="max-h-56 space-y-0.5 overflow-y-auto">
+                                    <template x-for="m in membrosFiltrados" :key="m.id">
+                                        <button type="button" @click="definirMembro(item, m.id)"
+                                                class="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-ink-700"
+                                                :class="item.assignee_id === m.id ? 'bg-ink-700/70' : ''">
+                                            <template x-if="m.avatar_url">
+                                                <img :src="m.avatar_url" :alt="m.name" class="h-7 w-7 shrink-0 rounded-full object-cover ring-2 ring-ink-800">
+                                            </template>
+                                            <template x-if="!m.avatar_url">
+                                                <span class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-[11px] font-semibold text-slate-100 ring-2 ring-ink-800" :style="'background:' + m.color" x-text="m.initials"></span>
+                                            </template>
+                                            <span class="min-w-0 flex-1 truncate text-sm text-slate-200" x-text="m.name"></span>
+                                            <svg x-show="item.assignee_id === m.id" class="h-4 w-4 shrink-0 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        </button>
+                                    </template>
+                                    <p x-show="membrosFiltrados.length === 0" class="px-2 py-2 text-xs text-slate-500">Ninguém com esse nome.</p>
+                                </div>
+                                <button x-show="item.assignee_id" type="button" @click="definirMembro(item, null)"
+                                        class="mt-1.5 w-full rounded-lg border border-ink-700 px-2 py-1.5 text-xs text-slate-400 transition hover:bg-ink-700 hover:text-slate-200">Remover responsável</button>
+                            </div>
+                        </template>
 
-                            <label class="relative inline-flex items-center" title="Prazo deste item">
-                                <svg class="pointer-events-none absolute left-2 h-3 w-3" :class="atrasado(item) ? 'text-rose-400' : (paraHoje(item) ? 'text-amber-400' : (item.due_date ? 'text-brand-400' : 'text-slate-500'))" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                <input type="date" x-model="item.due_date" @change="salvarItem(item, { due_date: item.due_date || null })"
-                                       class="h-6 cursor-pointer rounded-full border bg-ink-800 pl-6 pr-2 text-[11px] leading-none focus:outline-none focus:ring-1 focus:ring-brand-500 [color-scheme:dark]"
-                                       :class="atrasado(item) ? 'border-rose-500/50 text-rose-300' : (paraHoje(item) ? 'border-amber-500/50 text-amber-200' : (item.due_date ? 'border-ink-600 text-slate-200' : 'border-dashed border-ink-600 text-slate-500 hover:text-slate-300'))">
-                            </label>
+                        {{-- Popover: prazo --}}
+                        <template x-if="popoverAberto('data', item)">
+                            <div class="absolute right-2 top-full z-30 mt-1 w-60 rounded-xl border border-ink-600 bg-ink-800 p-3 shadow-2xl" @click.outside="cliqueFora($event)">
+                                <label class="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Prazo do item</label>
+                                <input type="date" data-foco-popover :value="item.due_date || ''" @change="definirData(item, $event.target.value)" @keydown.escape.prevent="fecharPopover()"
+                                       class="w-full rounded-lg border border-ink-700 bg-ink-900 px-2.5 py-1.5 text-sm text-slate-200 focus:border-brand-500 focus:outline-none [color-scheme:dark]">
+                                <div class="mt-2 flex items-center gap-1.5">
+                                    <button type="button" @click="definirData(item, hoje)" class="rounded-full bg-ink-700 px-2.5 py-1 text-[11px] font-medium text-slate-300 transition hover:bg-ink-600 hover:text-slate-100">Hoje</button>
+                                    <button type="button" @click="definirData(item, amanha)" class="rounded-full bg-ink-700 px-2.5 py-1 text-[11px] font-medium text-slate-300 transition hover:bg-ink-600 hover:text-slate-100">Amanhã</button>
+                                    <span class="flex-1"></span>
+                                    <button x-show="item.due_date" type="button" @click="definirData(item, null)" class="text-[11px] font-medium text-rose-400 transition hover:text-rose-300">Remover</button>
+                                </div>
+                            </div>
+                        </template>
 
-                            <span x-show="atrasado(item)" class="text-[10px] font-semibold text-rose-400">atrasado</span>
-                            <span x-show="paraHoje(item)" class="text-[10px] font-semibold text-amber-400">hoje</span>
-                        </div>
+                        {{-- Popover: menu --}}
+                        <template x-if="popoverAberto('menu', item)">
+                            <div class="absolute right-2 top-full z-30 mt-1 w-44 rounded-xl border border-ink-600 bg-ink-800 p-1 shadow-2xl" @click.outside="cliqueFora($event)">
+                                <button type="button" @click="editar(item)" class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm text-slate-200 transition hover:bg-ink-700">
+                                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    Editar texto
+                                </button>
+                                <button type="button" @click="excluir(item)" class="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm text-rose-400 transition hover:bg-rose-500/10">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    Excluir item
+                                </button>
+                            </div>
+                        </template>
                     </div>
                 </template>
             </div>
 
-            <form @submit.prevent="addItem" class="flex flex-wrap gap-2">
-                <input type="text" x-model="newItem" placeholder="Adicionar item..." class="min-w-[160px] flex-1 rounded border border-ink-800 bg-ink-800 px-3 py-1.5 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
-                <select x-model.number="newAssignee" title="Responsável (opcional)"
-                        class="rounded border border-ink-800 bg-ink-800 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none [color-scheme:dark]"
-                        :class="newAssignee ? 'text-slate-200' : 'text-slate-500'">
-                    <option value="">Responsável</option>
-                    @foreach($members as $m)
-                        <option value="{{ $m->id }}">{{ $m->name }}</option>
-                    @endforeach
-                </select>
-                <input type="date" x-model="newDueDate" title="Prazo (opcional)"
-                       class="rounded border border-ink-800 bg-ink-800 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none [color-scheme:dark]"
-                       :class="newDueDate ? 'text-slate-200' : 'text-slate-500'">
-                <button type="submit" :disabled="adding" class="rounded bg-ink-800 border border-ink-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50">Adicionar</button>
-            </form>
+            {{-- Compositor: so pede o nome; responsavel e prazo vem depois, pela linha --}}
+            <div class="mt-2 pl-[26px]">
+                <template x-if="!compondo">
+                    <button type="button" @click="abrirCompositor()"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-ink-800 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-ink-700 hover:text-slate-100">
+                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14m7-7H5"/></svg>
+                        Adicionar um item
+                    </button>
+                </template>
+                <template x-if="compondo">
+                    <div @click.outside="if (!novoTexto.trim()) fecharCompositor()">
+                        <textarea data-novo-item x-model="novoTexto" rows="2" placeholder="Adicionar um item…"
+                                  @keydown.enter.prevent="adicionar()" @keydown.escape.prevent="fecharCompositor()"
+                                  class="w-full resize-none rounded-lg border border-brand-500 bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500/30"></textarea>
+                        <div class="mt-1.5 flex items-center gap-1.5">
+                            <button type="button" @click="adicionar()" :disabled="salvando || !novoTexto.trim()"
+                                    class="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-500 disabled:cursor-not-allowed disabled:opacity-50">Salvar</button>
+                            <button type="button" @click="fecharCompositor()" class="rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-ink-700 hover:text-slate-200">Cancelar</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
 
         <hr class="my-6 border-ink-800">

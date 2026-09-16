@@ -653,6 +653,245 @@
         .catch(recarregar);
     };
 
+    /**
+     * Checklist do card, no estilo do Trello: linha limpa com prazo e foto do
+     * responsavel a direita, texto que vira editor ao clicar, compositor que
+     * so pergunta o nome. Mora aqui pelo mesmo motivo do seletorDeFlags — o
+     * slideover chega por AJAX. Os dados vem no x-data do partial.
+     */
+    window.checklistDoCard = function (cfg) {
+        return {
+            items: cfg.items || [],
+            membros: cfg.membros || [],
+            urlCriar: cfg.urlCriar,
+            urlItens: cfg.urlItens,
+            hoje: cfg.hoje,
+
+            // Compositor de item novo.
+            compondo: false,
+            novoTexto: '',
+            salvando: false,
+
+            // Edicao do texto de um item existente.
+            editandoId: null,
+            textoEdicao: '',
+
+            // Um popover aberto por vez: { tipo: 'membro' | 'data' | 'menu', id }.
+            popover: null,
+            filtroMembro: '',
+
+            cabecalhos() {
+                return {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                };
+            },
+
+            get progress() {
+                if (!this.items.length) { return 0; }
+                return Math.round(this.items.filter(i => i.is_completed).length / this.items.length * 100);
+            },
+
+            get amanha() {
+                var p = this.hoje.split('-').map(Number);
+                var d = new Date(p[0], p[1] - 1, p[2] + 1);
+                return this.iso(d);
+            },
+
+            iso(d) {
+                return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            },
+
+            /* ---------------- Compositor ---------------- */
+
+            abrirCompositor() {
+                this.compondo = true;
+                this.editandoId = null;
+                this.fecharPopover();
+                this.focar('[data-novo-item]');
+            },
+
+            fecharCompositor() {
+                this.compondo = false;
+                this.novoTexto = '';
+            },
+
+            async adicionar() {
+                var texto = this.novoTexto.trim();
+                if (!texto || this.salvando) { return; }
+
+                this.salvando = true;
+                try {
+                    var res = await fetch(this.urlCriar, {
+                        method: 'POST',
+                        headers: this.cabecalhos(),
+                        body: JSON.stringify({ description: texto })
+                    });
+                    var data = await res.json().catch(() => ({}));
+
+                    if (res.ok && data.item) {
+                        this.items.push(data.item);
+                        this.novoTexto = '';
+                        // Fica aberto para o proximo item, como no Trello.
+                        this.focar('[data-novo-item]');
+                    } else if (!window.sessaoExpirou(res.status)) {
+                        alert(data.message || 'Não foi possível adicionar o item.');
+                    }
+                } catch (e) {
+                    alert('Erro de conexão ao adicionar o item.');
+                } finally {
+                    this.salvando = false;
+                }
+            },
+
+            /* ---------------- Edicao do texto ---------------- */
+
+            editar(item) {
+                this.editandoId = item.id;
+                this.textoEdicao = item.description;
+                this.compondo = false;
+                this.fecharPopover();
+                this.focar('[data-edicao="' + item.id + '"]', true);
+            },
+
+            salvarEdicao(item) {
+                var texto = this.textoEdicao.trim();
+                if (texto && texto !== item.description) {
+                    item.description = texto;
+                    this.salvar(item, { description: texto });
+                }
+                this.editandoId = null;
+            },
+
+            cancelarEdicao() {
+                this.editandoId = null;
+            },
+
+            /* ---------------- Persistencia ---------------- */
+
+            async salvar(item, campos) {
+                try {
+                    var res = await fetch(this.urlItens + '/' + item.id, {
+                        method: 'PATCH',
+                        headers: this.cabecalhos(),
+                        body: JSON.stringify(campos)
+                    });
+                    var data = await res.json().catch(() => ({}));
+
+                    if (res.ok && data.item) {
+                        Object.assign(item, data.item);
+                    } else if (!window.sessaoExpirou(res.status)) {
+                        alert(data.message || 'Não foi possível salvar o item.');
+                    }
+                } catch (e) {
+                    alert('Erro de conexão ao salvar o item.');
+                }
+            },
+
+            alternar(item) {
+                item.is_completed = !item.is_completed;
+                this.salvar(item, { is_completed: item.is_completed });
+            },
+
+            excluir(item) {
+                if (!confirm('Excluir este item do checklist?')) { return; }
+                this.fecharPopover();
+                this.items = this.items.filter(i => i.id !== item.id);
+                fetch(this.urlItens + '/' + item.id, { method: 'DELETE', headers: this.cabecalhos() });
+            },
+
+            /* ---------------- Responsavel ---------------- */
+
+            membro(id) {
+                if (!id) { return null; }
+                return this.membros.find(m => m.id === Number(id)) || null;
+            },
+
+            get membrosFiltrados() {
+                var f = this.filtroMembro.trim().toLowerCase();
+                return f ? this.membros.filter(m => m.name.toLowerCase().indexOf(f) !== -1) : this.membros;
+            },
+
+            definirMembro(item, id) {
+                var novo = id ? Number(id) : null;
+                if (novo !== item.assignee_id) {
+                    item.assignee_id = novo;
+                    this.salvar(item, { assignee_id: novo });
+                }
+                this.fecharPopover();
+            },
+
+            /* ---------------- Prazo ---------------- */
+
+            definirData(item, valor) {
+                var nova = valor || null;
+                if (nova !== item.due_date) {
+                    item.due_date = nova;
+                    this.salvar(item, { due_date: nova });
+                }
+                this.fecharPopover();
+            },
+
+            /** "2026-09-18" -> "18 de set." */
+            dataCurta(isoData) {
+                if (!isoData) { return ''; }
+                var p = String(isoData).slice(0, 10).split('-').map(Number);
+                return new Date(p[0], p[1] - 1, p[2]).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+            },
+
+            atrasado(item) {
+                return !!item.due_date && !item.is_completed && item.due_date < this.hoje;
+            },
+
+            paraHoje(item) {
+                return !!item.due_date && !item.is_completed && item.due_date === this.hoje;
+            },
+
+            /* ---------------- Popovers ---------------- */
+
+            abrirPopover(tipo, item) {
+                if (this.popoverAberto(tipo, item)) {
+                    this.popover = null;
+                    return;
+                }
+                this.popover = { tipo: tipo, id: item.id };
+                this.filtroMembro = '';
+                this.focar('[data-foco-popover]');
+            },
+
+            fecharPopover() {
+                this.popover = null;
+            },
+
+            popoverAberto(tipo, item) {
+                return !!this.popover && this.popover.tipo === tipo && this.popover.id === item.id;
+            },
+
+            // Fecha ao clicar fora, exceto se o clique foi em outro botao que
+            // abre popover — senao o novo abriria e fecharia no mesmo clique.
+            cliqueFora(e) {
+                if (e.target.closest('[data-abre-popover]')) { return; }
+                this.fecharPopover();
+            },
+
+            focar(seletor, fimDoTexto) {
+                this.$nextTick(() => {
+                    var el = this.$root.querySelector(seletor);
+                    if (!el) { return; }
+                    el.focus();
+                    if (fimDoTexto && el.setSelectionRange) {
+                        var n = el.value.length;
+                        el.setSelectionRange(n, n);
+                    }
+                    if (el.type === 'date' && typeof el.showPicker === 'function') {
+                        try { el.showPicker(); } catch (e) { /* sem gesto do usuario: fica so o campo */ }
+                    }
+                });
+            }
+        };
+    };
+
     window.completeTask = function(btn, taskId, e) {
         if (e) {
             e.preventDefault();

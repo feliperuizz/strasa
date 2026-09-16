@@ -55,12 +55,25 @@ class TaskItemController extends Controller
         // Cada controle do item salva sozinho (checkbox, responsável, data), então
         // todos os campos são opcionais e só o que veio no pedido é alterado.
         $validated = $request->validate([
+            'description' => ['sometimes', 'required', 'string', 'max:255'],
             'is_completed' => ['sometimes', 'boolean'],
             'assignee_id' => ['sometimes', 'nullable', 'integer', $this->membroDaEmpresa($item->task)],
             'due_date' => ['sometimes', 'nullable', 'date'],
         ]);
 
         $resumo = '"'.Str::limit($item->description, 80).'"';
+
+        if (array_key_exists('description', $validated)) {
+            $novo = trim($validated['description']);
+
+            if ($novo !== $item->description) {
+                TaskActivity::registrar($item->task, TaskActivity::TYPE_DESCRIPTION_CHANGED,
+                    'renomeou o item '.$resumo.' para "'.Str::limit($novo, 80).'"');
+
+                $item->description = $novo;
+                $resumo = '"'.Str::limit($novo, 80).'"';
+            }
+        }
 
         if (array_key_exists('is_completed', $validated)) {
             // Marcar o item é o "terminei a minha parte" de quem está no card.
