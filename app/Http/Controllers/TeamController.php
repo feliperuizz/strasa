@@ -89,6 +89,28 @@ class TeamController extends Controller
         return back()->with('status', 'Membro atualizado com sucesso!');
     }
 
+    /** Tira o acesso sem apagar nada: histórico, cards e comentários ficam. */
+    public function deactivateMember(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($user->company_id === $request->user()->company_id, 403);
+        abort_if($user->id === $request->user()->id, 422, 'Você não pode desativar o seu próprio acesso.');
+
+        $user->forceFill(['deactivated_at' => now()])->save();
+
+        return back()->with('status', $user->name.' foi desativado. Ele não consegue mais entrar; tudo o que fez continua registrado.');
+    }
+
+    public function reactivateMember(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($user->company_id === $request->user()->company_id, 403);
+
+        $user->forceFill(['deactivated_at' => null])->save();
+
+        return back()->with('status', $user->name.' voltou a ter acesso.');
+    }
+
     public function removeMember(Request $request, User $user): RedirectResponse
     {
         abort_unless($request->user()->isAdmin(), 403);

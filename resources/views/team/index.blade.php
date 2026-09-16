@@ -25,10 +25,16 @@
                     </thead>
                     <tbody class="divide-y divide-ink-700">
                         @foreach($members as $user)
-                            <tr class="hover:bg-ink-700/50">
+                            <tr class="hover:bg-ink-700/50 {{ $user->isDeactivated() ? 'opacity-60' : '' }}">
                                 <td class="px-4 py-3 flex items-center gap-3">
                                     <x-avatar :user="$user" :size="8" />
-                                    <span class="font-medium text-slate-200">{{ $user->name }}</span>
+                                    <div class="min-w-0">
+                                        <span class="font-medium text-slate-200">{{ $user->name }}</span>
+                                        @if($user->isDeactivated())
+                                            <span class="ml-1.5 inline-flex items-center rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-300"
+                                                  title="Sem acesso desde {{ $user->deactivated_at->format('d/m/Y') }}">Desativado</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3">{{ $user->email }}</td>
                                 <td class="px-4 py-3">
@@ -49,7 +55,19 @@
                                                 @click="$dispatch('open-edit-member', { id: {{ $user->id }}, name: '{{ addslashes($user->name) }}', email: '{{ addslashes($user->email) }}', role: '{{ $user->role }}' })">
                                             Editar
                                         </button>
-                                        <form method="POST" action="{{ route('team.members.destroy', $user) }}" onsubmit="return confirm('Remover este membro?')">
+                                        @if($user->isDeactivated())
+                                            <form method="POST" action="{{ route('team.members.reactivate', $user) }}">
+                                                @csrf
+                                                <button class="text-emerald-400 hover:text-emerald-300 text-xs">Reativar</button>
+                                            </form>
+                                        @else
+                                            <form method="POST" action="{{ route('team.members.deactivate', $user) }}"
+                                                  onsubmit="return confirm('Desativar o acesso de {{ addslashes($user->name) }}?\n\nEle não consegue mais entrar no sistema e sai das listas de responsável. Nada é apagado: cards, comentários e histórico ficam. Dá para reativar depois.')">
+                                                @csrf
+                                                <button class="text-amber-400 hover:text-amber-300 text-xs">Desativar</button>
+                                            </form>
+                                        @endif
+                                        <form method="POST" action="{{ route('team.members.destroy', $user) }}" onsubmit="return confirm('Remover este membro de vez? Prefira Desativar se quiser manter o histórico dele.')">
                                             @csrf @method('DELETE')
                                             <button class="text-rose-400 hover:text-rose-300 text-xs">Remover</button>
                                         </form>

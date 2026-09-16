@@ -25,6 +25,17 @@ class AuthenticatedSessionController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // Conta desativada: recusa antes de tentar, com mensagem clara. É um
+        // sistema interno, então dizer "desativado" para quem sabe o e-mail
+        // não expõe nada.
+        $conta = \App\Models\User::where('email', $credentials['email'])->first();
+
+        if ($conta && $conta->isDeactivated()) {
+            throw ValidationException::withMessages([
+                'email' => 'Este acesso foi desativado. Fale com o administrador da sua equipe.',
+            ]);
+        }
+
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
                 'email' => 'As credenciais informadas não conferem.',

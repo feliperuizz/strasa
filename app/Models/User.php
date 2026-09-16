@@ -27,6 +27,7 @@ class User extends Authenticatable
         'name',
         'email',
         'role',
+        'deactivated_at',
         'avatar_color',
         'avatar_path',
         'avatar_disk',
@@ -43,6 +44,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'deactivated_at' => 'datetime',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'sidebar_client_order' => 'array',
@@ -76,6 +78,18 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === self::ROLE_ADMIN;
+    }
+
+    /** Acesso desativado pelo administrador: não entra, não aparece para escolher. */
+    public function isDeactivated(): bool
+    {
+        return $this->deactivated_at !== null;
+    }
+
+    /** Só quem ainda pode usar o sistema (listas de responsável, notificações...). */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNull('deactivated_at');
     }
 
     public function isMember(): bool

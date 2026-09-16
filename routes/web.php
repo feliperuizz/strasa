@@ -21,6 +21,7 @@ use App\Http\Controllers\TaskAttachmentController;
 use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\ActivityLogController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -151,11 +152,14 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('projects/{project}/calendar', [CalendarController::class, 'project'])->name('projects.calendar');
 
     /* Time / convites ---------------------------------------------------- */
+    Route::get('log-de-atividades', [ActivityLogController::class, 'index'])->name('activity-log.index');
     Route::get('team', [TeamController::class, 'index'])->name('team.index');
     Route::post('team/invitations', [TeamController::class, 'store'])->name('team.invitations.store');
     Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroy'])->name('team.invitations.destroy');
     Route::patch('team/members/{user}', [TeamController::class, 'updateMember'])->name('team.members.update');
     Route::delete('team/members/{user}', [TeamController::class, 'removeMember'])->name('team.members.destroy');
+    Route::post('team/members/{user}/deactivate', [TeamController::class, 'deactivateMember'])->name('team.members.deactivate');
+    Route::post('team/members/{user}/reactivate', [TeamController::class, 'reactivateMember'])->name('team.members.reactivate');
 
     /* Aprovações --------------------------------------------------------- */
     Route::get('aprovacoes', [ApprovalsController::class, 'index'])->name('approvals.index');

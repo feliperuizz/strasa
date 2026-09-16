@@ -108,6 +108,32 @@ class TaskActivity extends Model
             ?? ($this->meta['author'] ?? 'Cliente');
     }
 
+    /** Nome curto do tipo, para o resumo do log ("3 cards movidos"). */
+    public const LABELS = [
+        self::TYPE_CREATED => 'criou card',
+        self::TYPE_COLUMN_CHANGED => 'moveu card',
+        self::TYPE_ASSIGNEE_CHANGED => 'mudou responsável',
+        self::TYPE_PUBLISH_DATE_CHANGED => 'mudou data',
+        self::TYPE_PUBLISHED => 'concluiu',
+        self::TYPE_REJECTED => 'rejeitou',
+        self::TYPE_TITLE_CHANGED => 'editou título',
+        self::TYPE_DESCRIPTION_CHANGED => 'editou texto',
+        self::TYPE_TAGS_CHANGED => 'mexeu em flags',
+        self::TYPE_ATTACHMENT_ADDED => 'anexou arquivo',
+        self::TYPE_ATTACHMENT_REMOVED => 'removeu arquivo',
+        self::TYPE_FOLDER_CREATED => 'criou pasta',
+        self::TYPE_CHECKLIST_ADDED => 'item de checklist',
+        self::TYPE_CHECKLIST_DONE => 'concluiu item',
+        self::TYPE_CHECKLIST_REOPENED => 'reabriu item',
+        self::TYPE_CHECKLIST_REMOVED => 'removeu item',
+        self::TYPE_COMMENTED => 'comentou',
+    ];
+
+    public function typeLabel(): string
+    {
+        return self::LABELS[$this->type] ?? $this->type;
+    }
+
     /** Cor da bolinha na timeline, por família de evento. */
     public function color(): string
     {

@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\TaskApproval;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,6 +61,22 @@ class ShareTenantData
         $user = $request->user();
 
         abort_if($user === null || $user->company_id === null, 403, 'Usuário sem empresa associada.');
+
+        // Desativado depois de já estar logado: cai fora na próxima request.
+        // Para AJAX devolve 419, que o front já trata recarregando para o login.
+        if ($user->isDeactivated()) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['message' => 'Acesso desativado.'], 419);
+            }
+
+            return redirect()->route('login')->withErrors([
+                'email' => 'Este acesso foi desativado. Fale com o administrador da sua equipe.',
+            ]);
+        }
 
         $companyId = $user->company_id;
 

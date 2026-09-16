@@ -177,6 +177,7 @@ class ClientPortal extends Model
 
         return User::whereIn('id', $ids)
             ->where('company_id', $this->company_id)
+            ->active()
             ->get();
     }
 }

@@ -77,7 +77,7 @@ class DemandsController extends Controller
             'colaboradores' => $this->agruparPorPessoa($tarefas),
             'semResponsavel' => $tarefas->filter(fn ($t) => $t->assignees->isEmpty())->values(),
             'resumo' => $this->resumo($tarefas),
-            'equipe' => User::where('company_id', $user->company_id)->orderBy('name')->get(['id', 'name']),
+            'equipe' => User::where('company_id', $user->company_id)->active()->orderBy('name')->get(['id', 'name']),
             'clientes' => Client::active()->orderBy('name')->get(['id', 'name']),
             'atalhos' => self::ATALHOS,
             'filtros' => $filtros + ['atalho' => $atalho, 'de' => $de, 'ate' => $ate],

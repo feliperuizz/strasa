@@ -87,6 +87,7 @@ class TaskCommentController extends Controller
         $tokens = array_map(fn ($t) => Str::lower($t), $matches[1]);
 
         return User::where('company_id', $companyId)
+            ->active()
             ->get(['id', 'name'])
             ->filter(fn ($u) => in_array(Str::lower(Str::before($u->name, ' ')), $tokens, true))
             ->pluck('id')

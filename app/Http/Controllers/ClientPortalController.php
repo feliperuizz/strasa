@@ -25,6 +25,7 @@ class ClientPortalController extends Controller
         return view('clients.portal', [
             'client' => $client,
             'equipe' => \App\Models\User::where('company_id', $client->company_id)
+                ->active()
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'aprovacoes' => \App\Models\TaskApproval::where('client_id', $client->id)

@@ -55,6 +55,7 @@ class ClientController extends Controller
 
         // Usados no bloco do painel de aprovação: quem pode receber o push.
         $equipe = \App\Models\User::where('company_id', $client->company_id)
+            ->active()
             ->orderBy('name')
             ->get(['id', 'name']);
 

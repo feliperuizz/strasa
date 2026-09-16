@@ -134,6 +134,7 @@ class DashboardController extends Controller
 
         // Membros da equipe com acompanhamento e evolução
         $teamMembers = User::where('company_id', $companyId)
+            ->active()
             ->withCount([
                 'assignedTasks as tasks_total',
                 'assignedTasks as tasks_completed' => fn ($q) => $q->where('is_published', true),

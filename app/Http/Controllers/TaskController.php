@@ -84,7 +84,7 @@ class TaskController extends Controller
             'activities.user',
         ]);
 
-        $members = User::where('company_id', $task->company_id)->orderBy('name')->get();
+        $members = User::where('company_id', $task->company_id)->active()->orderBy('name')->get();
         $data = array_merge($this->formData($task->project), ['task' => $task, 'members' => $members]);
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -260,7 +260,7 @@ class TaskController extends Controller
     {
         return [
             'project' => $project->load('client', 'columns'),
-            'members' => User::where('company_id', $project->company_id)->orderBy('name')->get(),
+            'members' => User::where('company_id', $project->company_id)->active()->orderBy('name')->get(),
             'contentTypes' => Task::CONTENT_TYPES,
             // Inclui as predefinidas que ainda nao viraram registro.
             'allTags' => Tag::comPredefinidas(),
