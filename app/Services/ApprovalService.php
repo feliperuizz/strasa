@@ -77,8 +77,8 @@ class ApprovalService
             $task = $aprovacao->task;
 
             $this->log($task, TaskActivity::TYPE_PUBLISHED,
-                "{$reviewerName} aprovou a peça no painel do cliente",
-                ['approval_id' => $aprovacao->id]);
+                'aprovou a peça no painel do cliente',
+                ['approval_id' => $aprovacao->id, 'author' => $reviewerName]);
 
             if (filled($feedback)) {
                 $this->registrarComentarioDoCliente($task, $reviewerName, $feedback);
@@ -120,8 +120,8 @@ class ApprovalService
             }
 
             $this->log($task, TaskActivity::TYPE_REJECTED,
-                "{$reviewerName} pediu ajuste no painel do cliente",
-                ['approval_id' => $aprovacao->id, 'reason' => $feedback]);
+                'pediu ajuste no painel do cliente',
+                ['approval_id' => $aprovacao->id, 'reason' => $feedback, 'author' => $reviewerName]);
 
             if (filled($feedback)) {
                 $this->registrarComentarioDoCliente($task, $reviewerName, $feedback);
@@ -191,13 +191,7 @@ class ApprovalService
 
     private function log(Task $task, string $type, string $descricao, array $meta = [], ?int $userId = null): void
     {
-        $task->activities()->create([
-            'company_id' => $task->company_id,
-            'user_id' => $userId ?? auth()->id(),
-            'type' => $type,
-            'description' => $descricao,
-            'meta' => $meta ?: null,
-        ]);
+        TaskActivity::registrar($task, $type, $descricao, $meta, $userId);
     }
 
     /**

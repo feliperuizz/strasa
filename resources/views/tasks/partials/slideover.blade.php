@@ -480,6 +480,11 @@
             </div>
         </div>
 
+        <hr class="my-6 border-ink-800">
+
+        {{-- Histórico do card --}}
+        @include('tasks.partials.activity', ['task' => $task])
+
         @else
         <div class="mt-6 flex items-center justify-center rounded-lg border border-dashed border-ink-800 p-8">
             <p class="text-center text-sm text-slate-500">A tarefa será salva automaticamente ao digitar o título. Os anexos serão liberados após o salvamento.</p>

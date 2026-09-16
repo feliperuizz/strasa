@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\TaskActivity;
 use App\Models\TaskFolder;
 use Illuminate\Http\Request;
 
@@ -20,6 +21,9 @@ class TaskFolderController extends Controller
             'company_id' => $task->company_id,
             'name' => $validated['name'],
         ]);
+
+        TaskActivity::registrar($task, TaskActivity::TYPE_FOLDER_CREATED,
+            'criou a pasta "'.$folder->name.'"');
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['folder' => $folder, 'message' => 'Pasta criada com sucesso.']);

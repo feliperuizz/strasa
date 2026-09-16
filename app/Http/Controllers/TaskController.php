@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class TaskController extends Controller
 {
@@ -104,6 +105,7 @@ class TaskController extends Controller
             'folders.attachments',
             'attachments',
             'comments.user',
+            'activities.user',
         ]);
 
         $data = array_merge($this->formData($task->project), ['task' => $task]);
@@ -348,19 +350,28 @@ class TaskController extends Controller
         $task->tags()->sync($ids);
     }
 
+    /**
+     * Compara o que veio do formulário com o que está no banco e escreve no
+     * histórico o que de fato mudou — com nome de quem entrou/saiu, flag
+     * adicionada, título antigo etc. Sem isso o log dizia só "alterou os
+     * responsáveis", que não conta para quem a tarefa foi passada.
+     *
+     * Roda antes do update(), então $task ainda tem os valores antigos.
+     */
     private function trackChanges(TaskRequest $request, Task $task, Column $column): void
     {
-        $currentAssignees = $task->assignees()->pluck('users.id')->map(fn($id) => (int)$id)->toArray();
-        $newAssignees = collect($request->input('assignees', []))->map(fn($id) => (int)$id)->toArray();
-        sort($currentAssignees);
-        sort($newAssignees);
-        
-        if ($currentAssignees !== $newAssignees) {
-            $this->log($task, TaskActivity::TYPE_ASSIGNEE_CHANGED, 'alterou os responsáveis');
-        }
+        $this->trackAssignees($request, $task);
+        $this->trackTitle($request, $task);
+        $this->trackDescription($request, $task);
+        $this->trackTags($request, $task);
 
         if ((string) $request->validated('publish_date') !== (string) optional($task->publish_date)->toDateString()) {
-            $this->log($task, TaskActivity::TYPE_PUBLISH_DATE_CHANGED, 'alterou a data de publicação');
+            $nova = $request->validated('publish_date');
+
+            $this->logAgrupado($task, TaskActivity::TYPE_PUBLISH_DATE_CHANGED,
+                $nova
+                    ? 'marcou a publicação para '.\Carbon\Carbon::parse($nova)->format('d/m/Y')
+                    : 'tirou a data de publicação');
         }
 
         if ($column->id !== $task->column_id) {
@@ -368,14 +379,155 @@ class TaskController extends Controller
         }
     }
 
+    /**
+     * "Passou para a Letícia" é justamente o evento que ninguém enxergava:
+     * o log registra quem entrou e quem saiu, pelo nome.
+     */
+    private function trackAssignees(TaskRequest $request, Task $task): void
+    {
+        $atuais = $task->assignees()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+        $novos = collect($request->input('assignees', []))->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        sort($atuais);
+        sort($novos);
+
+        if ($atuais === $novos) {
+            return;
+        }
+
+        $entraram = array_values(array_diff($novos, $atuais));
+        $sairam = array_values(array_diff($atuais, $novos));
+
+        $nomes = User::whereIn('id', array_merge($entraram, $sairam))->pluck('name', 'id');
+        $listar = fn (array $ids) => $this->listaLegivel(
+            collect($ids)->map(fn ($id) => $nomes[$id] ?? 'alguém')->all()
+        );
+
+        // Quem sai é quase sempre a própria pessoa repassando o card — dizer
+        // "Leticia passou de Leticia para Bruno" só polui. O nome de quem saiu
+        // continua no meta para quem precisar do detalhe.
+        $eu = auth()->id();
+
+        $descricao = match (true) {
+            $entraram && $sairam === [$eu] => 'passou a tarefa para '.$listar($entraram),
+            $entraram && $sairam => 'passou de '.$listar($sairam).' para '.$listar($entraram),
+            $entraram === [$eu] => 'assumiu a tarefa',
+            (bool) $entraram => $atuais
+                ? 'adicionou '.$listar($entraram).' como responsável'
+                : 'passou a tarefa para '.$listar($entraram),
+            $sairam === [$eu] => 'saiu da tarefa',
+            default => 'tirou '.$listar($sairam).' dos responsáveis',
+        };
+
+        $this->logAgrupado($task, TaskActivity::TYPE_ASSIGNEE_CHANGED, $descricao, [
+            'entraram' => $listar($entraram) ?: null,
+            'sairam' => $listar($sairam) ?: null,
+        ]);
+    }
+
+    private function trackTitle(TaskRequest $request, Task $task): void
+    {
+        $antes = trim((string) $task->title);
+        $depois = trim((string) ($request->validated('title') ?? ''));
+
+        if ($depois === '' || $antes === $depois) {
+            return;
+        }
+
+        $novo = Str::limit($depois, 60);
+
+        $this->logAgrupado($task, TaskActivity::TYPE_TITLE_CHANGED,
+            ($antes === '' || $antes === 'Nova Tarefa')
+                ? "nomeou o card de \"{$novo}\""
+                : 'renomeou "'.Str::limit($antes, 60)."\" para \"{$novo}\"");
+    }
+
+    private function trackDescription(TaskRequest $request, Task $task): void
+    {
+        $antes = (string) $task->description;
+        $depois = (string) ($request->validated('description') ?? '');
+
+        $textoAntes = $this->textoDoHtml($antes);
+        $textoDepois = $this->textoDoHtml($depois);
+
+        // O Quill manda "<p><br></p>" no lugar de vazio, então comparar o HTML
+        // cru marcaria mudança em todo card que nunca teve descrição. Só o que
+        // muda o texto conta — ou uma formatação nova sobre texto existente.
+        $mudou = $textoAntes !== $textoDepois
+            || ($textoDepois !== '' && $antes !== $depois);
+
+        if (! $mudou) {
+            return;
+        }
+
+        $this->logAgrupado($task, TaskActivity::TYPE_DESCRIPTION_CHANGED,
+            $textoDepois === ''
+                ? 'apagou a descrição'
+                : ($textoAntes === '' ? 'escreveu a descrição' : 'editou a descrição'),
+            ['trecho' => Str::limit($textoDepois, 140) ?: null]);
+    }
+
+    private function trackTags(TaskRequest $request, Task $task): void
+    {
+        $antes = $task->tags->pluck('name')->map(fn ($n) => trim((string) $n))->unique();
+
+        $depois = collect($request->input('tags', []))
+            ->map(fn ($t) => trim(explode('|', (string) $t)[0]))
+            ->filter()
+            ->unique();
+
+        $entraram = $depois->diff($antes)->values()->all();
+        $sairam = $antes->diff($depois)->values()->all();
+
+        if (! $entraram && ! $sairam) {
+            return;
+        }
+
+        $partes = [];
+        if ($entraram) {
+            $partes[] = 'marcou '.$this->listaLegivel($entraram);
+        }
+        if ($sairam) {
+            $partes[] = 'tirou '.$this->listaLegivel($sairam);
+        }
+
+        $this->logAgrupado($task, TaskActivity::TYPE_TAGS_CHANGED,
+            implode(' e ', $partes).' nas flags');
+    }
+
+    /** Texto puro de um HTML do Quill, para comparar conteúdo sem a marcação. */
+    private function textoDoHtml(string $html): string
+    {
+        $texto = str_replace(["\xc2\xa0", '&nbsp;'], ' ', $html);
+
+        return trim((string) preg_replace('/\s+/u', ' ', strip_tags($texto)));
+    }
+
+    /** ["Ana"] => "Ana"; ["Ana","Bia"] => "Ana e Bia"; 3+ => "Ana, Bia e Caio". */
+    private function listaLegivel(array $nomes): string
+    {
+        if (count($nomes) <= 1) {
+            return (string) ($nomes[0] ?? '');
+        }
+
+        $ultimo = array_pop($nomes);
+
+        return implode(', ', $nomes).' e '.$ultimo;
+    }
+
     private function log(Task $task, string $type, string $description, array $meta = []): void
     {
-        $task->activities()->create([
-            'company_id' => $task->company_id,
-            'user_id' => auth()->id(),
-            'type' => $type,
-            'description' => $description,
-            'meta' => $meta ?: null,
-        ]);
+        TaskActivity::registrar($task, $type, $description, $meta);
+    }
+
+    /**
+     * O slideover salva sozinho a cada tecla parada (500ms). Sem agrupar, uma
+     * frase digitada na descrição viraria dez linhas de histórico — por isso
+     * edições seguidas do mesmo autor, do mesmo tipo, atualizam a última linha
+     * em vez de criar outra.
+     */
+    private function logAgrupado(Task $task, string $type, string $description, array $meta = []): void
+    {
+        TaskActivity::registrarAgrupado($task, $type, $description, $meta);
     }
 }

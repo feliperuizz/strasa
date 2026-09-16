@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\TaskActivity;
 use App\Models\TaskComment;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,9 @@ class TaskCommentController extends Controller
             'body' => $data['body'],
             'mentions' => $this->parseMentions($data['body'], $task->company_id),
         ]);
+
+        TaskActivity::registrar($task, TaskActivity::TYPE_COMMENTED, 'comentou',
+            ['trecho' => Str::limit($data['body'], 140)]);
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['message' => 'Comentário adicionado']);

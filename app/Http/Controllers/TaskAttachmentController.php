@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Models\TaskActivity;
 use App\Models\TaskAttachment;
 use App\Services\AttachmentStreamer;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +34,7 @@ class TaskAttachmentController extends Controller
         $disk = config('filesystems.attachments_disk');
         $folder = "company-{$task->company_id}/tasks/{$task->id}";
         $folderId = $request->input('folder_id');
+        $enviados = [];
 
         foreach ($request->file('files') as $file) {
             // Nome único no bucket, preservando a extensão original.
@@ -61,6 +63,18 @@ class TaskAttachmentController extends Controller
                 'size' => $file->getSize(),
                 'is_image' => Str::startsWith($mime, 'image/'),
             ]);
+
+            $enviados[] = $file->getClientOriginalName();
+        }
+
+        // Um envio de vários arquivos vira uma linha só no histórico, com os
+        // nomes no meta — é o "incluiu algo no card" que ninguém via.
+        if ($enviados) {
+            TaskActivity::registrar($task, TaskActivity::TYPE_ATTACHMENT_ADDED,
+                count($enviados) === 1
+                    ? 'anexou "'.Str::limit($enviados[0], 60).'"'
+                    : 'anexou '.count($enviados).' arquivos',
+                ['arquivos' => $enviados]);
         }
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -76,8 +90,16 @@ class TaskAttachmentController extends Controller
         $this->authorize('update', $attachment->task);
 
         // Remove o arquivo no bucket e depois o registro no banco.
+        $nome = $attachment->original_name;
+        $task = $attachment->task;
+
         Storage::disk($attachment->disk)->delete($attachment->path);
         $attachment->delete();
+
+        if ($task) {
+            TaskActivity::registrar($task, TaskActivity::TYPE_ATTACHMENT_REMOVED,
+                'removeu o anexo "'.Str::limit((string) $nome, 60).'"');
+        }
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['message' => 'Anexo removido com sucesso.']);

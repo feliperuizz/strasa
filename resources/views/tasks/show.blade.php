@@ -148,6 +148,10 @@
                 </div>
 
                 <div class="pt-4 border-t border-ink-600">
+                    @include('tasks.partials.activity', ['task' => $task])
+                </div>
+
+                <div class="pt-4 border-t border-ink-600">
                     <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Excluir esta tarefa e todos os anexos permanentemente?')">
                         @csrf @method('DELETE')
                         <button class="w-full rounded border border-rose-700/50 py-1.5 text-sm text-rose-400 hover:bg-rose-900/30">Excluir Tarefa</button>
