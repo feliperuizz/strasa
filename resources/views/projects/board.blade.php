@@ -408,10 +408,18 @@
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify({ column_id: columnId })
-                }).then(() => {
-                    if (window.saveScrollPositions) window.saveScrollPositions();
-                    window.location.reload();
+                }).then(async res => {
+                    if (window.sessaoExpirou(res.status)) { return; }
+                    if (!res.ok) {
+                        const j = await res.json().catch(() => ({}));
+                        throw new Error(j.message || ('HTTP ' + res.status));
+                    }
+                    // Busca o card ja na coluna nova, sem recarregar a pagina.
+                    window.atualizarCardDoQuadro(this.taskId);
+                }).catch(err => {
+                    alert('Não foi possível mover o card.' + String.fromCharCode(10, 10) + (err && err.message ? err.message : err));
                 });
+                this.open = false;
             },
 
             deleteTask() {
@@ -422,7 +430,12 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                             'Accept': 'application/json'
                         }
-                    }).then(() => {
+                    }).then(res => {
+                        if (!res.ok) { throw new Error('HTTP ' + res.status); }
+                        const card = document.querySelector(`.task-card[data-id="${this.taskId}"]`);
+                        if (card) { card.remove(); }
+                        window.dispatchEvent(new CustomEvent('kanban-recontar'));
+                    }).catch(() => {
                         if (window.saveScrollPositions) window.saveScrollPositions();
                         window.location.reload();
                     });

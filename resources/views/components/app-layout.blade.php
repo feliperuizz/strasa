@@ -608,6 +608,51 @@
         return true;
     };
 
+    // Atualiza um card do quadro no lugar, sem recarregar a pagina. Se a
+    // tarefa mudou de coluna vai para a certa; se foi excluida, some.
+    // Qualquer falha cai no recarregamento antigo, que sempre funcionou.
+    window.atualizarCardDoQuadro = function (taskId) {
+        var recarregar = function () {
+            if (window.saveScrollPositions) window.saveScrollPositions();
+            window.location.reload();
+        };
+
+        fetch(`{{ url('/tasks') }}/${taskId}/card`, {
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => {
+            if (res.status === 404) { return { removido: true }; }
+            if (!res.ok) { throw new Error('HTTP ' + res.status); }
+            return res.json();
+        })
+        .then(data => {
+            var atual = document.querySelector(`.task-card[data-id="${taskId}"]`);
+
+            if (data.removido) {
+                if (atual) { atual.remove(); }
+                window.dispatchEvent(new CustomEvent('kanban-recontar'));
+                return;
+            }
+
+            var lista = document.querySelector(`.kanban-list[data-column-id="${data.column_id}"]`);
+            var molde = document.createElement('template');
+            molde.innerHTML = (data.html || '').trim();
+            var novo = molde.content.firstElementChild;
+
+            if (!novo || !lista) { throw new Error('card ou coluna nao encontrados'); }
+
+            if (atual && atual.parentElement === lista) {
+                atual.replaceWith(novo);
+            } else {
+                if (atual) { atual.remove(); }
+                lista.appendChild(novo);
+            }
+
+            window.dispatchEvent(new CustomEvent('kanban-recontar'));
+        })
+        .catch(recarregar);
+    };
+
     window.completeTask = function(btn, taskId, e) {
         if (e) {
             e.preventDefault();
@@ -719,14 +764,30 @@
             Alpine.data('taskModal', () => ({
                 isOpen: false,
                 content: '',
+                taskId: null,
                 open(url) {
                     this.isOpen = true;
+                    // Guarda de qual tarefa e o slideover para, ao fechar, atualizar
+                    // so o card dela no quadro.
+                    var m = String(url).match(/\/tasks\/(\d+)/);
+                    this.taskId = m ? m[1] : null;
                     this.content = '<div class="flex h-full items-center justify-center text-slate-500">Carregando...</div>';
                     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
                         .then(res => res.text()).then(html => this.content = html);
                 },
                 closeModal() {
                     this.isOpen = false;
+                    var id = this.taskId;
+                    this.taskId = null;
+
+                    // No quadro, troca so o card que estava aberto: sem piscar.
+                    // Fora dele (Minhas Tarefas, Demandas...) a lista inteira
+                    // depende da tarefa, entao recarrega como antes.
+                    if (id && document.getElementById('kanban-board')) {
+                        window.atualizarCardDoQuadro(id);
+                        return;
+                    }
+
                     if (window.saveScrollPositions) window.saveScrollPositions();
                     setTimeout(() => window.location.reload(), 150);
                 }

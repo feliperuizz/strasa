@@ -20,7 +20,7 @@
         <button type="button" data-fechar-flags class="text-slate-500 hover:text-slate-200 text-lg leading-none">&times;</button>
     </div>
 
-    <div id="painel-flags-lista" class="max-h-64 overflow-y-auto py-1"></div>
+    <div id="painel-flags-lista" class="max-h-[55vh] overflow-y-auto py-1"></div>
 
     {{-- Criar uma flag nova --}}
     <div class="border-t border-ink-700 p-3">
@@ -389,7 +389,21 @@
     });
 
     // O painel é fixo na tela; se a coluna rolar, ele descolaria do card.
-    window.addEventListener('scroll', fechar, true);
+    // Então acompanha o botão enquanto o card estiver visível e só fecha
+    // quando o card sai da tela. Rolar a própria lista de flags não conta.
+    window.addEventListener('scroll', function (e) {
+        if (!painel || painel.classList.contains('hidden')) { return; }
+        if (painel.contains(e.target)) { return; }
+
+        if (botaoAtual && document.body.contains(botaoAtual)) {
+            var r = botaoAtual.getBoundingClientRect();
+            if (r.bottom > 0 && r.top < window.innerHeight) {
+                posicionar(botaoAtual);
+                return;
+            }
+        }
+        fechar();
+    }, true);
     window.addEventListener('resize', fechar);
 })();
 </script>

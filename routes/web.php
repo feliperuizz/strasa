@@ -123,6 +123,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('tasks/{task}', [TaskController::class, 'destroy'])->name('tasks.destroy');
     Route::post('tasks/{task}/move', [TaskController::class, 'move'])->name('tasks.move');
     Route::post('tasks/{task}/complete', [TaskController::class, 'complete'])->name('tasks.complete');
+    Route::get('tasks/{task}/card', [TaskController::class, 'card'])->name('tasks.card');
 
     /* Itens de Checklist ------------------------------------------------- */
     Route::post('tasks/{task}/items', [\App\Http\Controllers\TaskItemController::class, 'store'])->name('items.store');

@@ -308,6 +308,26 @@ class TaskController extends Controller
         ]);
     }
 
+    /**
+     * Só o card do quadro, renderizado sozinho.
+     *
+     * Ao fechar o slideover, o quadro troca este card no lugar em vez de
+     * recarregar a página inteira — a recarga era rápida, mas piscava.
+     */
+    public function card(Task $task): JsonResponse
+    {
+        $this->authorize('view', $task);
+
+        // Mesmas relações que o BoardController carrega para desenhar o card.
+        $task->load(['assignees', 'tags', 'attachments', 'items', 'approvals']);
+
+        return response()->json([
+            'id' => $task->id,
+            'column_id' => $task->column_id,
+            'html' => view('components.task-card', ['task' => $task])->render(),
+        ]);
+    }
+
     /** Garante que a coluna pertence ao projeto (e à empresa via scope). */
     private function resolveColumn(int $columnId, Project $project): Column
     {
