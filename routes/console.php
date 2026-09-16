@@ -30,3 +30,8 @@ Schedule::command('notifications:publish-reminders')->everyMinute();
 
 // E-mail de Briefing Diário (Todo dia às 09:00)
 Schedule::command('emails:daily-briefing')->dailyAt('09:00');
+
+// Mensalidades do Financeiro: cria as cobranças do mês seguinte em todas as
+// empresas. A tela do Financeiro também gera ao abrir; isto garante que as
+// cobranças existam mesmo se ninguém abrir (ex.: para o briefing do dia).
+Schedule::command('financeiro:recorrencias')->dailyAt('00:10');

@@ -25,6 +25,9 @@ class Payment extends Model
         self::STATUS_CANCELLED => 'Cancelado',
     ];
 
+    public const RECURRENCE_ONE_TIME = 'one_time';
+    public const RECURRENCE_MONTHLY = 'monthly';
+
     public const METHOD_PIX = 'pix';
     public const METHOD_BOLETO = 'boleto';
     public const METHOD_CREDIT_CARD = 'credit_card';
@@ -52,6 +55,9 @@ class Payment extends Model
         'payment_method',
         'reference_month',
         'recurrence',
+        'recurrence_series_id',
+        'recurrence_day',
+        'recurrence_ended_at',
         'notes',
         'attachment_path',
         'attachment_disk',
@@ -64,6 +70,7 @@ class Payment extends Model
             'amount' => 'decimal:2',
             'due_date' => 'date',
             'paid_at' => 'date',
+            'recurrence_ended_at' => 'date',
         ];
     }
 
@@ -84,6 +91,26 @@ class Payment extends Model
     /* --------------------------------------------------------------------- */
     /* Helpers e Acessores                                                   */
     /* --------------------------------------------------------------------- */
+
+    /** Faz parte de uma mensalidade que ainda gera os próximos meses. */
+    public function isRecurringActive(): bool
+    {
+        return $this->recurrence === self::RECURRENCE_MONTHLY
+            && $this->recurrence_series_id !== null
+            && $this->recurrence_ended_at === null;
+    }
+
+    /** Já foi de uma mensalidade, mas a série foi encerrada. */
+    public function isRecurringEnded(): bool
+    {
+        return $this->recurrence_series_id !== null && $this->recurrence_ended_at !== null;
+    }
+
+    /** Mês de competência, caindo no mês do vencimento quando não foi informado. */
+    public function referenceMonth(): string
+    {
+        return $this->reference_month ?: $this->due_date->format('Y-m');
+    }
 
     public function isPaid(): bool
     {

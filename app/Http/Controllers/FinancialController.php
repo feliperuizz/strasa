@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Payment;
+use App\Services\RecorrenciaDeCobrancas;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,6 +19,10 @@ class FinancialController extends Controller
 
         $companyId = $request->user()->company_id;
         $today = now()->toDateString();
+
+        // Mensalidades: cria as cobranças que faltam até o mês seguinte. Fica
+        // aqui além do agendador para a tela nunca abrir defasada.
+        app(RecorrenciaDeCobrancas::class)->gerar($companyId);
 
         // 1. Clientes ativos para os formulários e filtros
         $clients = Client::where('company_id', $companyId)
@@ -239,7 +244,15 @@ class FinancialController extends Controller
             $data['attachment_disk'] = $disk;
         }
 
-        Payment::create($data);
+        $cobranca = Payment::create($data);
+
+        if (($data['recurrence'] ?? null) === Payment::RECURRENCE_MONTHLY) {
+            $recorrencia = app(RecorrenciaDeCobrancas::class);
+            $recorrencia->ativar($cobranca);
+            $recorrencia->gerar($companyId);
+
+            return back()->with('status', 'Cobrança cadastrada! Ela vai se repetir todo dia '.$cobranca->recurrence_day.' — a do mês que vem já está na lista.');
+        }
 
         return back()->with('status', 'Cobrança cadastrada com sucesso!');
     }
@@ -260,7 +273,6 @@ class FinancialController extends Controller
             'paid_at' => ['nullable', 'date'],
             'payment_method' => ['nullable', 'string', Rule::in(array_keys(Payment::METHODS))],
             'reference_month' => ['nullable', 'string', 'regex:/^\d{4}-\d{2}$/'],
-            'recurrence' => ['nullable', 'string', Rule::in(['one_time', 'monthly'])],
             'notes' => ['nullable', 'string'],
             'attachment' => ['nullable', 'file'],
         ]);
@@ -307,6 +319,32 @@ class FinancialController extends Controller
         ]);
 
         return back()->with('status', 'Pagamento confirmado com sucesso! 🎉');
+    }
+
+    /** "Repetir todo mês": liga a recorrência numa cobrança já existente. */
+    public function startRecurrence(Request $request, Payment $payment): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($payment->company_id === $request->user()->company_id, 403);
+
+        $recorrencia = app(RecorrenciaDeCobrancas::class);
+        $recorrencia->ativar($payment);
+        $criadas = $recorrencia->gerar($payment->company_id);
+
+        return back()->with('status', 'Pronto: "'.$payment->title.'" vai se repetir todo dia '.$payment->recurrence_day
+            .($criadas ? ' — '.$criadas.' cobrança'.($criadas > 1 ? 's' : '').' já criada'.($criadas > 1 ? 's' : '').' para os próximos meses.' : '.'));
+    }
+
+    /** Encerra a mensalidade: para de gerar e limpa os meses futuros ainda intocados. */
+    public function stopRecurrence(Request $request, Payment $payment): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin(), 403);
+        abort_unless($payment->company_id === $request->user()->company_id, 403);
+
+        $removidas = app(RecorrenciaDeCobrancas::class)->encerrar($payment);
+
+        return back()->with('status', 'Recorrência de "'.$payment->title.'" encerrada.'
+            .($removidas ? ' '.$removidas.' cobrança'.($removidas > 1 ? 's futuras removidas' : ' futura removida').'.' : ''));
     }
 
     public function destroy(Request $request, Payment $payment): RedirectResponse

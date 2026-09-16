@@ -197,5 +197,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::post('financial', [FinancialController::class, 'store'])->name('financial.store');
     Route::patch('financial/{payment}', [FinancialController::class, 'update'])->name('financial.update');
     Route::post('financial/{payment}/mark-paid', [FinancialController::class, 'markPaid'])->name('financial.mark-paid');
+    Route::post('financial/{payment}/recurrence', [FinancialController::class, 'startRecurrence'])->name('financial.recurrence.start');
+    Route::delete('financial/{payment}/recurrence', [FinancialController::class, 'stopRecurrence'])->name('financial.recurrence.stop');
     Route::delete('financial/{payment}', [FinancialController::class, 'destroy'])->name('financial.destroy');
 });

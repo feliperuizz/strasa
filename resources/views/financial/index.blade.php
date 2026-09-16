@@ -232,7 +232,7 @@
                                 $isLate = $payment->isLate();
                                 $isPaid = $payment->isPaid();
                             @endphp
-                            <tr class="hover:bg-ink-800/60 transition {{ $isLate ? 'bg-rose-950/10' : '' }}">
+                            <tr class="group hover:bg-ink-800/60 transition {{ $isLate ? 'bg-rose-950/10' : '' }}">
                                 {{-- Cliente --}}
                                 <td class="px-5 py-3.5">
                                     <div class="flex items-center gap-2.5">
@@ -258,6 +258,38 @@
                                             📎 Ver Comprovante
                                         </a>
                                     @endif
+
+                                    {{-- Mensalidade: repete sozinha todo mês, no mesmo dia --}}
+                                    <div class="mt-1 flex flex-wrap items-center gap-1.5">
+                                        @if($payment->isRecurringActive())
+                                            <span class="inline-flex items-center gap-1 rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-brand-300"
+                                                  title="A cobrança do mês seguinte é criada automaticamente, sempre no dia {{ $payment->recurrence_day }}.">
+                                                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M5.5 9A8 8 0 0119 7.5M18.5 15A8 8 0 015 16.5"/></svg>
+                                                Todo dia {{ $payment->recurrence_day }}
+                                            </span>
+                                            <form method="POST" action="{{ route('financial.recurrence.stop', $payment) }}" class="inline"
+                                                  onsubmit="return confirm('Encerrar a recorrência de \'{{ addslashes($payment->title) }}\'?\n\nNenhuma cobrança nova será criada. As já pagas e a deste mês ficam; as futuras ainda pendentes somem.')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-[10.5px] font-medium text-slate-500 opacity-0 transition hover:text-rose-400 group-hover:opacity-100" title="Parar de repetir">
+                                                    encerrar
+                                                </button>
+                                            </form>
+                                        @elseif($payment->isRecurringEnded())
+                                            <span class="inline-flex items-center gap-1 rounded-full border border-ink-600 bg-ink-900 px-2 py-0.5 text-[10.5px] font-medium text-slate-500" title="Esta mensalidade foi encerrada em {{ $payment->recurrence_ended_at->format('d/m/Y') }}.">
+                                                Recorrência encerrada
+                                            </span>
+                                        @endif
+                                        @if(! $payment->isRecurringActive() && $payment->status !== \App\Models\Payment::STATUS_CANCELLED)
+                                            <form method="POST" action="{{ route('financial.recurrence.start', $payment) }}" class="inline"
+                                                  onsubmit="return confirm('Repetir \'{{ addslashes($payment->title) }}\' todo dia {{ $payment->due_date->day }}?\n\nA cobrança do mês seguinte é criada automaticamente, com o mesmo valor. Você anexa o boleto/Pix de cada mês quando tiver.')">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-500 opacity-0 transition hover:text-brand-300 group-hover:opacity-100" title="Transformar em mensalidade">
+                                                    <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M5.5 9A8 8 0 0119 7.5M18.5 15A8 8 0 015 16.5"/></svg>
+                                                    Repetir todo mês
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 {{-- Valor --}}
@@ -342,6 +374,8 @@
                                                     payment_method: '{{ $payment->payment_method }}',
                                                     reference_month: '{{ $payment->reference_month }}',
                                                     recurrence: '{{ $payment->recurrence }}',
+                                                    recurring_active: {{ $payment->isRecurringActive() ? 'true' : 'false' }},
+                                                    recurrence_day: '{{ $payment->recurrence_day ?? '' }}',
                                                     notes: '{{ addslashes($payment->notes ?? '') }}',
                                                     update_url: '{{ route('financial.update', $payment) }}'
                                                 })"
@@ -459,12 +493,15 @@
                                     </div>
 
                                     {{-- Recorrência --}}
-                                    <div>
+                                    <div x-data="{ recorrencia: 'monthly' }">
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Tipo de Cobrança</label>
-                                        <select name="recurrence" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
-                                            <option value="monthly">Mensalidade (Recorrente)</option>
-                                            <option value="one_time">Avulso / Projeto Único</option>
+                                        <select name="recurrence" x-model="recorrencia" class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
+                                            <option value="monthly">Mensalidade — repete todo mês</option>
+                                            <option value="one_time">Cobrança única</option>
                                         </select>
+                                        <p class="mt-1 text-[11px] leading-snug text-slate-500" x-show="recorrencia === 'monthly'">
+                                            A cobrança do mês seguinte é criada sozinha, no mesmo dia e com o mesmo valor. O boleto/Pix de cada mês você anexa quando tiver.
+                                        </p>
                                     </div>
 
                                     {{-- Observações --}}
@@ -581,6 +618,14 @@
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Mês de Competência</label>
                                         <input type="month" name="reference_month" x-model="editData.reference_month"
                                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
+                                    </div>
+
+                                    {{-- Mensalidade: só informa; ativar/encerrar fica na linha da tabela --}}
+                                    <div class="sm:col-span-2 rounded-lg border border-brand-500/20 bg-brand-500/[0.06] px-3 py-2 text-[11.5px] leading-snug text-slate-300"
+                                         x-show="editData.recurring_active" style="display: none;">
+                                        <span class="font-semibold text-brand-300">Mensalidade</span> — repete todo dia <span x-text="editData.recurrence_day"></span>.
+                                        O que você alterar aqui vale para esta cobrança; a do mês seguinte copia a mais recente da série.
+                                        Para parar de repetir, use "encerrar" na linha da cobrança.
                                     </div>
 
                                     {{-- Observações --}}
