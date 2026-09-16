@@ -608,6 +608,65 @@
         return true;
     };
 
+    /**
+     * Recarrega so as regioes marcadas com data-recarga-suave="nome", buscando
+     * a propria pagina de novo e trocando o miolo de cada uma. E o que as
+     * listas (Demandas, Minhas Tarefas) usam ao fechar um card: a tela
+     * atualiza sem piscar e sem perder o que estava recolhido ou rolado.
+     * Rejeita quando a pagina nao tem regiao marcada, para quem chama cair
+     * no recarregamento normal.
+     */
+    window.recargaSuave = function () {
+        var regioes = document.querySelectorAll('[data-recarga-suave]');
+        if (!regioes.length) {
+            return Promise.reject(new Error('pagina sem regiao de recarga suave'));
+        }
+
+        return fetch(window.location.href, { credentials: 'same-origin', headers: { 'Accept': 'text/html' } })
+            .then(function (res) {
+                if (res.status === 419 || res.redirected && /\/login/.test(res.url)) { throw new Error('__sessao__'); }
+                if (!res.ok) { throw new Error('HTTP ' + res.status); }
+                return res.text();
+            })
+            .then(function (html) {
+                var doc = new DOMParser().parseFromString(html, 'text/html');
+                var trocadas = 0;
+
+                regioes.forEach(function (atual) {
+                    var nome = atual.getAttribute('data-recarga-suave');
+                    var nova = doc.querySelector('[data-recarga-suave="' + nome + '"]');
+                    if (!nova) { return; }
+                    // O Alpine observa o DOM e inicializa o que entrar aqui.
+                    atual.innerHTML = nova.innerHTML;
+                    trocadas++;
+                });
+
+                if (!trocadas) { throw new Error('regiao nao veio na resposta'); }
+            });
+    };
+
+    /**
+     * Bloco que abre/recolhe e lembra o estado no navegador — o nome de cada
+     * pessoa em Demandas, por exemplo. A chave e por pagina, entao recolher
+     * alguem em Demandas nao mexe em outra tela.
+     */
+    window.grupoRecolhivel = function (chave) {
+        var armazem = 'strasa:recolhido:' + window.location.pathname + ':' + chave;
+
+        return {
+            aberto: true,
+            init() {
+                try { this.aberto = localStorage.getItem(armazem) !== '1'; } catch (e) { /* sem storage: fica aberto */ }
+            },
+            alternar() {
+                this.aberto = !this.aberto;
+                try {
+                    if (this.aberto) { localStorage.removeItem(armazem); } else { localStorage.setItem(armazem, '1'); }
+                } catch (e) { /* sem storage: so nao lembra */ }
+            }
+        };
+    };
+
     // Atualiza um card do quadro no lugar, sem recarregar a pagina. Se a
     // tarefa mudou de coluna vai para a certa; se foi excluida, some.
     // Qualquer falha cai no recarregamento antigo, que sempre funcionou.
@@ -955,9 +1014,17 @@
                 return;
             }
 
-            // Fora do quadro (Minhas Tarefas, por exemplo): recarrega.
-            if (window.saveScrollPositions) { window.saveScrollPositions(); }
-            setTimeout(() => window.location.reload(), 300);
+            // Fora do quadro (Minhas Tarefas, por exemplo): atualiza a lista
+            // sem piscar quando a pagina permite; senao recarrega.
+            var recarregar = function () {
+                if (window.saveScrollPositions) { window.saveScrollPositions(); }
+                window.location.reload();
+            };
+            if (document.querySelector('[data-recarga-suave]')) {
+                setTimeout(function () { window.recargaSuave().catch(recarregar); }, 300);
+                return;
+            }
+            setTimeout(recarregar, 300);
         })
         .catch(() => {
             btn.innerHTML = iconeOriginal;
@@ -1020,15 +1087,27 @@
                     this.taskId = null;
 
                     // No quadro, troca so o card que estava aberto: sem piscar.
-                    // Fora dele (Minhas Tarefas, Demandas...) a lista inteira
-                    // depende da tarefa, entao recarrega como antes.
                     if (id && document.getElementById('kanban-board')) {
                         window.atualizarCardDoQuadro(id);
                         return;
                     }
 
-                    if (window.saveScrollPositions) window.saveScrollPositions();
-                    setTimeout(() => window.location.reload(), 150);
+                    var recarregar = function () {
+                        if (window.saveScrollPositions) window.saveScrollPositions();
+                        window.location.reload();
+                    };
+
+                    // Listas (Demandas, Minhas Tarefas...): atualiza so o miolo
+                    // marcado na pagina. Sem regiao marcada, recarrega como antes.
+                    if (document.querySelector('[data-recarga-suave]')) {
+                        window.recargaSuave().catch(function (err) {
+                            if (err && err.message === '__sessao__') { window.sessaoExpirou(419); return; }
+                            recarregar();
+                        });
+                        return;
+                    }
+
+                    setTimeout(recarregar, 150);
                 }
             }));
         }

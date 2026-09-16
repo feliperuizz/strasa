@@ -8,7 +8,9 @@
         </div>
     </x-slot>
 
-    <div class="p-4 sm:p-6 space-y-6">
+    {{-- data-recarga-suave: ao fechar um card, so este miolo e atualizado
+         (ver recargaSuave no layout) — a pagina nao recarrega nem pisca. --}}
+    <div class="p-4 sm:p-6 space-y-6" data-recarga-suave="demandas">
 
         {{-- Atalhos de período --}}
         <div class="flex flex-wrap gap-2">
@@ -106,9 +108,9 @@
                     @php $pessoa = $dados['pessoa']; @endphp
 
                     <div class="rounded-xl border border-ink-600 bg-ink-800 overflow-hidden"
-                         x-data="{ aberto: true }">
+                         x-data="grupoRecolhivel('pessoa-{{ $pessoa->id }}')">
 
-                        <button @click="aberto = !aberto"
+                        <button @click="alternar()"
                                 class="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-ink-700/40 transition">
                             <div class="flex items-center gap-3 min-w-0">
                                 <x-avatar :user="$pessoa" :size="9" />
@@ -194,8 +196,8 @@
 
                 {{-- Tarefas sem ninguém atribuído --}}
                 @if($semResponsavel->isNotEmpty())
-                    <div class="rounded-xl border border-amber-500/30 bg-amber-500/[0.05] overflow-hidden" x-data="{ aberto: true }">
-                        <button @click="aberto = !aberto"
+                    <div class="rounded-xl border border-amber-500/30 bg-amber-500/[0.05] overflow-hidden" x-data="grupoRecolhivel('sem-responsavel')">
+                        <button @click="alternar()"
                                 class="flex w-full items-center justify-between gap-3 px-5 py-4 text-left hover:bg-amber-500/[0.08] transition">
                             <div class="flex items-center gap-3">
                                 <span class="grid h-9 w-9 place-items-center rounded-full bg-amber-500/15 text-amber-400 text-sm font-bold">?</span>

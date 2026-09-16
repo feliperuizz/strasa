@@ -1,6 +1,6 @@
 <x-app-layout title="Minhas Tarefas">
     <x-slot name="header">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2" data-recarga-suave="minhas-tarefas-cabecalho">
             <div>
                 <h1 class="text-xl font-bold text-slate-200 tracking-wide">Minhas Tarefas</h1>
                 <p class="text-xs sm:text-sm text-slate-400 mt-0.5">
@@ -15,7 +15,9 @@
         </div>
     </x-slot>
 
-    <div class="flex h-full flex-col">
+    {{-- data-recarga-suave: fechar um card ou concluir pela bolinha atualiza
+         so este miolo, sem recarregar a pagina (ver recargaSuave no layout). --}}
+    <div class="flex h-full flex-col" data-recarga-suave="minhas-tarefas">
 
         <div class="flex-1 overflow-auto p-4 max-w-6xl mx-auto w-full">
             <div class="rounded-xl border border-ink-600 bg-ink-800 overflow-hidden">
