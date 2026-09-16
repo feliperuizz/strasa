@@ -653,6 +653,24 @@
                 return;
             }
 
+            // Nenhuma coluna marcada como concluido: a automacao esta desligada
+            // e a tarefa fica onde esta. So risca o titulo e poe o selo.
+            if (!data.column_id) {
+                var titulo = card.querySelector('[data-task-title]');
+                if (titulo) {
+                    titulo.style.textDecoration = 'line-through';
+                    titulo.style.opacity = '0.6';
+                }
+                if (!card.querySelector('[data-selo-concluido]')) {
+                    var selo = document.createElement('span');
+                    selo.setAttribute('data-selo-concluido', '');
+                    selo.className = 'mt-2 inline-block rounded bg-emerald-900/40 px-1.5 py-0.5 text-[10px] text-emerald-400';
+                    selo.textContent = '● Publicado';
+                    (card.querySelector('[data-card-body]') || card).appendChild(selo);
+                }
+                return;
+            }
+
             // Fora do quadro (Minhas Tarefas, por exemplo): recarrega.
             if (window.saveScrollPositions) { window.saveScrollPositions(); }
             setTimeout(() => window.location.reload(), 300);

@@ -275,29 +275,25 @@ class TaskController extends Controller
         // da coluna. Antes daqui pegávamos a ÚLTIMA coluna por posição, o que
         // mandava a tarefa para "Rejeitado" no template padrão — e para lugares
         // diferentes sempre que alguém reordenava o quadro.
+        //
+        // Sem nenhuma coluna marcada, a automação está desligada: a tarefa é
+        // concluída onde está, sem mudar de coluna. Antes isso devolvia 422 e
+        // um alerta pedindo para marcar uma coluna — parecia erro do sistema.
         $destino = $task->project->columns()
             ->where('marks_published', true)
             ->orderBy('position')
             ->first();
 
-        if (! $destino) {
-            return response()->json([
-                'ok' => false,
-                'sem_coluna' => true,
-                'message' => 'Nenhuma coluna deste quadro está marcada como "concluído". '
-                    .'Abra o menu (⋯) da coluna desejada e marque a opção.',
-            ], 422);
-        }
-
         $origem = $task->column;
+        $mudouDeColuna = $destino && $origem && $origem->id !== $destino->id;
 
         $task->update([
-            'column_id' => $destino->id,
+            'column_id' => $destino?->id ?? $task->column_id,
             'is_published' => true,
             'published_at' => $task->published_at ?? now(),
         ]);
 
-        if ($origem && $origem->id !== $destino->id) {
+        if ($mudouDeColuna) {
             $this->log($task, TaskActivity::TYPE_COLUMN_CHANGED,
                 "concluiu e moveu para \"{$destino->name}\"");
         }
@@ -306,8 +302,9 @@ class TaskController extends Controller
 
         return response()->json([
             'ok' => true,
-            'column_id' => $destino->id,
-            'column_name' => $destino->name,
+            'moved' => $mudouDeColuna,
+            'column_id' => $destino?->id,
+            'column_name' => $destino?->name,
         ]);
     }
 

@@ -25,7 +25,7 @@
              class="h-28 w-full rounded-t-xl object-cover pointer-events-none">
     @endif
 
-    <div class="p-3">
+    <div class="p-3" data-card-body>
         @if($selo)
             <div class="mb-2 flex items-center gap-1.5">
                 <span class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide {{ $selo[1] }}">
@@ -55,7 +55,7 @@
                     <path d="M8 12l3 3 5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-0 group-hover/check:opacity-100 transition-opacity"></path>
                 </svg>
             </button>
-            <span class="text-[13px] font-medium leading-snug text-slate-200 mt-0.5 relative z-10"
+            <span class="text-[13px] font-medium leading-snug text-slate-200 mt-0.5 relative z-10" data-task-title
                style="{{ $task->is_published ? 'text-decoration: line-through; opacity: 0.6;' : '' }}">
                 {{ $task->title }}
             </span>
@@ -115,7 +115,7 @@
         </div>
 
         @if($task->is_published)
-            <span class="mt-2 inline-block rounded bg-emerald-900/40 px-1.5 py-0.5 text-[10px] text-emerald-400">● Publicado</span>
+            <span class="mt-2 inline-block rounded bg-emerald-900/40 px-1.5 py-0.5 text-[10px] text-emerald-400" data-selo-concluido>● Publicado</span>
         @endif
     </div>
 </div>

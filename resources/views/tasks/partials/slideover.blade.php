@@ -330,54 +330,83 @@
 
 
         {{-- Checklist --}}
+        {{-- Cada item tem responsável e prazo próprios: a peça costuma ser dividida
+             em etapas (roteiro, captação, edição...) que pessoas diferentes entregam
+             em dias diferentes. Os controles salvam sozinhos ao mudar. --}}
         <div class="mb-6" x-data="{
             newItem: '',
+            newAssignee: null,
+            newDueDate: '',
             adding: false,
+            hoje: (function () { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })(),
             items: {{ json_encode($task->items ?? []) }},
+            cabecalhos() {
+                return {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
+                    'Accept': 'application/json'
+                };
+            },
             async addItem() {
                 if(!this.newItem.trim()) return;
                 this.adding = true;
                 try {
                     const res = await fetch('{{ route('items.store', $task) }}', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ description: this.newItem })
+                        headers: this.cabecalhos(),
+                        body: JSON.stringify({
+                            description: this.newItem,
+                            assignee_id: this.newAssignee || null,
+                            due_date: this.newDueDate || null
+                        })
                     });
                     const data = await res.json();
                     if(res.ok) {
                         this.items.push(data.item);
                         this.newItem = '';
+                        this.newAssignee = null;
+                        this.newDueDate = '';
+                    } else if (!window.sessaoExpirou(res.status)) {
+                        alert(data.message || 'Não foi possível adicionar o item.');
                     }
                 } finally {
                     this.adding = false;
                 }
             },
-            async toggleItem(item) {
+            async salvarItem(item, campos) {
+                try {
+                    const res = await fetch('/items/' + item.id, {
+                        method: 'PATCH',
+                        headers: this.cabecalhos(),
+                        body: JSON.stringify(campos)
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (res.ok && data.item) {
+                        Object.assign(item, data.item);
+                    } else if (!window.sessaoExpirou(res.status)) {
+                        alert(data.message || 'Não foi possível salvar o item.');
+                    }
+                } catch (e) {
+                    alert('Erro de conexão ao salvar o item.');
+                }
+            },
+            toggleItem(item) {
                 item.is_completed = !item.is_completed;
-                fetch('/items/' + item.id, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ is_completed: item.is_completed })
-                });
+                this.salvarItem(item, { is_completed: item.is_completed });
             },
             async deleteItem(item) {
                 if(!confirm('Excluir item?')) return;
                 this.items = this.items.filter(i => i.id !== item.id);
                 fetch('/items/' + item.id, {
                     method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    }
+                    headers: this.cabecalhos()
                 });
+            },
+            atrasado(item) {
+                return !!item.due_date && !item.is_completed && item.due_date < this.hoje;
+            },
+            paraHoje(item) {
+                return !!item.due_date && !item.is_completed && item.due_date === this.hoje;
             },
             get progress() {
                 if(this.items.length === 0) return 0;
@@ -391,23 +420,62 @@
                 </h3>
                 <span class="text-xs font-semibold text-slate-400" x-text="progress + '%'"></span>
             </div>
-            
+
             <div class="h-1.5 w-full bg-ink-800 rounded-full mb-4 overflow-hidden" x-show="items.length > 0">
                 <div class="h-full bg-brand-500 transition-all duration-500" :style="'width: ' + progress + '%'"></div>
             </div>
 
-            <div class="space-y-2 mb-3">
+            <div class="space-y-1.5 mb-3">
                 <template x-for="item in items" :key="item.id">
-                    <div class="flex items-start gap-2 group">
-                        <input type="checkbox" :checked="item.is_completed" @change="toggleItem(item)" class="mt-1 rounded border-ink-600 bg-ink-800 text-brand-500 focus:ring-brand-500 cursor-pointer">
-                        <span class="flex-1 text-sm transition pt-0.5" :class="item.is_completed ? 'text-slate-500 line-through' : 'text-slate-200'" x-text="item.description"></span>
-                        <button type="button" @click="deleteItem(item)" class="text-xs text-rose-500 opacity-0 group-hover:opacity-100 transition px-2">Excluir</button>
+                    <div class="group rounded-lg px-2 py-1.5 -mx-2 transition hover:bg-ink-800/60">
+                        <div class="flex items-start gap-2">
+                            <input type="checkbox" :checked="item.is_completed" @change="toggleItem(item)" class="mt-1 rounded border-ink-600 bg-ink-800 text-brand-500 focus:ring-brand-500 cursor-pointer">
+                            <span class="flex-1 text-sm transition pt-0.5 break-words" :class="item.is_completed ? 'text-slate-500 line-through' : 'text-slate-200'" x-text="item.description"></span>
+                            <button type="button" @click="deleteItem(item)" class="text-xs text-rose-500 opacity-0 group-hover:opacity-100 transition px-2" title="Excluir item">Excluir</button>
+                        </div>
+
+                        {{-- Responsável e prazo do item --}}
+                        <div class="mt-1 flex flex-wrap items-center gap-1.5 pl-6">
+                            <label class="relative inline-flex items-center" title="Responsável por este item">
+                                <svg class="pointer-events-none absolute left-2 h-3 w-3" :class="item.assignee_id ? 'text-brand-400' : 'text-slate-500'" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                <select x-model.number="item.assignee_id" @change="salvarItem(item, { assignee_id: item.assignee_id })"
+                                        class="h-6 cursor-pointer appearance-none rounded-full border bg-ink-800 pl-6 pr-6 text-[11px] leading-none focus:outline-none focus:ring-1 focus:ring-brand-500 [color-scheme:dark]"
+                                        :class="item.assignee_id ? 'border-ink-600 text-slate-200' : 'border-dashed border-ink-600 text-slate-500 hover:text-slate-300'">
+                                    <option value="">Responsável</option>
+                                    @foreach($members as $m)
+                                        <option value="{{ $m->id }}">{{ $m->name }}</option>
+                                    @endforeach
+                                </select>
+                                <svg class="pointer-events-none absolute right-2 h-2.5 w-2.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </label>
+
+                            <label class="relative inline-flex items-center" title="Prazo deste item">
+                                <svg class="pointer-events-none absolute left-2 h-3 w-3" :class="atrasado(item) ? 'text-rose-400' : (paraHoje(item) ? 'text-amber-400' : (item.due_date ? 'text-brand-400' : 'text-slate-500'))" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <input type="date" x-model="item.due_date" @change="salvarItem(item, { due_date: item.due_date || null })"
+                                       class="h-6 cursor-pointer rounded-full border bg-ink-800 pl-6 pr-2 text-[11px] leading-none focus:outline-none focus:ring-1 focus:ring-brand-500 [color-scheme:dark]"
+                                       :class="atrasado(item) ? 'border-rose-500/50 text-rose-300' : (paraHoje(item) ? 'border-amber-500/50 text-amber-200' : (item.due_date ? 'border-ink-600 text-slate-200' : 'border-dashed border-ink-600 text-slate-500 hover:text-slate-300'))">
+                            </label>
+
+                            <span x-show="atrasado(item)" class="text-[10px] font-semibold text-rose-400">atrasado</span>
+                            <span x-show="paraHoje(item)" class="text-[10px] font-semibold text-amber-400">hoje</span>
+                        </div>
                     </div>
                 </template>
             </div>
 
-            <form @submit.prevent="addItem" class="flex gap-2">
-                <input type="text" x-model="newItem" placeholder="Adicionar item..." class="flex-1 rounded border border-ink-800 bg-ink-800 px-3 py-1.5 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
+            <form @submit.prevent="addItem" class="flex flex-wrap gap-2">
+                <input type="text" x-model="newItem" placeholder="Adicionar item..." class="min-w-[160px] flex-1 rounded border border-ink-800 bg-ink-800 px-3 py-1.5 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
+                <select x-model.number="newAssignee" title="Responsável (opcional)"
+                        class="rounded border border-ink-800 bg-ink-800 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none [color-scheme:dark]"
+                        :class="newAssignee ? 'text-slate-200' : 'text-slate-500'">
+                    <option value="">Responsável</option>
+                    @foreach($members as $m)
+                        <option value="{{ $m->id }}">{{ $m->name }}</option>
+                    @endforeach
+                </select>
+                <input type="date" x-model="newDueDate" title="Prazo (opcional)"
+                       class="rounded border border-ink-800 bg-ink-800 px-2 py-1.5 text-xs focus:border-brand-500 focus:outline-none [color-scheme:dark]"
+                       :class="newDueDate ? 'text-slate-200' : 'text-slate-500'">
                 <button type="submit" :disabled="adding" class="rounded bg-ink-800 border border-ink-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-50">Adicionar</button>
             </form>
         </div>
