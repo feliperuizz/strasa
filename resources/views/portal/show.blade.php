@@ -232,10 +232,18 @@
                 </div>
             </div>
 
-            @if(filled($task->description))
+            {{-- Legenda do post. Cards antigos não têm o campo próprio: cai na
+                 anotação, convertida de HTML para texto — antes a marcação do
+                 editor aparecia crua aqui. O CSS preserva as quebras. --}}
+            @php
+                $legenda = filled($task->caption)
+                    ? $task->caption
+                    : \App\Support\HtmlParaTexto::converter($task->description);
+            @endphp
+            @if(filled($legenda))
                 <div class="panel">
                     <h2>Texto da publicação</h2>
-                    <div class="copy">{{ $task->description }}</div>
+                    <div class="copy">{{ $legenda }}</div>
                 </div>
             @endif
 

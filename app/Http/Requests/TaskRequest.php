@@ -33,6 +33,8 @@ class TaskRequest extends FormRequest
             'publish_date' => ['nullable', 'date'],
             'publish_time' => ['nullable', 'date_format:H:i'],
             'description' => ['nullable', 'string'],
+            // Legenda do post: texto puro, é o que o cliente vê no painel.
+            'caption' => ['nullable', 'string', 'max:5000'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
         ];

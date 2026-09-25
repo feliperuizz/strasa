@@ -21,7 +21,12 @@
                 </div>
 
                 <div class="prose prose-invert max-w-none text-slate-300 ql-editor px-0 pb-0">
-                    {!! $task->description ?: '<p class="text-slate-500">Sem descrição.</p>' !!}
+                    {!! $task->description ?: '<p class="text-slate-500">Sem anotação.</p>' !!}
+
+                    @if(filled($task->caption))
+                        <h3 class="mt-5 mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Legenda do post</h3>
+                        <div class="whitespace-pre-wrap break-words rounded-lg border border-ink-700 bg-ink-900/60 p-3 text-sm leading-relaxed text-slate-200">{{ $task->caption }}</div>
+                    @endif
                 </div>
             </div>
 

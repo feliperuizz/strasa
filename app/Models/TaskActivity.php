@@ -25,6 +25,7 @@ class TaskActivity extends Model
     public const TYPE_REJECTED = 'rejected';
     public const TYPE_TITLE_CHANGED = 'title_changed';
     public const TYPE_DESCRIPTION_CHANGED = 'description_changed';
+    public const TYPE_CAPTION_CHANGED = 'caption_changed';
     public const TYPE_TAGS_CHANGED = 'tags_changed';
     public const TYPE_ATTACHMENT_ADDED = 'attachment_added';
     public const TYPE_ATTACHMENT_REMOVED = 'attachment_removed';
@@ -117,7 +118,8 @@ class TaskActivity extends Model
         self::TYPE_PUBLISHED => 'concluiu',
         self::TYPE_REJECTED => 'rejeitou',
         self::TYPE_TITLE_CHANGED => 'editou título',
-        self::TYPE_DESCRIPTION_CHANGED => 'editou texto',
+        self::TYPE_DESCRIPTION_CHANGED => 'editou anotação',
+        self::TYPE_CAPTION_CHANGED => 'editou legenda',
         self::TYPE_TAGS_CHANGED => 'mexeu em flags',
         self::TYPE_ATTACHMENT_ADDED => 'anexou arquivo',
         self::TYPE_ATTACHMENT_REMOVED => 'removeu arquivo',
@@ -143,6 +145,7 @@ class TaskActivity extends Model
             self::TYPE_ASSIGNEE_CHANGED => '#fbbf24',
             self::TYPE_ATTACHMENT_ADDED, self::TYPE_FOLDER_CREATED => '#38bdf8',
             self::TYPE_COMMENTED => '#c084fc',
+            self::TYPE_CAPTION_CHANGED => '#60a5fa',
             default => '#94a3b8',
         };
     }

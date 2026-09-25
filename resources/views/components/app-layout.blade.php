@@ -955,6 +955,56 @@
         };
     };
 
+    /**
+     * Campo da legenda do post. Mora aqui, e nao no slideover, porque o
+     * partial chega por AJAX. O texto e salvo pelo auto-save do formulario
+     * (taskForm.save), entao aqui so ficam o contador e o copiar.
+     */
+    window.legendaDoPost = function (inicial) {
+        return {
+            texto: inicial || '',
+            copiado: false,
+
+            get caracteres() {
+                return this.texto.length;
+            },
+
+            /**
+             * Delega para o auto-save do card (taskForm.save), que ja tem
+             * debounce e mostra "salvo". O form escuta 'change', e o change
+             * nativo do textarea so dispara ao sair do campo — por isso o
+             * evento vai na mao a cada tecla.
+             */
+            save() {
+                var form = document.getElementById('task-auto-form');
+                if (form) { form.dispatchEvent(new Event('change', { bubbles: true })); }
+            },
+
+            copiar() {
+                var texto = this.texto;
+                var marcar = () => {
+                    this.copiado = true;
+                    setTimeout(() => { this.copiado = false; }, 1600);
+                };
+
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(texto).then(marcar).catch(() => this.copiarAntigo(texto, marcar));
+                    return;
+                }
+                this.copiarAntigo(texto, marcar);
+            },
+
+            /** Sem clipboard API (http, navegador antigo): seleciona e copia. */
+            copiarAntigo(texto, aoCopiar) {
+                var campo = this.$refs.campo;
+                if (!campo) { return; }
+                campo.select();
+                try { document.execCommand('copy'); aoCopiar(); } catch (e) { /* o texto fica selecionado */ }
+                campo.setSelectionRange(campo.value.length, campo.value.length);
+            }
+        };
+    };
+
     window.completeTask = function(btn, taskId, e) {
         if (e) {
             e.preventDefault();

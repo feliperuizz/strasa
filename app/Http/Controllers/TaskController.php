@@ -47,6 +47,7 @@ class TaskController extends Controller
                 'created_by' => $request->user()->id,
                 'title' => $request->validated('title') ?? 'Nova Tarefa', // Permite salvar sem título temporariamente
                 'description' => $request->validated('description'),
+                'caption' => $request->validated('caption'),
                 'content_type' => $request->validated('content_type'),
                 'publish_date' => $request->validated('publish_date'),
                 'publish_time' => $request->validated('publish_time'),
@@ -135,6 +136,7 @@ class TaskController extends Controller
                 'column_id' => $column->id,
                 'title' => $request->validated('title') ?? 'Nova Tarefa',
                 'description' => $request->validated('description'),
+                'caption' => $request->validated('caption'),
                 'content_type' => $request->validated('content_type'),
                 'publish_date' => $request->validated('publish_date'),
                 'publish_time' => $request->validated('publish_time'),
@@ -382,6 +384,7 @@ class TaskController extends Controller
         $this->trackAssignees($request, $task);
         $this->trackTitle($request, $task);
         $this->trackDescription($request, $task);
+        $this->trackCaption($request, $task);
         $this->trackTags($request, $task);
 
         if ((string) $request->validated('publish_date') !== (string) optional($task->publish_date)->toDateString()) {
@@ -481,9 +484,30 @@ class TaskController extends Controller
 
         $this->logAgrupado($task, TaskActivity::TYPE_DESCRIPTION_CHANGED,
             $textoDepois === ''
-                ? 'apagou a descrição'
-                : ($textoAntes === '' ? 'escreveu a descrição' : 'editou a descrição'),
+                ? 'apagou a anotação'
+                : ($textoAntes === '' ? 'escreveu a anotação' : 'editou a anotação'),
             ['trecho' => Str::limit($textoDepois, 140) ?: null]);
+    }
+
+    /** Legenda do post: texto puro, então a comparação é direta. */
+    private function trackCaption(TaskRequest $request, Task $task): void
+    {
+        if (! $request->has('caption')) {
+            return;
+        }
+
+        $antes = trim((string) $task->caption);
+        $depois = trim((string) ($request->validated('caption') ?? ''));
+
+        if ($antes === $depois) {
+            return;
+        }
+
+        $this->logAgrupado($task, TaskActivity::TYPE_CAPTION_CHANGED,
+            $depois === ''
+                ? 'apagou a legenda do post'
+                : ($antes === '' ? 'escreveu a legenda do post' : 'editou a legenda do post'),
+            ['trecho' => Str::limit($depois, 140) ?: null]);
     }
 
     private function trackTags(TaskRequest $request, Task $task): void

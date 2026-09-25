@@ -160,13 +160,13 @@
                     </div>
                 </div>
 
-                {{-- Descrição --}}
+                {{-- Anotação interna: rich text, só a equipe vê --}}
                 <div x-data="{
                         quill: null,
                         initQuill() {
                             this.quill = new Quill($refs.editor, {
                                 theme: 'snow',
-                                placeholder: 'O que é essa tarefa?',
+                                placeholder: 'Referências, briefing, combinados com o cliente...',
                                 modules: {
                                     toolbar: [
                                         ['bold', 'italic', 'underline', 'strike'],
@@ -181,11 +181,39 @@
                                 $refs.hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
                             });
                         }
-                    }" 
+                    }"
                     x-init="initQuill()">
-                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-2">Descrição</label>
+                    <div class="mb-2 flex items-center gap-2">
+                        <label class="block text-xs font-semibold uppercase text-slate-500">Anotação</label>
+                        <span class="rounded-full bg-ink-800 px-2 py-0.5 text-[10px] font-medium text-slate-500" title="Só a equipe vê. Não vai para o painel do cliente.">interno</span>
+                    </div>
                     <input type="hidden" name="description" x-ref="hiddenInput" value="{{ $task->description }}">
                     <div x-ref="editor">{!! $task->description !!}</div>
+                </div>
+
+                {{-- Legenda do post: texto puro, é o que o cliente vê no painel
+                     de aprovação. Rich text aqui não serve — legenda de rede
+                     social é texto corrido; o que importa são as quebras. --}}
+                <div x-data="legendaDoPost(@js($task->caption ?? ''))">
+                    <div class="mb-2 flex flex-wrap items-center gap-2">
+                        <label for="caption-{{ $task->id ?? 'novo' }}" class="block text-xs font-semibold uppercase text-slate-500">Legenda do post</label>
+                        <span class="rounded-full bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-300" title="É este texto que aparece no painel de aprovação do cliente.">vai para o cliente</span>
+                        <span class="ml-auto flex items-center gap-2">
+                            <span class="text-[10.5px] tabular-nums" :class="caracteres > 2200 ? 'text-amber-400' : 'text-slate-500'"
+                                  :title="caracteres > 2200 ? 'Passou do limite do Instagram (2.200)' : 'Caracteres'"
+                                  x-text="caracteres + ' car.'"></span>
+                            <button type="button" @click="copiar()" x-show="caracteres > 0"
+                                    class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition"
+                                    :class="copiado ? 'bg-emerald-500/15 text-emerald-300' : 'text-slate-400 hover:bg-ink-700 hover:text-slate-200'">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                <span x-text="copiado ? 'Copiado!' : 'Copiar'"></span>
+                            </button>
+                        </span>
+                    </div>
+                    <textarea id="caption-{{ $task->id ?? 'novo' }}" name="caption" x-ref="campo" x-model="texto" @input="save()" rows="6"
+                              placeholder="A legenda que vai ser publicada. Pode usar emojis e quebras de linha à vontade."
+                              class="w-full resize-y rounded-lg border border-ink-700 bg-ink-900 px-3 py-2.5 text-sm leading-relaxed text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/30">{{ $task->caption }}</textarea>
+                    <p class="mt-1 text-[11px] text-slate-500">As quebras de linha aparecem exatamente assim para o cliente.</p>
                 </div>
             </div>
         </form>
