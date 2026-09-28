@@ -35,3 +35,8 @@ Schedule::command('emails:daily-briefing')->dailyAt('09:00');
 // empresas. A tela do Financeiro também gera ao abrir; isto garante que as
 // cobranças existam mesmo se ninguém abrir (ex.: para o briefing do dia).
 Schedule::command('financeiro:recorrencias')->dailyAt('00:10');
+
+// Prévias leves das imagens antigas (as novas já nascem com prévia). Um lote
+// por vez, começando pelas peças que estão com o cliente; quando todas
+// existirem, cada rodada só confere e sai.
+Schedule::command('previas:gerar --limite=40')->everyFiveMinutes()->withoutOverlapping(30);

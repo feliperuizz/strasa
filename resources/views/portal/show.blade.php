@@ -179,8 +179,9 @@
                     @forelse($midias as $i => $midia)
                         <div class="slide {{ $i === 0 ? 'on' : '' }}" data-slide="{{ $i }}">
                             @if($midia->is_image)
-                                <img src="{{ route('portal.media', [$portal->token, $midia->id]) }}"
-                                     alt="{{ $task->title }} — {{ $i + 1 }}">
+                                <img src="{{ route('portal.media', [$portal->token, $midia->id, 'v' => 'tela']) }}"
+                                     alt="{{ $task->title }} — {{ $i + 1 }}" decoding="async"
+                                     @if($i === 0) fetchpriority="high" @endif>
                             @else
                                 <video controls preload="metadata"
                                        src="{{ route('portal.media', [$portal->token, $midia->id]) }}"></video>
@@ -204,7 +205,7 @@
                         @foreach($midias as $i => $midia)
                             <button class="dot {{ $i === 0 ? 'on' : '' }}" type="button" data-goto="{{ $i }}">
                                 @if($midia->is_image)
-                                    <img src="{{ route('portal.media', [$portal->token, $midia->id]) }}" alt="" loading="lazy">
+                                    <img src="{{ route('portal.media', [$portal->token, $midia->id, 'v' => 'mini']) }}" alt="" loading="lazy" decoding="async">
                                 @else
                                     <span class="vid">▶</span>
                                 @endif

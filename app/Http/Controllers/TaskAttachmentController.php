@@ -6,6 +6,7 @@ use App\Models\Task;
 use App\Models\TaskActivity;
 use App\Models\TaskAttachment;
 use App\Services\AttachmentStreamer;
+use App\Services\PreviaDeImagem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -66,7 +67,7 @@ class TaskAttachmentController extends Controller
 
             $mime = $this->detectarMime($file, $extension);
 
-            $task->attachments()->create([
+            $anexo = $task->attachments()->create([
                 'company_id' => $task->company_id,
                 'folder_id' => $folderId,
                 'uploaded_by' => $request->user()->id,
@@ -78,6 +79,13 @@ class TaskAttachmentController extends Controller
                 'is_image' => Str::startsWith($mime, 'image/'),
                 'position' => $proxima++,
             ]);
+
+            // Prévias já no envio, a partir do arquivo que ainda está no
+            // temporário do PHP — sem baixar de volta do Drive. Falhar aqui
+            // nunca impede o envio: o painel cai no original.
+            if ($anexo->is_image) {
+                app(PreviaDeImagem::class)->gerarTodas($anexo, $file->getRealPath());
+            }
 
             $enviados[] = $file->getClientOriginalName();
         }
@@ -149,6 +157,7 @@ class TaskAttachmentController extends Controller
         $task = $attachment->task;
 
         Storage::disk($attachment->disk)->delete($attachment->path);
+        app(PreviaDeImagem::class)->apagar($attachment);
         $attachment->delete();
 
         if ($task) {

@@ -11,6 +11,8 @@ use App\Models\TaskAttachment;
 use App\Models\TaskComment;
 use App\Services\ApprovalService;
 use App\Services\AttachmentStreamer;
+use Illuminate\Support\Facades\DB;
+use App\Services\PreviaDeImagem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -231,6 +233,31 @@ class ApprovalPortalController extends Controller
             ->exists();
 
         abort_unless($permitido, 404);
+
+        // Prévia leve (?v=tela no visualizador, ?v=mini nas miniaturas). Sai
+        // do disco local em milissegundos, em vez de o servidor buscar o
+        // original em resolução cheia no Drive a cada acesso. Sem prévia
+        // possível, segue para o original como antes.
+        $tamanho = (string) $request->query('v', '');
+
+        if ($anexo->is_image && isset(PreviaDeImagem::TAMANHOS[$tamanho])) {
+            // Nada mais usa o banco daqui pra frente, e gerar a prévia pela
+            // primeira vez pode levar alguns segundos (download do Drive).
+            DB::disconnect();
+            @set_time_limit(120);
+
+            $previa = app(PreviaDeImagem::class)->garantir($anexo, $tamanho);
+
+            if ($previa) {
+                return response()->file($previa, [
+                    'Content-Type' => str_ends_with($previa, '.webp') ? 'image/webp' : 'image/jpeg',
+                    // O endereço muda se o arquivo mudar (é outro anexo), então
+                    // o navegador pode guardar sem perguntar de novo.
+                    'Cache-Control' => 'private, max-age=31536000, immutable',
+                    'X-Content-Type-Options' => 'nosniff',
+                ]);
+            }
+        }
 
         return app(AttachmentStreamer::class)->stream($request, $anexo);
     }

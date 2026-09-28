@@ -125,8 +125,8 @@
                     <a class="piece" href="{{ route('portal.show', [$portal->token, $aprovacao->id]) }}">
                         <div class="thumb">
                             @if($capa)
-                                <img src="{{ route('portal.media', [$portal->token, $capa->id]) }}"
-                                     alt="{{ $task->title }}" loading="lazy">
+                                <img src="{{ route('portal.media', [$portal->token, $capa->id, 'v' => 'mini']) }}"
+                                     alt="{{ $task->title }}" loading="lazy" decoding="async">
                             @else
                                 <div class="empty">Sem prévia</div>
                             @endif
@@ -163,8 +163,8 @@
 
                     <a class="answered-row" href="{{ route('portal.show', [$portal->token, $aprovacao->id]) }}">
                         @if($capa)
-                            <img class="mini" src="{{ route('portal.media', [$portal->token, $capa->id]) }}"
-                                 alt="" loading="lazy">
+                            <img class="mini" src="{{ route('portal.media', [$portal->token, $capa->id, 'v' => 'mini']) }}"
+                                 alt="" loading="lazy" decoding="async">
                         @else
                             <span class="mini"></span>
                         @endif
