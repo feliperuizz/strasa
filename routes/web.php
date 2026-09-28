@@ -142,6 +142,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('folders/{folder}', [\App\Http\Controllers\TaskFolderController::class, 'destroy'])->name('folders.destroy');
 
     Route::post('tasks/{task}/attachments', [TaskAttachmentController::class, 'store'])->name('attachments.store');
+    Route::post('tasks/{task}/attachments/reorder', [TaskAttachmentController::class, 'reorder'])->name('attachments.reorder');
     Route::delete('attachments/{attachment}', [TaskAttachmentController::class, 'destroy'])->name('attachments.destroy');
     Route::get('attachments/{attachment}/download', [TaskAttachmentController::class, 'download'])->name('attachments.download');
     Route::get('attachments/{attachment}/show', [TaskAttachmentController::class, 'show'])->name('attachments.show');

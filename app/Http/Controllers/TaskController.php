@@ -321,7 +321,7 @@ class TaskController extends Controller
         $this->authorize('view', $task);
 
         // Mesmas relações que o BoardController carrega para desenhar o card.
-        $task->load(['assignees', 'tags', 'attachments', 'items', 'approvals']);
+        $task->load(['assignees', 'tags', 'attachments', 'folders', 'items', 'approvals']);
 
         return response()->json([
             'id' => $task->id,

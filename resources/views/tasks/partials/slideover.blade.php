@@ -275,10 +275,25 @@
         @endif
 
         {{-- Anexos --}}
-        {{-- Anexos e Pastas --}}
+        {{-- Anexos e Pastas. A ordem aqui (pastas, depois soltos; dentro de cada
+             uma, a do arraste) é a do carrossel no card e no painel do cliente.
+             O número no canto de cada imagem/vídeo é a posição que o cliente vê. --}}
+        @php
+            $ordemCarrossel = $task->approvalMedia()->pluck('id')->flip();
+            $numero = fn ($att) => isset($ordemCarrossel[$att->id]) ? $ordemCarrossel[$att->id] + 1 : null;
+            $urlOrdem = route('attachments.reorder', $task);
+        @endphp
         <div x-data="{ creatingFolder: false, newFolderName: '' }">
             <div class="mb-4 flex items-center justify-between">
-                <h3 class="font-semibold text-slate-200">Anexos</h3>
+                <div>
+                    <h3 class="font-semibold text-slate-200">Anexos</h3>
+                    @if($ordemCarrossel->count() > 1)
+                        <p class="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500">
+                            <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+                            Arraste os arquivos para mudar a ordem do carrossel — é a ordem que o cliente vê.
+                        </p>
+                    @endif
+                </div>
                 <button type="button" @click="creatingFolder = !creatingFolder" class="text-xs text-brand-400 hover:text-brand-300 font-medium transition">＋ Nova Pasta</button>
             </div>
             
@@ -319,9 +334,9 @@
                                 <button type="submit" class="rounded bg-ink-800 px-2 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-600" :disabled="uploading">Enviar</button>
                             </form>
                             
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-2 gap-3" x-init="ordenarAnexos($el, @js($urlOrdem))">
                                 @foreach($folder->attachments as $att)
-                                    @include('tasks.partials.attachment-card', ['att' => $att])
+                                    @include('tasks.partials.attachment-card', ['att' => $att, 'ordem' => $numero($att)])
                                 @endforeach
                             </div>
                             @if($folder->attachments->isEmpty())
@@ -346,9 +361,9 @@
                         </button>
                     </form>
 
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-2 gap-3" x-init="ordenarAnexos($el, @js($urlOrdem))">
                         @foreach($rootAttachments as $att)
-                            @include('tasks.partials.attachment-card', ['att' => $att])
+                            @include('tasks.partials.attachment-card', ['att' => $att, 'ordem' => $numero($att)])
                         @endforeach
                     </div>
                 </div>

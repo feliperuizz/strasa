@@ -13,7 +13,7 @@ class TaskAttachment extends Model
 
     protected $fillable = [
         'company_id', 'task_id', 'folder_id', 'uploaded_by',
-        'disk', 'path', 'original_name', 'mime_type', 'size', 'is_image',
+        'disk', 'path', 'original_name', 'mime_type', 'size', 'is_image', 'position',
     ];
 
     protected function casts(): array
@@ -21,6 +21,7 @@ class TaskAttachment extends Model
         return [
             'is_image' => 'boolean',
             'size' => 'integer',
+            'position' => 'integer',
         ];
     }
 

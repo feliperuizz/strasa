@@ -88,9 +88,10 @@ class Task extends Model
         return $this->hasMany(TaskComment::class)->orderBy('created_at');
     }
 
+    /** Na ordem do carrossel (arrastável no card), e não mais do mais novo ao mais velho. */
     public function attachments(): HasMany
     {
-        return $this->hasMany(TaskAttachment::class)->latest();
+        return $this->hasMany(TaskAttachment::class)->orderBy('position')->orderBy('id');
     }
 
     public function folders(): HasMany
@@ -137,20 +138,34 @@ class Task extends Model
     }
 
     /** Primeira imagem anexada, usada como capa do card. */
+    /** Capa do card: a primeira imagem do carrossel, igual à que o cliente vê primeiro. */
     public function coverImage(): ?TaskAttachment
     {
-        return $this->attachments->firstWhere('is_image', true);
+        return $this->approvalMedia()->firstWhere('is_image', true);
     }
 
     /**
-     * Peças visuais que o cliente vê no portal: todas as imagens (o carrossel
-     * inteiro, na ordem em que foram anexadas) seguidas dos vídeos.
+     * Peças visuais que o cliente vê no portal, na ordem do carrossel.
+     *
+     * É a mesma ordem da tela do card, de cima para baixo: primeiro as pastas
+     * (na ordem em que aparecem, por nome), depois os arquivos soltos; dentro
+     * de cada uma, a ordem arrastada pela equipe. Imagens e vídeos seguem
+     * juntos — carrossel misto é permitido nas redes.
      */
     public function approvalMedia()
     {
+        $ordemDasPastas = $this->folders->pluck('id')->flip();
+        $pasta = fn ($a) => $a->folder_id === null
+            ? PHP_INT_MAX
+            : ($ordemDasPastas[$a->folder_id] ?? PHP_INT_MAX - 1);
+
         return $this->attachments
             ->filter(fn ($a) => $a->is_image || str_starts_with((string) $a->mime_type, 'video/'))
-            ->sortBy([['is_image', 'desc'], ['id', 'asc']])
+            ->sortBy([
+                fn ($a, $b) => $pasta($a) <=> $pasta($b),
+                ['position', 'asc'],
+                ['id', 'asc'],
+            ])
             ->values();
     }
 

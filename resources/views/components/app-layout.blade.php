@@ -1005,6 +1005,81 @@
         };
     };
 
+    /**
+     * Arrastar para ordenar os anexos de uma pasta (ou os soltos) no card.
+     * A ordem define o carrossel no card e no painel do cliente. Chamado pelo
+     * x-init de cada grade do slideover (que chega por AJAX, por isso mora aqui).
+     */
+    window.ordenarAnexos = function (lista, url) {
+        if (!lista || typeof Sortable === 'undefined') { return; }
+        if (lista._ordenacao) { lista._ordenacao.destroy(); }
+
+        var itens = function () {
+            return Array.prototype.slice.call(lista.querySelectorAll(':scope > [data-attachment-id]'));
+        };
+
+        lista._ordenacao = new Sortable(lista, {
+            animation: 150,
+            draggable: '[data-attachment-id]',
+            ghostClass: 'opacity-40',
+            // Fallback em vez do drag nativo: clicar na miniatura continua
+            // abrindo a imagem/vídeo; só vira arraste depois de mover 4px.
+            forceFallback: true,
+            fallbackTolerance: 4,
+            delay: 150,
+            delayOnTouchOnly: true,
+            filter: '[data-nao-arrasta]',
+            preventOnFilter: false,
+
+            onStart: function () {
+                lista._ordemAntes = itens();
+            },
+
+            onEnd: function (evt) {
+                if (evt.oldIndex === evt.newIndex) { return; }
+
+                window.numerarCarrossel();
+                if (window.taskViewer && typeof window.taskViewer.update === 'function') {
+                    window.taskViewer.update();
+                }
+
+                var desfazer = function () {
+                    (lista._ordemAntes || []).forEach(function (el) { lista.appendChild(el); });
+                    window.numerarCarrossel();
+                    if (window.taskViewer && typeof window.taskViewer.update === 'function') {
+                        window.taskViewer.update();
+                    }
+                };
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ ids: itens().map(function (el) { return parseInt(el.dataset.attachmentId, 10); }) })
+                })
+                .then(function (res) {
+                    if (window.sessaoExpirou(res.status)) { desfazer(); return; }
+                    if (!res.ok) { throw new Error('HTTP ' + res.status); }
+                })
+                .catch(function () {
+                    desfazer();
+                    alert('Não foi possível salvar a nova ordem. Tente de novo.');
+                });
+            }
+        });
+    };
+
+    /** Renumera as bolinhas 1, 2, 3... na ordem em que aparecem no card. */
+    window.numerarCarrossel = function () {
+        var n = 0;
+        document.querySelectorAll('#attachments-container [data-ordem-carrossel]').forEach(function (el) {
+            el.textContent = ++n;
+        });
+    };
+
     window.completeTask = function(btn, taskId, e) {
         if (e) {
             e.preventDefault();

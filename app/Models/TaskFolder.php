@@ -24,6 +24,6 @@ class TaskFolder extends Model
 
     public function attachments(): HasMany
     {
-        return $this->hasMany(TaskAttachment::class, 'folder_id');
+        return $this->hasMany(TaskAttachment::class, 'folder_id')->orderBy('position')->orderBy('id');
     }
 }

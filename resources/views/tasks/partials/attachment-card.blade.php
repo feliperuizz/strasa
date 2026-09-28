@@ -1,6 +1,14 @@
-<div class="group relative flex items-center gap-3 rounded-lg border border-ink-800 bg-ink-800 p-2">
+{{-- $ordem: posição no carrossel (1, 2, 3...) — só imagens e vídeos têm. --}}
+@php $ordem = $ordem ?? null; @endphp
+<div class="group relative flex cursor-grab items-center gap-3 rounded-lg border border-ink-800 bg-ink-800 p-2 active:cursor-grabbing"
+     data-attachment-id="{{ $att->id }}">
+    @if($ordem)
+        <span data-ordem-carrossel
+              class="pointer-events-none absolute -left-1.5 -top-1.5 z-10 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-ink-900"
+              title="Posição no carrossel">{{ $ordem }}</span>
+    @endif
     @if($att->is_image)
-        <img src="{{ route('attachments.show', $att) }}" data-url="{{ route('attachments.show', $att) }}" data-download-url="{{ route('attachments.download', $att) }}" loading="lazy" decoding="async" class="h-10 w-10 rounded object-cover viewer-image cursor-pointer" alt="{{ $att->original_name }}">
+        <img draggable="false" src="{{ route('attachments.show', $att) }}" data-url="{{ route('attachments.show', $att) }}" data-download-url="{{ route('attachments.download', $att) }}" loading="lazy" decoding="async" class="h-10 w-10 rounded object-cover viewer-image cursor-pointer" alt="{{ $att->original_name }}">
     @elseif($att->is_video)
         {{-- Miniatura de vídeo: clica e assiste no player, sem baixar. --}}
         <button type="button"
@@ -30,7 +38,7 @@
             <a href="{{ route('attachments.download', $att) }}" target="_blank" class="truncate text-xs font-medium text-slate-200 hover:text-slate-200 hover:underline block">{{ $att->original_name }}</a>
         @endif
     </div>
-    <button type="button" @click="deleteAttachment('{{ route('attachments.destroy', $att) }}', $event.target.closest('.group'))" class="absolute -right-2 -top-2 hidden rounded-full bg-rose-600 p-1 text-white hover:bg-rose-500 group-hover:block" title="Excluir">
+    <button type="button" data-nao-arrasta @click="deleteAttachment('{{ route('attachments.destroy', $att) }}', $event.target.closest('.group'))" class="absolute -right-2 -top-2 hidden rounded-full bg-rose-600 p-1 text-white hover:bg-rose-500 group-hover:block" title="Excluir">
         <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
     </button>
 </div>

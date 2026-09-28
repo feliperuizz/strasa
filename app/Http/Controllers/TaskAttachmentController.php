@@ -9,6 +9,7 @@ use App\Services\AttachmentStreamer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -36,7 +37,20 @@ class TaskAttachmentController extends Controller
         $folderId = $request->input('folder_id');
         $enviados = [];
 
-        foreach ($request->file('files') as $file) {
+        // O navegador não manda os arquivos na ordem do nome — no Windows vem
+        // primeiro o que estava selecionado por último. Ordenar pelo nome de
+        // forma natural ("2" antes de "10") acerta o carrossel na maioria dos
+        // casos (arte-1, arte-2...); o resto a equipe ajusta arrastando.
+        $arquivos = collect($request->file('files'))
+            ->sortBy(fn ($f) => $f->getClientOriginalName(), SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        // Entram no fim da pasta (ou dos soltos) onde foram enviados.
+        $proxima = (int) $task->attachments()
+            ->when($folderId, fn ($q) => $q->where('folder_id', $folderId), fn ($q) => $q->whereNull('folder_id'))
+            ->max('position') + 1;
+
+        foreach ($arquivos as $file) {
             // Nome único no bucket, preservando a extensão original.
             $extension = $file->getClientOriginalExtension();
             $name = Str::uuid().($extension !== '' ? '.'.$extension : '');
@@ -62,6 +76,7 @@ class TaskAttachmentController extends Controller
                 'mime_type' => $mime ?: 'application/octet-stream',
                 'size' => $file->getSize(),
                 'is_image' => Str::startsWith($mime, 'image/'),
+                'position' => $proxima++,
             ]);
 
             $enviados[] = $file->getClientOriginalName();
@@ -82,6 +97,46 @@ class TaskAttachmentController extends Controller
         }
 
         return back()->with('status', 'Anexo(s) enviado(s) para o bucket.');
+    }
+
+    /**
+     * Nova ordem de uma pasta (ou dos arquivos soltos), vinda do arraste no
+     * card. É a ordem do carrossel no card e no painel do cliente.
+     */
+    public function reorder(Request $request, Task $task): JsonResponse
+    {
+        $this->authorize('update', $task);
+
+        $dados = $request->validate([
+            'ids' => ['required', 'array', 'min:1'],
+            'ids.*' => ['integer', 'distinct'],
+        ]);
+
+        $anexos = $task->attachments()->whereIn('id', $dados['ids'])->get()->keyBy('id');
+
+        // Todos precisam ser deste card e da mesma pasta: o arraste é dentro
+        // de um bloco só, então qualquer outra coisa é pedido adulterado.
+        abort_if($anexos->count() !== count($dados['ids']), 422, 'Algum arquivo não pertence a este card.');
+        abort_if($anexos->pluck('folder_id')->unique()->count() > 1, 422, 'A ordem só pode ser alterada dentro de uma mesma pasta.');
+
+        $mudou = false;
+
+        DB::transaction(function () use ($dados, $anexos, &$mudou) {
+            foreach ($dados['ids'] as $posicao => $id) {
+                if ($anexos[$id]->position !== $posicao) {
+                    $anexos[$id]->forceFill(['position' => $posicao])->save();
+                    $mudou = true;
+                }
+            }
+        });
+
+        // Vários arrastes seguidos viram uma linha só no histórico.
+        if ($mudou) {
+            TaskActivity::registrarAgrupado($task, TaskActivity::TYPE_ATTACHMENTS_REORDERED,
+                'reorganizou a ordem do carrossel');
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     public function destroy(Request $request, TaskAttachment $attachment)

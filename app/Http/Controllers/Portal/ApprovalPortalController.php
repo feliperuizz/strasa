@@ -126,7 +126,7 @@ class ApprovalPortalController extends Controller
         $aprovacao = $this->acharAprovacao($portal, $approval);
 
         $task = $aprovacao->task;
-        $task->load(['attachments', 'items']);
+        $task->load(['attachments', 'folders', 'items']);
 
         return view('portal.show', [
             'portal' => $portal,
@@ -280,7 +280,7 @@ class ApprovalPortalController extends Controller
         return TaskApproval::withoutGlobalScopes()
             ->where('company_id', $portal->company_id)
             ->where('client_id', $portal->client_id)
-            ->with(['task' => fn ($q) => $q->withoutGlobalScopes()->with('attachments')])
+            ->with(['task' => fn ($q) => $q->withoutGlobalScopes()->with(['attachments', 'folders'])])
             ->orderByDesc('submitted_at');
     }
 
