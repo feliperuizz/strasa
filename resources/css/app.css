@@ -1,3 +1,41 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Celular: a página nunca desliza de lado.
+ *
+ * O que precisa rolar na horizontal (o quadro, tabelas largas) rola dentro
+ * da própria caixa. Sem isto, qualquer coisa alguns pixels mais larga que a
+ * tela fazia o dedo arrastar a página inteira para o lado, deixando uma
+ * faixa vazia — o "está tudo torto".
+ */
+html,
+body {
+    overflow-x: hidden;
+}
+
+@supports (overflow: clip) {
+    html,
+    body {
+        overflow-x: clip;
+    }
+}
+
+/* Chegar ao fim de uma caixa que rola de lado não arrasta a página junto. */
+.overflow-x-auto,
+.overflow-auto {
+    overscroll-behavior-x: contain;
+}
+
+/*
+ * iPhone/iPad dão zoom sozinhos ao tocar num campo com fonte menor que 16px
+ * e não desfazem depois: a tela fica ampliada e deslocada. Em telas de toque
+ * os campos pequenos sobem para 16px — o suficiente para o zoom não
+ * acontecer. Os que já são maiores (o título do card) ficam como estão.
+ */
+@media (pointer: coarse) {
+    :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):not([type="hidden"]), select, textarea, .ql-editor):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl):not(.text-4xl) {
+        font-size: 16px !important;
+    }
+}

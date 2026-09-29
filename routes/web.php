@@ -84,6 +84,7 @@ Route::prefix('aprovacao/{token}')->name('portal.')->group(function () {
 Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
     Route::get('my-tasks', [\App\Http\Controllers\MyTasksController::class, 'index'])->name('my-tasks');
+    Route::post('my-tasks/reorder', [\App\Http\Controllers\MyTasksController::class, 'reorder'])->name('my-tasks.reorder');
     Route::get('search/tasks', [\App\Http\Controllers\SearchController::class, 'tasks'])->name('search.tasks');
 
     Route::get('profile', [\App\Http\Controllers\ProfileController::class, 'edit'])->name('profile.edit');

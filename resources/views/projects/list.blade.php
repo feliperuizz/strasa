@@ -1,103 +1,11 @@
 <x-app-layout title="{{ $project->name }} · {{ $project->client->name }}" :client="$client">
     <x-slot name="header">
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2">
-                @if($project->client->logo_url)
-                    <img src="{{ $project->client->logo_url }}" alt="{{ $project->client->name }}" class="h-6 w-6 rounded-md object-cover ring-1 ring-ink-600">
-                @else
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $project->client->color ?? '#64748b' }}">{{ substr($project->client->name, 0, 2) }}</span>
-                @endif
-                <a href="{{ route('clients.show', $project->client) }}" class="text-xl font-bold text-slate-400 hover:text-slate-200 tracking-wide transition ml-1">{{ $project->client->name }}</a>
-                <span class="text-slate-600">/</span>
-                <h1 class="text-xl font-bold text-slate-200 tracking-wide">{{ $project->name }}</h1>
-                @can('update', $project)
-                    <a href="{{ route('projects.edit', $project) }}" class="ml-2 text-slate-500 hover:text-brand-400" title="Editar Projeto">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                    </a>
-                @endcan
-            </div>
-            <div x-data="{ 
-                isFavorite: {{ auth()->user()->favoriteProjects()->where('project_id', $project->id)->exists() ? 'true' : 'false' }},
-                toggle() {
-                    fetch('{{ route('projects.favorite', $project) }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                            'Accept': 'application/json'
-                        }
-                    })
-                    .then(res => res.json())
-                    .then(data => this.isFavorite = data.is_favorite);
-                }
-            }">
-                <button @click="toggle()" :class="isFavorite ? 'text-amber-400' : 'text-slate-500 hover:text-brand-400'">
-                    <svg class="w-5 h-5" :fill="isFavorite ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
-                </button>
-            </div>
-
-            {{-- Botão Minhas Notas --}}
-            <div>
-                <button @click="$dispatch('open-notes')" class="flex items-center gap-1.5 rounded-md border border-ink-600 bg-ink-800 px-2 py-1 text-xs font-medium text-slate-300 hover:bg-ink-700 hover:text-slate-200 transition">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                    Minhas Notas
-                </button>
-            </div>
-
-            {{-- Status do Projeto --}}
-            <div x-data="{
-                status: '{{ $project->status }}',
-                open: false,
-                colors: {
-                    on_track: 'bg-emerald-400/20 text-emerald-400 border-emerald-400/30',
-                    at_risk: 'bg-amber-400/20 text-amber-400 border-amber-400/30',
-                    off_track: 'bg-rose-400/20 text-rose-400 border-rose-400/30',
-                    '': 'border-ink-600 text-slate-400 hover:bg-ink-800'
-                },
-                labels: {
-                    on_track: 'No prazo',
-                    at_risk: 'Em risco',
-                    off_track: 'Atrasado',
-                    '': 'Definir status'
-                },
-                updateStatus(newStatus) {
-                    fetch('{{ route('projects.status', $project) }}', {
-                        method: 'PATCH',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').getAttribute('content'),
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ status: newStatus })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        this.status = data.status || '';
-                        this.open = false;
-                    });
-                }
-            }" class="relative">
-                <button @click="open = !open" :class="'text-xs rounded-full px-2 py-0.5 cursor-pointer border transition ' + colors[status]" x-text="labels[status]"></button>
-                
-                <div x-show="open" @click.outside="open = false" style="display: none;" class="absolute left-0 mt-2 w-36 rounded-lg border border-ink-600 bg-ink-800 py-1 shadow-xl z-50">
-                    <button @click="updateStatus('on_track')" class="block w-full px-4 py-1.5 text-left text-xs text-emerald-400 hover:bg-ink-700">No prazo</button>
-                    <button @click="updateStatus('at_risk')" class="block w-full px-4 py-1.5 text-left text-xs text-amber-400 hover:bg-ink-700">Em risco</button>
-                    <button @click="updateStatus('off_track')" class="block w-full px-4 py-1.5 text-left text-xs text-rose-400 hover:bg-ink-700">Atrasado</button>
-                    <button @click="updateStatus('')" class="block w-full px-4 py-1.5 text-left text-xs text-slate-400 hover:bg-ink-700 border-t border-ink-700 mt-1 pt-1.5">Limpar</button>
-                </div>
-            </div>
-        </div>
-        <div class="flex items-center gap-4 mt-3 border-b border-ink-600 pb-0.5">
-            <a href="{{ route('projects.board', $project) }}" class="text-sm text-slate-400 hover:text-slate-200 pb-2">Quadro</a>
-            <span class="text-sm font-semibold text-slate-200 border-b-2 border-white pb-2 cursor-pointer">Lista</span>
-            <a href="{{ route('projects.calendar', $project) }}" class="text-sm text-slate-400 hover:text-slate-200 pb-2">Calendário</a>
-            <span class="text-sm text-slate-400 hover:text-slate-200 pb-2 cursor-pointer">＋</span>
-        </div>
+        @include('projects.partials.cabecalho', ['aba' => 'lista'])
     </x-slot>
 
     <div class="flex h-full flex-col" data-recarga-suave="lista-do-projeto">
 
-        <div class="px-4 pt-4 pb-2 flex items-center gap-4">
+        <div class="px-4 pt-4 pb-2 flex flex-wrap items-center gap-2 sm:gap-4">
             <button type="button" @click="$dispatch('open-task-modal', '{{ route('tasks.create', $project) }}')" class="inline-flex items-center gap-1 rounded bg-ink-800 px-3 py-1.5 text-sm font-medium text-slate-200 hover:bg-slate-700 transition">
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 Adicionar tarefa
@@ -111,7 +19,7 @@
             </a>
         </div>
 
-        <div class="flex-1 overflow-auto p-4 space-y-6">
+        <div class="flex-1 overflow-y-auto p-3 space-y-6 sm:p-4">
             @foreach($columns as $column)
                 <div>
                     <div class="flex items-center gap-2 mb-2 px-2">
@@ -120,14 +28,14 @@
                     </div>
                     
                     <div class="rounded-xl border border-ink-600/80 bg-ink-800/85 backdrop-blur-md overflow-x-auto shadow-sm">
-                        <table class="w-full text-left text-sm text-slate-300 min-w-[600px]">
+                        <table class="w-full text-left text-sm text-slate-300 sm:min-w-[600px]">
                             <thead class="border-b border-ink-600 bg-ink-900/50 text-xs text-slate-400">
                                 <tr>
-                                    <th class="px-4 py-2 font-medium w-8"></th>
-                                    <th class="px-4 py-2 font-medium">Tarefa</th>
-                                    <th class="px-4 py-2 font-medium">Responsável</th>
-                                    <th class="px-4 py-2 font-medium">Data</th>
-                                    <th class="px-4 py-2 font-medium">Tags</th>
+                                    <th class="w-8 py-2 pl-3 pr-1 font-medium sm:px-4"></th>
+                                    <th class="px-2 py-2 font-medium sm:px-4">Tarefa</th>
+                                    <th class="px-3 py-2 font-medium sm:px-4"><span class="sr-only sm:not-sr-only">Responsável</span></th>
+                                    <th class="hidden px-4 py-2 font-medium sm:table-cell">Data</th>
+                                    <th class="hidden px-4 py-2 font-medium sm:table-cell">Tags</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-ink-700">
@@ -135,13 +43,26 @@
                                     <tr class="hover:bg-ink-700/50 cursor-pointer group" 
                                         @click="$dispatch('open-task-modal', '{{ route('tasks.edit', $task) }}')"
                                         @contextmenu.prevent.stop="$dispatch('open-context-menu', { taskId: {{ $task->id }}, currentColumn: {{ $task->column_id }}, event: $event, url: '{{ route('tasks.destroy', $task) }}' })">
-                                        <td class="px-4 py-3" @click.stop>
+                                        <td class="py-3 pl-3 pr-1 align-top sm:px-4" @click.stop>
                                             <button type="button" onclick="window.completeTask(this, {{ $task->id }}, event)" class="mt-0.5 text-slate-500 hover:text-emerald-400 focus:outline-none transition-colors">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                             </button>
                                         </td>
-                                        <td class="px-4 py-3 font-medium text-slate-200">{{ $task->title }}</td>
-                                        <td class="px-4 py-3">
+                                        <td class="break-words px-2 py-3 font-medium text-slate-200 sm:px-4">
+                                            {{ $task->title }}
+                                            {{-- No celular data e flags ficam embaixo do título --}}
+                                            @if($task->publish_date || $task->tags->isNotEmpty())
+                                                <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-normal sm:hidden">
+                                                    @if($task->publish_date)
+                                                        <span class="{{ $task->publish_date->isPast() && !$task->is_published ? 'text-rose-400' : 'text-slate-400' }}">{{ $task->publish_date->format('d/m') }}</span>
+                                                    @endif
+                                                    @foreach($task->tags as $tag)
+                                                        <span class="rounded px-1.5 py-px text-[10px] font-medium" style="background: {{ $tag->color }}22; color: {{ $tag->color }}">{{ $tag->name }}</span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </td>
+                                        <td class="px-3 py-3 align-top sm:px-4">
                                             @if($task->assignees->isNotEmpty())
                                                 <div class="flex -space-x-1.5" title="Responsáveis: {{ $task->assignees->pluck('name')->join(', ') }}">
                                                     @foreach($task->assignees->take(3) as $assignee)
@@ -149,13 +70,13 @@
                                                     @endforeach
                                                 </div>
                                             @else
-                                                <span class="text-xs text-slate-500">Sem responsável</span>
+                                                <span class="text-xs text-slate-500">—</span>
                                             @endif
                                         </td>
-                                        <td class="px-4 py-3 text-xs {{ optional($task->publish_date)->isPast() && !$task->is_published ? 'text-rose-400' : 'text-slate-400' }}">
+                                        <td class="hidden px-4 py-3 text-xs sm:table-cell {{ optional($task->publish_date)->isPast() && !$task->is_published ? 'text-rose-400' : 'text-slate-400' }}">
                                             {{ optional($task->publish_date)->format('d/m/Y') ?: '-' }}
                                         </td>
-                                        <td class="px-4 py-3">
+                                        <td class="hidden px-4 py-3 sm:table-cell">
                                             @if($task->tags->isNotEmpty())
                                                 <div class="flex flex-wrap gap-1">
                                                     @foreach($task->tags as $tag)

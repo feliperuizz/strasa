@@ -32,11 +32,11 @@
 
             {{-- Anexos (R2/S3) --}}
             <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                <div class="mb-4 flex items-center justify-between">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <h2 class="font-semibold text-slate-200">Anexos</h2>
-                    <form action="{{ route('attachments.store', $task) }}" method="POST" enctype="multipart/form-data" class="flex items-center gap-2">
+                    <form action="{{ route('attachments.store', $task) }}" method="POST" enctype="multipart/form-data" class="flex min-w-0 max-w-full flex-wrap items-center gap-2">
                         @csrf
-                        <input type="file" name="files[]" multiple required class="text-sm text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-700 file:px-2 file:py-1 file:text-xs file:text-slate-200 hover:file:bg-ink-600">
+                        <input type="file" name="files[]" multiple required class="min-w-0 max-w-full text-sm text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-700 file:px-2 file:py-1 file:text-xs file:text-slate-200 hover:file:bg-ink-600">
                         <button class="rounded bg-ink-700 px-2 py-1 text-xs font-medium text-slate-200 hover:bg-ink-600">Enviar</button>
                     </form>
                 </div>

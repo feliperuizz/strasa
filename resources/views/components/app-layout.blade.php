@@ -318,7 +318,9 @@
 
         {{-- pb-28: a hotbar ocupa os 96px de baixo (bottom-6 + ~72px de altura);
              com pb-24 o conteúdo encostava exatamente na barra, sem folga. --}}
-        <main class="flex-1 overflow-auto pb-28 lg:pb-0">
+        {{-- overflow-x-hidden: o main só rola para baixo. O que precisa de
+             rolagem lateral (quadro, tabelas) tem a própria caixa. --}}
+        <main class="flex-1 overflow-y-auto overflow-x-hidden pb-28 lg:pb-0">
             {{ $slot }}
         </main>
     </div>

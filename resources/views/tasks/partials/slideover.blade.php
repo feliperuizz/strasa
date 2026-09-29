@@ -6,16 +6,16 @@
     class="flex h-full flex-col bg-ink-900 text-slate-200">
 
     {{-- Header --}}
-    <div class="flex items-center justify-between border-b border-ink-800 px-6 py-4">
-        <div class="flex items-center gap-3">
+    <div class="flex items-center justify-between gap-3 border-b border-ink-800 px-4 py-4 sm:px-6">
+        <div class="flex min-w-0 items-center gap-3">
             @if($task->exists)
                 <button type="button" @click="completeTaskAndClose({{ $task->id }})" class="group flex h-6 w-6 items-center justify-center rounded-full border border-slate-500 hover:border-emerald-400 hover:bg-emerald-900/30" title="Concluir tarefa">
                     <svg class="h-4 w-4 text-transparent group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                 </button>
             @endif
-            <span class="text-sm text-slate-400">{{ $project->name }}</span>
+            <span class="truncate text-sm text-slate-400">{{ $project->name }}</span>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex shrink-0 items-center gap-4">
             <span x-show="saving" class="text-xs text-slate-400 transition" style="display: none;">Salvando...</span>
             <span x-show="saved" class="text-xs text-emerald-400 transition" style="display: none;">Salvo</span>
             @if($task->exists && auth()->user()->can('delete', $task))
@@ -34,7 +34,7 @@
     </div>
 
     {{-- Body --}}
-    <div class="flex-1 overflow-y-auto px-6 py-4">
+    <div class="flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 sm:px-6">
         <form id="task-auto-form" @submit.prevent @change="save()">
             @csrf
             
@@ -51,7 +51,7 @@
                 </div>
 
                 {{-- Metadados rápidos --}}
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div x-data="{ open: false }">
                         <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Responsáveis</label>
                         <div class="flex flex-wrap gap-1 mb-2">
@@ -86,9 +86,9 @@
                         <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Publicação</label>
                         <div class="flex items-center gap-2">
                             <input type="date" name="publish_date" value="{{ optional($task->publish_date)->format('Y-m-d') }}" @change="save()"
-                                   class="w-full rounded border-0 bg-ink-800 py-1.5 pl-3 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500 [color-scheme:dark]">
+                                   class="min-w-0 flex-1 rounded border-0 bg-ink-800 py-1.5 pl-3 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500 [color-scheme:dark]">
                             <input type="time" name="publish_time" value="{{ $task->publish_time ? \Carbon\Carbon::parse($task->publish_time)->format('H:i') : '' }}" @change="save()"
-                                   class="w-24 rounded border-0 bg-ink-800 py-1.5 px-2 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500 [color-scheme:dark]" title="Horário">
+                                   class="w-28 shrink-0 rounded border-0 bg-ink-800 py-1.5 px-2 text-sm text-slate-200 focus:ring-1 focus:ring-brand-500 [color-scheme:dark]" title="Horário">
                         </div>
                     </div>
                 </div>
