@@ -1,6 +1,6 @@
 <x-app-layout title="Equipe">
     <x-slot name="header">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-3">
             <h1 class="text-base font-semibold text-slate-200">Equipe da Agência</h1>
             @if(auth()->user()->isAdmin())
                 <button x-data @click="$dispatch('open-modal', 'invite-modal')" class="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500">＋ Adicionar</button>
@@ -14,7 +14,7 @@
         <div>
             <h2 class="text-lg font-medium text-slate-200 mb-4">Membros Ativos</h2>
             <div class="overflow-x-auto rounded-xl border border-ink-600 bg-ink-800">
-                <table class="w-full text-left text-sm text-slate-300 min-w-[600px]">
+                <table class="tabela-celular w-full text-left text-sm text-slate-300 min-w-[600px]">
                     <thead class="border-b border-ink-600 bg-ink-900/50 text-xs uppercase text-slate-400">
                         <tr>
                             <th class="px-4 py-3 font-medium">Nome</th>
@@ -36,8 +36,8 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="px-4 py-3">{{ $user->email }}</td>
-                                <td class="px-4 py-3">
+                                <td data-rotulo="E-mail" class="px-4 py-3 [overflow-wrap:anywhere]">{{ $user->email }}</td>
+                                <td data-rotulo="Desempenho" class="px-4 py-3">
                                     <div class="flex items-center gap-2">
                                         <div class="text-xs text-slate-400">
                                             <span class="text-slate-200">{{ $user->tasks_total - $user->tasks_completed }}</span> pendentes

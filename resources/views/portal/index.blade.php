@@ -88,9 +88,16 @@
     .answered-row .txt { flex: 1; min-width: 0; }
     .answered-row .txt b {
         display: block; font-size: 14px; font-weight: 600;
-        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        line-height: 1.35; overflow-wrap: break-word;
     }
     .answered-row .txt small { font-size: 12px; color: var(--muted); }
+    /* Celular estreito: o selo desce para baixo do título em vez de espremê-lo.
+       Fica depois das regras acima para vencer o "flex: 1" do .txt. */
+    @media (max-width: 400px) {
+        .answered-row { flex-wrap: wrap; row-gap: 8px; }
+        .answered-row .txt { flex: 1 1 calc(100% - 56px); }
+        .answered-row .badge { margin-left: 56px; }
+    }
 @endsection
 
 @section('content')

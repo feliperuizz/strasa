@@ -71,9 +71,11 @@
             border-bottom: 1px solid var(--line);
             position: sticky; top: 0; z-index: 20;
         }
+        /* Altura mínima em vez de fixa: nome de cliente longo quebra em duas
+           ou três linhas no celular e a barra cresce junto, sem cortar. */
         .topbar-inner {
             display: flex; align-items: center; justify-content: space-between;
-            gap: 16px; height: 70px;
+            gap: 16px; min-height: 70px; padding-top: 12px; padding-bottom: 12px;
         }
         .ident { display: flex; align-items: center; gap: 13px; min-width: 0; }
         .ident .logo {
@@ -88,7 +90,7 @@
         .ident .who { min-width: 0; }
         .ident .who b {
             display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.015em;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            line-height: 1.25; overflow-wrap: break-word;
         }
         .ident .who span { font-size: 12px; color: var(--muted); }
 

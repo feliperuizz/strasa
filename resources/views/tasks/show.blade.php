@@ -1,6 +1,6 @@
 <x-app-layout title="{{ $task->title }}">
     <x-slot name="header">
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
             <a href="{{ route('projects.board', $task->project) }}" class="text-sm text-slate-400 hover:text-slate-200">{{ $task->project->name }}</a>
             <span class="text-slate-600">/</span>
             <span class="text-sm text-slate-300">{{ $task->title }}</span>

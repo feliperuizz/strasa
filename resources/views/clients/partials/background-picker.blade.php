@@ -24,7 +24,7 @@
         </div>
 
         <!-- Seletor de Tipo (Padrão, Cor Sólida, Gradiente) -->
-        <div class="inline-flex rounded-lg bg-ink-800 p-1 border border-ink-600 text-xs self-start sm:self-auto">
+        <div class="inline-flex max-w-full flex-wrap rounded-lg bg-ink-800 p-1 border border-ink-600 text-xs self-start sm:self-auto">
             <button type="button" @click="setType('default')"
                     :class="bgType === 'default' ? 'bg-brand-600 text-white font-medium shadow' : 'text-slate-400 hover:text-white'"
                     class="rounded-md px-3 py-1.5 transition">
@@ -184,36 +184,36 @@
             <div class="grid grid-cols-3 gap-2 flex-1">
                 <!-- Coluna 1 -->
                 <div class="rounded-lg bg-ink-800/85 backdrop-blur-md p-2 border border-white/10 shadow-sm flex flex-col gap-1.5">
-                    <div class="flex items-center justify-between border-b border-ink-700/60 pb-1">
+                    <div class="flex flex-wrap items-center justify-between gap-x-1 border-b border-ink-700/60 pb-1">
                         <span class="text-[10px] font-semibold text-slate-300 uppercase">A Fazer</span>
                         <span class="text-[9px] text-slate-400 bg-ink-900/60 px-1 rounded">2</span>
                     </div>
                     <div class="rounded bg-ink-900/90 p-1.5 border border-ink-700/60 shadow-xs">
-                        <div class="text-[10px] font-medium text-slate-200 truncate">Planejamento de Posts</div>
+                        <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-medium text-slate-200">Planejamento de Posts</div>
                         <div class="text-[8px] text-slate-400 mt-0.5">18/Ago · #Design</div>
                     </div>
                 </div>
 
                 <!-- Coluna 2 -->
                 <div class="rounded-lg bg-ink-800/85 backdrop-blur-md p-2 border border-white/10 shadow-sm flex flex-col gap-1.5">
-                    <div class="flex items-center justify-between border-b border-ink-700/60 pb-1">
+                    <div class="flex flex-wrap items-center justify-between gap-x-1 border-b border-ink-700/60 pb-1">
                         <span class="text-[10px] font-semibold text-amber-400 uppercase">Em Andamento</span>
                         <span class="text-[9px] text-slate-400 bg-ink-900/60 px-1 rounded">1</span>
                     </div>
                     <div class="rounded bg-ink-900/90 p-1.5 border border-ink-700/60 shadow-xs">
-                        <div class="text-[10px] font-medium text-slate-200 truncate">Gravação de Reels</div>
+                        <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-medium text-slate-200">Gravação de Reels</div>
                         <div class="text-[8px] text-slate-400 mt-0.5">20/Ago · #Vídeo</div>
                     </div>
                 </div>
 
                 <!-- Coluna 3 -->
                 <div class="rounded-lg bg-ink-800/85 backdrop-blur-md p-2 border border-white/10 shadow-sm flex flex-col gap-1.5">
-                    <div class="flex items-center justify-between border-b border-ink-700/60 pb-1">
+                    <div class="flex flex-wrap items-center justify-between gap-x-1 border-b border-ink-700/60 pb-1">
                         <span class="text-[10px] font-semibold text-emerald-400 uppercase">Postado</span>
                         <span class="text-[9px] text-slate-400 bg-ink-900/60 px-1 rounded">1</span>
                     </div>
                     <div class="rounded bg-ink-900/90 p-1.5 border border-ink-700/60 shadow-xs">
-                        <div class="text-[10px] font-medium text-slate-200 truncate">Carrossel Semanal</div>
+                        <div class="overflow-hidden text-ellipsis whitespace-nowrap text-[10px] font-medium text-slate-200">Carrossel Semanal</div>
                         <div class="text-[8px] text-emerald-400 mt-0.5">✓ Publicado</div>
                     </div>
                 </div>

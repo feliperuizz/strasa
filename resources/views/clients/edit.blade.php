@@ -1,6 +1,6 @@
 <x-app-layout title="Editar cliente: {{ $client->name }}">
     <x-slot name="header">
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
             <a href="{{ route('clients.index') }}" class="text-sm text-slate-400 hover:text-slate-200">Clientes</a>
             <span class="text-slate-600">/</span>
             <a href="{{ route('clients.show', $client) }}" class="text-sm text-slate-400 hover:text-slate-200">{{ $client->name }}</a>

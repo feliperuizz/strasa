@@ -5,7 +5,7 @@
                 <h1 class="text-xl font-bold text-slate-200 tracking-wide">Gestão Financeira & Faturamento</h1>
                 <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Acompanhe cobranças, previsões de faturamento e pagamentos de clientes.</p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
                 <button x-data @click="$dispatch('open-modal', 'create-payment-modal')"
                         class="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 transition">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -33,7 +33,7 @@
                     <div class="text-2xl sm:text-3xl font-bold text-emerald-400">
                         R$ {{ number_format($stats['received'], 2, ',', '.') }}
                     </div>
-                    <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
+                    <div class="text-xs text-slate-400 mt-2 flex flex-wrap items-center justify-between gap-x-2">
                         <span class="text-emerald-400 font-semibold">{{ $stats['collection_rate'] }}%</span>
                         <span class="text-slate-400">{{ $stats['paid_count'] }} recebidos</span>
                     </div>
@@ -48,7 +48,7 @@
                     <div class="text-2xl sm:text-3xl font-bold text-sky-400">
                         R$ {{ number_format($stats['pending'], 2, ',', '.') }}
                     </div>
-                    <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
+                    <div class="text-xs text-slate-400 mt-2 flex flex-wrap items-center justify-between gap-x-2">
                         <span>A vencer no prazo</span>
                         <span class="text-slate-400">{{ $stats['pending_count'] }} pendentes</span>
                     </div>
@@ -63,7 +63,7 @@
                     <div class="text-2xl sm:text-3xl font-bold {{ $stats['late'] > 0 ? 'text-rose-400' : 'text-slate-300' }}">
                         R$ {{ number_format($stats['late'], 2, ',', '.') }}
                     </div>
-                    <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
+                    <div class="text-xs text-slate-400 mt-2 flex flex-wrap items-center justify-between gap-x-2">
                         @if($stats['late'] > 0)
                             <span class="text-rose-400 font-medium animate-pulse">Atenção requerida</span>
                             <span class="text-rose-400 font-bold">{{ $stats['late_count'] }} atrasados</span>
@@ -83,7 +83,7 @@
                     <div class="text-2xl sm:text-3xl font-bold text-amber-400">
                         R$ {{ number_format($stats['projected'], 2, ',', '.') }}
                     </div>
-                    <div class="text-xs text-slate-400 mt-2 flex items-center justify-between">
+                    <div class="text-xs text-slate-400 mt-2 flex flex-wrap items-center justify-between gap-x-2">
                         <span>Total acumulado:</span>
                         <span class="text-slate-300 font-medium">R$ {{ number_format($stats['total_all_time'], 0, ',', '.') }}</span>
                     </div>
@@ -213,7 +213,7 @@
             </header>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-300 min-w-[850px]">
+                <table class="tabela-celular w-full text-left text-sm text-slate-300 min-w-[850px]">
                     <thead class="border-b border-ink-600 bg-ink-900/50 text-xs uppercase text-slate-400 tracking-wider">
                         <tr>
                             <th class="px-5 py-3 font-semibold">Cliente</th>
@@ -293,14 +293,14 @@
                                 </td>
 
                                 {{-- Valor --}}
-                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                <td data-rotulo="Valor" class="cel-metade px-4 py-3.5 whitespace-nowrap">
                                     <span class="font-bold text-sm {{ $isPaid ? 'text-emerald-400' : ($isLate ? 'text-rose-400' : 'text-slate-200') }}">
                                         {{ $payment->formatted_amount }}
                                     </span>
                                 </td>
 
                                 {{-- Vencimento --}}
-                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                <td data-rotulo="Vencimento" class="cel-metade px-4 py-3.5 whitespace-nowrap">
                                     <div class="text-xs font-medium {{ $isLate ? 'text-rose-400 font-bold' : 'text-slate-300' }}">
                                         {{ $payment->due_date->format('d/m/Y') }}
                                     </div>
@@ -312,7 +312,7 @@
                                 </td>
 
                                 {{-- Pagamento --}}
-                                <td class="px-4 py-3.5 whitespace-nowrap text-xs text-slate-300">
+                                <td data-rotulo="Pagamento" class="cel-metade px-4 py-3.5 whitespace-nowrap text-xs text-slate-300">
                                     @if($payment->paid_at)
                                         <span class="text-emerald-400 font-medium">{{ $payment->paid_at->format('d/m/Y') }}</span>
                                     @else
@@ -321,14 +321,14 @@
                                 </td>
 
                                 {{-- Método --}}
-                                <td class="px-4 py-3.5 whitespace-nowrap">
+                                <td data-rotulo="Método" class="cel-metade px-4 py-3.5 whitespace-nowrap">
                                     <span class="text-xs text-slate-300 bg-ink-900 px-2 py-0.5 rounded border border-ink-700">
                                         {{ $payment->method_label }}
                                     </span>
                                 </td>
 
                                 {{-- Status --}}
-                                <td class="px-4 py-3.5 text-center whitespace-nowrap">
+                                <td data-rotulo="Status" class="px-4 py-3.5 text-center whitespace-nowrap">
                                     @if($isPaid)
                                         <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                             <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
@@ -353,7 +353,7 @@
 
                                 {{-- Ações --}}
                                 <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
+                                    <div class="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
                                         @if(!$isPaid && $payment->status !== \App\Models\Payment::STATUS_CANCELLED)
                                             <button type="button"
                                                     @click="$dispatch('open-mark-paid', { id: {{ $payment->id }}, title: '{{ addslashes($payment->title) }}', amount: '{{ $payment->formatted_amount }}', client: '{{ addslashes($payment->client->name) }}', method: '{{ $payment->payment_method ?: 'pix' }}' })"

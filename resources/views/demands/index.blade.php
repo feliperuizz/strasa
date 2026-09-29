@@ -35,7 +35,7 @@
         </div>
 
         {{-- Filtros --}}
-        <form method="GET" class="flex flex-wrap items-end gap-3 rounded-xl border border-ink-600 bg-ink-800/60 p-4">
+        <form method="GET" class="flex flex-wrap items-end gap-3 rounded-xl border border-ink-600 bg-ink-800/60 p-4 [&>*]:min-w-0 [&>*]:max-w-full">
             <div>
                 <label class="block text-xs font-medium text-slate-400 mb-1">De</label>
                 <input type="date" name="de" value="{{ $modo === 'intervalo' ? $filtros['de'] : '' }}"

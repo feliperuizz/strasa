@@ -28,6 +28,146 @@ body {
     overscroll-behavior-x: contain;
 }
 
+/* Seletor com opção comprida (nome de cliente) não fica mais largo que a caixa. */
+select {
+    max-width: 100%;
+}
+
+/*
+ * Celular: ver tudo, sem "…".
+ *
+ * No computador vários textos são cortados com reticências para caber numa
+ * linha. No celular isso escondia justamente o que importa (nome do
+ * cliente, título da tarefa, nome da coluna). Aqui eles quebram linha.
+ *
+ * break-word (e não anywhere) no geral: só parte uma palavra se ela sozinha
+ * não couber na linha. "anywhere" em tudo esmagava botões e datas curtas
+ * ("Edi/tar", "30/0/9"); ele fica só onde há palavra gigante (títulos,
+ * links, nomes de arquivo), aplicado direto no elemento.
+ */
+@media (max-width: 639px) {
+    body {
+        overflow-wrap: break-word;
+    }
+
+    /* Mantém o overflow:hidden do truncate: assim o item continua podendo
+       encolher dentro de uma linha flex, só que agora quebrando em vez de
+       cortar com "…". */
+    .truncate {
+        text-overflow: clip;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    /* Item de grade pode encolher até a coluna. Sem isto um gráfico (que
+       nasce com 300px) ou uma palavra comprida alargavam o cartão para além
+       da tela e a borda direita era cortada. */
+    .grid > * {
+        min-width: 0;
+    }
+
+    canvas {
+        max-width: 100%;
+    }
+
+    /*
+     * Tabelas no celular: cada linha vira um cartão, cada coluna vira
+     * "rótulo em cima, valor embaixo". Marque a <table> com .tabela-celular
+     * e as células com data-rotulo="...". .cel-metade e .cel-terco põem
+     * duas ou três células lado a lado. No computador nada muda.
+     */
+    .tabela-celular {
+        display: block;
+        width: 100%;
+        min-width: 0 !important;
+        white-space: normal !important;
+    }
+
+    .tabela-celular thead {
+        display: none;
+    }
+
+    .tabela-celular tbody {
+        display: block;
+    }
+
+    .tabela-celular tr {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        row-gap: 8px;
+        padding: 14px 16px;
+    }
+
+    .tabela-celular td {
+        flex: 0 0 100%;
+        min-width: 0 !important;
+        padding: 0 !important;
+        text-align: left !important;
+        white-space: normal !important;
+    }
+
+    .tabela-celular td:not(.flex) {
+        display: block;
+    }
+
+    .tabela-celular td.flex {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .tabela-celular td.cel-metade {
+        flex-basis: 50%;
+        padding-right: 8px !important;
+    }
+
+    .tabela-celular td.cel-terco {
+        flex-basis: 33.333%;
+        padding-right: 8px !important;
+    }
+
+    .tabela-celular td[data-rotulo]::before {
+        content: attr(data-rotulo);
+        display: block;
+        margin-bottom: 3px;
+        font-size: 10.5px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: rgb(100 116 139);
+    }
+}
+
+/* Celulares bem estreitos (até 379px): números e títulos grandes descem um
+   degrau, senão "R$ 12.850,90" não cabia no cartão e partia no meio. */
+@media (max-width: 379px) {
+    .text-2xl {
+        font-size: 1.25rem;
+        line-height: 1.75rem;
+    }
+
+    .text-3xl {
+        font-size: 1.5rem;
+        line-height: 2rem;
+    }
+}
+
+/*
+ * Celular não tem "passar o mouse por cima". Controles que só apareciam no
+ * hover (menu ⋯ da coluna, + flag do card, prazo e responsável do checklist,
+ * excluir anexo, repetir cobrança todo mês...) ficavam invisíveis no toque.
+ * Em telas sem hover eles aparecem sempre.
+ */
+@media (hover: none) {
+    .group-hover\:opacity-100 {
+        opacity: 1;
+    }
+
+    .group-hover\:block {
+        display: block;
+    }
+}
+
 /*
  * iPhone/iPad dão zoom sozinhos ao tocar num campo com fonte menor que 16px
  * e não desfazem depois: a tela fica ampliada e deslocada. Em telas de toque

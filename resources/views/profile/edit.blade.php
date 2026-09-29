@@ -86,7 +86,7 @@
                 <div class="space-y-4 bg-ink-900/30 p-4 rounded-lg border border-ink-700/50">
                     @php $settings = $user->notification_settings ?? []; @endphp
 
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Resumo do Dia</label>
                             <p class="text-xs text-slate-500">Notificar quantidade de tarefas que você tem para hoje.</p>
@@ -102,7 +102,7 @@
 
                     <hr class="border-ink-700/50">
 
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Postagens e Agendamentos</label>
                             <p class="text-xs text-slate-500">Notificar publicações sob sua responsabilidade hoje.</p>
@@ -118,7 +118,7 @@
 
                     <hr class="border-ink-700/50">
 
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-300">Lembrete de Publicação (5 min)</label>
                             <p class="text-xs text-slate-500">Notificar 5 minutos antes do horário marcado no quadro.</p>
@@ -133,7 +133,7 @@
 
                     <hr class="border-ink-700/50">
 
-                    <div class="flex items-center justify-between">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
                             <label class="block text-sm font-medium text-slate-300">E-mail de Briefing Diário</label>
                             <p class="text-xs text-slate-500">Receber um resumo das suas tarefas todos os dias às 09:00.</p>
@@ -148,8 +148,8 @@
 
                     <hr class="border-ink-700/50">
 
-                    <div class="flex items-center justify-between">
-                        <div>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="min-w-0">
                             <label class="block text-sm font-medium text-slate-300">Tema do Sistema</label>
                             <p class="text-xs text-slate-500">Escolha entre Claro, Escuro ou Automático.</p>
                         </div>

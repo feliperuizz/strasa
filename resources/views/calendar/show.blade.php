@@ -1,16 +1,18 @@
 <x-app-layout title="Calendário · {{ $project ? $project->name : $client->name }}" :client="$client">
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                @if($client->logo_url)
-                    <img src="{{ $client->logo_url }}" alt="{{ $client->name }}" class="h-6 w-6 rounded-md object-cover ring-1 ring-ink-600">
-                @else
-                    <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $client->color ?? '#64748b' }}">{{ substr($client->name, 0, 2) }}</span>
-                @endif
-                <a href="{{ route('clients.show', $client) }}" class="text-sm font-semibold text-slate-200 hover:text-slate-200">{{ $client->name }}</a>
-                <span class="text-slate-500">/</span>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <div class="flex min-w-0 items-center gap-2">
+                    @if($client->logo_url)
+                        <img src="{{ $client->logo_url }}" alt="{{ $client->name }}" class="h-6 w-6 shrink-0 rounded-md object-cover ring-1 ring-ink-600">
+                    @else
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $client->color ?? '#64748b' }}">{{ substr($client->name, 0, 2) }}</span>
+                    @endif
+                    <a href="{{ route('clients.show', $client) }}" class="min-w-0 text-sm font-semibold text-slate-200 hover:text-slate-200">{{ $client->name }}</a>
+                </div>
+                <span class="hidden text-slate-500 sm:inline">/</span>
                 <div class="relative" x-data="{ menu: false }">
-                    <button @click="menu = !menu" class="text-sm text-slate-400 hover:text-slate-200 flex items-center gap-1">
+                    <button @click="menu = !menu" class="text-left text-sm text-slate-400 hover:text-slate-200 flex items-center gap-1">
                         {{ $project ? $project->name : 'Todos os projetos' }} ▾
                     </button>
                     <div x-show="menu" @click.outside="menu=false" x-cloak class="absolute left-0 mt-2 w-48 rounded-lg border border-ink-600 bg-ink-700 py-1 shadow-xl z-10">
@@ -20,8 +22,8 @@
                         @endforeach
                     </div>
                 </div>
-                <span class="text-slate-500">/</span>
-                <span class="text-sm text-slate-400">Calendário</span>
+                <span class="hidden text-slate-500 sm:inline">/</span>
+                <span class="text-sm text-slate-400"><span class="text-slate-600 sm:hidden">· </span>Calendário</span>
             </div>
             @if($project)
                 <a href="{{ route('projects.board', $project) }}" class="rounded bg-ink-700 px-3 py-1.5 text-sm font-medium text-slate-300 hover:bg-ink-600 hover:text-slate-200">Ver Quadro</a>
@@ -31,7 +33,7 @@
 
     <div class="flex h-full flex-col p-4 sm:p-6" x-data="calendar()">
         <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
                 <button @click="prevMonth" class="rounded border border-ink-600 bg-ink-800 px-2 py-1 text-slate-400 hover:text-slate-200">◀</button>
                 <div class="w-32 text-center text-sm font-semibold text-slate-200" x-text="monthName + ' ' + year"></div>
                 <button @click="nextMonth" class="rounded border border-ink-600 bg-ink-800 px-2 py-1 text-slate-400 hover:text-slate-200">▶</button>
@@ -42,7 +44,36 @@
             </div>
         </div>
 
-        <div class="flex-1 rounded-xl border border-ink-600/80 bg-ink-800/85 backdrop-blur-md flex flex-col overflow-hidden shadow-sm">
+        {{-- Celular: agenda do mês. Na grade de 7 colunas cada dia fica com uns
+             44px e o título do post não cabe; aqui vai um dia por bloco, com
+             projeto e título inteiros. --}}
+        <div class="space-y-4 sm:hidden">
+            <template x-for="(day, index) in days.filter(d => d.isCurrentMonth && d.events.length)" :key="'agenda-' + index">
+                <section>
+                    <div class="mb-1.5 flex items-baseline gap-2 px-1">
+                        <span class="text-[12px] font-bold uppercase tracking-wider"
+                              :class="day.isToday ? 'text-brand-300' : 'text-slate-300'"
+                              x-text="day.isToday ? 'Hoje' : day.date.toLocaleDateString('pt-BR', { weekday: 'long' })"></span>
+                        <span class="text-[11.5px] text-slate-500" x-text="day.date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })"></span>
+                    </div>
+                    <div class="space-y-1.5">
+                        <template x-for="event in day.events" :key="event.id">
+                            <a :href="event.url" class="block rounded-lg px-3 py-2.5 transition hover:brightness-125"
+                               :style="'background: ' + event.color + '1f; border-left: 3px solid ' + event.color">
+                                <div class="text-[11.5px] font-semibold" :style="'color: ' + event.color" x-text="(event.is_published ? '✓ ' : '') + event.project"></div>
+                                <div class="mt-0.5 text-sm leading-snug text-slate-100" x-text="event.title"></div>
+                            </a>
+                        </template>
+                    </div>
+                </section>
+            </template>
+            <div x-show="!days.some(d => d.isCurrentMonth && d.events.length)"
+                 class="rounded-xl border border-dashed border-ink-600 px-6 py-10 text-center text-sm text-slate-500">
+                Nenhum post com data neste mês.
+            </div>
+        </div>
+
+        <div class="hidden flex-1 rounded-xl border border-ink-600/80 bg-ink-800/85 backdrop-blur-md sm:flex flex-col overflow-hidden shadow-sm">
             {{-- Dias da semana --}}
             <div class="grid grid-cols-7 border-b border-ink-600 bg-ink-900/50">
                 <template x-for="day in ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']">

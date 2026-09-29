@@ -130,16 +130,16 @@
                                             </div>
                                             @if($tarefa && $tarefa->project)
                                                 <a href="{{ route('projects.board', $tarefa->project_id) }}"
-                                                   class="mt-0.5 inline-flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-300 transition">
+                                                   class="mt-0.5 block text-[11px] leading-snug text-slate-500 hover:text-slate-300 transition">
                                                     @if($tarefa->project->client)
-                                                        <span class="h-1.5 w-1.5 rounded-full" style="background: {{ $tarefa->project->client->color ?? '#64748b' }}"></span>
+                                                        <span class="mr-0.5 inline-block h-1.5 w-1.5 rounded-full align-middle" style="background: {{ $tarefa->project->client->color ?? '#64748b' }}"></span>
                                                         {{ $tarefa->project->client->name }} ·
                                                     @endif
                                                     {{ $tarefa->project->name }}
                                                     @if($tarefa->column)
                                                         <span class="text-slate-600">· {{ $tarefa->column->name }}</span>
                                                     @endif
-                                                    <svg class="h-3 w-3 opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                                    <svg class="inline h-3 w-3 align-[-1px] opacity-60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                                 </a>
                                             @endif
                                         </div>

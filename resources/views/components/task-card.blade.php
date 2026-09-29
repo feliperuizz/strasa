@@ -55,7 +55,7 @@
                     <path d="M8 12l3 3 5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-0 group-hover/check:opacity-100 transition-opacity"></path>
                 </svg>
             </button>
-            <span class="text-[13px] font-medium leading-snug text-slate-200 mt-0.5 relative z-10" data-task-title
+            <span class="min-w-0 text-[13px] font-medium leading-snug text-slate-200 mt-0.5 relative z-10 [overflow-wrap:anywhere]" data-task-title
                style="{{ $task->is_published ? 'text-decoration: line-through; opacity: 0.6;' : '' }}">
                 {{ $task->title }}
             </span>

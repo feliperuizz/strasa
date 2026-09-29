@@ -27,7 +27,7 @@
         </div>
 
         {{-- Filtros --}}
-        <form method="GET" class="flex flex-wrap items-end gap-3 rounded-xl border border-ink-600 bg-ink-800/60 p-4">
+        <form method="GET" class="flex flex-wrap items-end gap-3 rounded-xl border border-ink-600 bg-ink-800/60 p-4 [&>*]:min-w-0 [&>*]:max-w-full">
             <div>
                 <label class="block text-xs font-medium text-slate-400 mb-1">Cliente</label>
                 <select name="client" class="rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">

@@ -1,7 +1,7 @@
 <x-app-layout title="{{ $client->name }}" :client="$client">
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-3">
                 @if($client->logo_url)
                     <img src="{{ $client->logo_url }}" class="h-8 w-8 rounded object-cover ring-1 ring-white/10" alt="">
                 @else

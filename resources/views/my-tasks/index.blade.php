@@ -75,8 +75,8 @@
                                 <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px] text-slate-400">
                                     @if($task->project)
                                         <a href="{{ route('projects.board', $task->project_id) }}" @click.stop
-                                           class="inline-flex min-w-0 max-w-full items-center gap-1.5 hover:text-slate-200">
-                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full" style="background: {{ $cliente?->color ?? '#64748b' }}"></span>
+                                           class="flex min-w-0 max-w-full items-start gap-1.5 hover:text-slate-200">
+                                            <span class="mt-[5px] h-1.5 w-1.5 shrink-0 rounded-full" style="background: {{ $cliente?->color ?? '#64748b' }}"></span>
                                             <span class="truncate">{{ $cliente ? $cliente->name.' · ' : '' }}{{ $task->project->name }}</span>
                                         </a>
                                     @endif

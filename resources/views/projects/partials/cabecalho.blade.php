@@ -5,20 +5,26 @@ passava por cima do avatar e empurrava a página para o lado.
 $aba: "quadro" ou "lista".
 --}}
     <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <div class="flex flex-wrap items-center gap-2">
-            @if($project->client->logo_url)
-                <img src="{{ $project->client->logo_url }}" alt="{{ $project->client->name }}" class="h-6 w-6 rounded-md object-cover ring-1 ring-ink-600">
-            @else
-                <span class="flex h-6 w-6 items-center justify-center rounded-md bg-ink-600 text-[10px] font-bold text-white ring-1 ring-ink-600" style="background-color: {{ $project->client->color ?? '#64748b' }}">{{ substr($project->client->name, 0, 2) }}</span>
-            @endif
-            <a href="{{ route('clients.show', $project->client) }}" class="text-base sm:text-xl font-bold text-slate-400 hover:text-slate-200 tracking-wide transition ml-1">{{ $project->client->name }}</a>
-            <span class="text-slate-600">/</span>
-            <h1 class="text-base sm:text-xl font-bold text-slate-200 tracking-wide">{{ $project->name }}</h1>
-            @can('update', $project)
-                <a href="{{ route('projects.edit', $project) }}" class="ml-2 text-slate-500 hover:text-brand-400" title="Editar Projeto">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                </a>
-            @endcan
+        {{-- No celular: cliente pequeno em cima, projeto em destaque embaixo.
+             No computador: tudo numa linha, "Cliente / Projeto". --}}
+        <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+            <div class="flex min-w-0 items-center gap-2">
+                @if($project->client->logo_url)
+                    <img src="{{ $project->client->logo_url }}" alt="{{ $project->client->name }}" class="h-5 w-5 shrink-0 rounded-md object-cover ring-1 ring-ink-600 sm:h-6 sm:w-6">
+                @else
+                    <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-ink-600 text-[9px] font-bold text-white ring-1 ring-ink-600 sm:h-6 sm:w-6 sm:text-[10px]" style="background-color: {{ $project->client->color ?? '#64748b' }}">{{ substr($project->client->name, 0, 2) }}</span>
+                @endif
+                <a href="{{ route('clients.show', $project->client) }}" class="min-w-0 text-[13px] font-semibold leading-snug text-slate-400 transition hover:text-slate-200 sm:ml-1 sm:text-xl sm:font-bold sm:tracking-wide">{{ $project->client->name }}</a>
+            </div>
+            <span class="hidden text-slate-600 sm:inline">/</span>
+            <div class="flex min-w-0 basis-full items-start gap-2 sm:basis-auto sm:items-center">
+                <h1 class="min-w-0 text-base font-bold leading-snug text-slate-200 sm:text-xl sm:tracking-wide">{{ $project->name }}</h1>
+                @can('update', $project)
+                    <a href="{{ route('projects.edit', $project) }}" class="mt-1 shrink-0 text-slate-500 hover:text-brand-400 sm:ml-1 sm:mt-0" title="Editar Projeto">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                    </a>
+                @endcan
+            </div>
         </div>
         <div x-data="{ 
             isFavorite: {{ auth()->user()->favoriteProjects()->where('project_id', $project->id)->exists() ? 'true' : 'false' }},

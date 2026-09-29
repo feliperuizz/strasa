@@ -75,13 +75,13 @@
                     {{-- Cards --}}
                     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Seguidores</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Seguidores</div>
                             <div class="text-2xl sm:text-3xl font-bold text-slate-100">{{ number_format($resumo['seguidores'], 0, ',', '.') }}</div>
                             <div class="text-xs text-slate-500 mt-2">somando as redes</div>
                         </div>
 
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Ganho no período</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Ganho no período</div>
                             @if($resumo['ganho'] === null)
                                 <div class="text-2xl font-bold text-slate-500">—</div>
                                 <div class="text-xs text-slate-500 mt-2">precisa de 2 lançamentos</div>
@@ -94,13 +94,13 @@
                         </div>
 
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Visualizações</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Visualizações</div>
                             <div class="text-2xl sm:text-3xl font-bold text-brand-400">{{ number_format($resumo['visualizacoes'], 0, ',', '.') }}</div>
                             <div class="text-xs text-slate-500 mt-2">somadas no período</div>
                         </div>
 
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Taxa de engajamento</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Taxa de engajamento</div>
                             @if($resumo['taxa'] === null)
                                 <div class="text-2xl font-bold text-slate-500">—</div>
                                 <div class="text-xs text-slate-500 mt-2">informe curtidas e seguidores</div>
@@ -142,7 +142,7 @@
                         </div>
 
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm whitespace-nowrap">
+                            <table class="tabela-celular w-full text-sm whitespace-nowrap">
                                 <thead class="bg-ink-900/50 text-[11px] uppercase tracking-wider text-slate-500">
                                     <tr>
                                         <th class="px-4 py-2.5 text-left font-semibold">Data</th>
@@ -162,22 +162,22 @@
                                 <tbody class="divide-y divide-ink-700">
                                     @foreach($registros as $m)
                                         <tr class="hover:bg-ink-700/30">
-                                            <td class="px-4 py-2.5 text-slate-300">{{ $m->reference_date->format('d/m/Y') }}</td>
-                                            <td class="px-4 py-2.5">
+                                            <td data-rotulo="Data" class="cel-metade px-4 py-2.5 text-slate-300">{{ $m->reference_date->format('d/m/Y') }}</td>
+                                            <td data-rotulo="Rede" class="cel-metade px-4 py-2.5">
                                                 <span class="inline-flex items-center gap-1.5 text-slate-300">
                                                     <span class="h-2 w-2 rounded-full" style="background: {{ $m->networkColor() }}"></span>
                                                     {{ $m->networkLabel() }}
                                                 </span>
                                             </td>
-                                            <td class="px-4 py-2.5 text-right text-slate-200 font-medium">{{ $m->followers !== null ? number_format($m->followers, 0, ',', '.') : '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->avg_likes !== null ? number_format($m->avg_likes, 0, ',', '.') : '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->avg_comments !== null ? number_format($m->avg_comments, 0, ',', '.') : '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->avg_shares !== null ? number_format($m->avg_shares, 0, ',', '.') : '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->views !== null ? number_format($m->views, 0, ',', '.') : '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->profile_visits !== null ? number_format($m->profile_visits, 0, ',', '.') : '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->link_clicks !== null ? number_format($m->link_clicks, 0, ',', '.') : '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->posts_count ?? '—' }}</td>
-                                            <td class="px-4 py-2.5 text-right text-slate-400">{{ $m->engagementRate() !== null ? number_format($m->engagementRate(), 2, ',', '.').'%' : '—' }}</td>
+                                            <td data-rotulo="Seguidores" class="cel-terco px-4 py-2.5 text-right text-slate-200 font-medium">{{ $m->followers !== null ? number_format($m->followers, 0, ',', '.') : '—' }}</td>
+                                            <td data-rotulo="Curtidas" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->avg_likes !== null ? number_format($m->avg_likes, 0, ',', '.') : '—' }}</td>
+                                            <td data-rotulo="Coment." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->avg_comments !== null ? number_format($m->avg_comments, 0, ',', '.') : '—' }}</td>
+                                            <td data-rotulo="Compart." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->avg_shares !== null ? number_format($m->avg_shares, 0, ',', '.') : '—' }}</td>
+                                            <td data-rotulo="Visualiz." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->views !== null ? number_format($m->views, 0, ',', '.') : '—' }}</td>
+                                            <td data-rotulo="Visitas" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->profile_visits !== null ? number_format($m->profile_visits, 0, ',', '.') : '—' }}</td>
+                                            <td data-rotulo="Cliques" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->link_clicks !== null ? number_format($m->link_clicks, 0, ',', '.') : '—' }}</td>
+                                            <td data-rotulo="Posts" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->posts_count ?? '—' }}</td>
+                                            <td data-rotulo="Taxa" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->engagementRate() !== null ? number_format($m->engagementRate(), 2, ',', '.').'%' : '—' }}</td>
                                             @can('update', $client)
                                                 <td class="px-4 py-2.5 text-right">
                                                     <form method="POST" action="{{ route('metrics.destroy', $m) }}" class="inline"
@@ -237,13 +237,13 @@
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Faturamento</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Faturamento</div>
                             <div class="text-2xl font-bold text-slate-100">R$ {{ number_format($faturamento['total'], 2, ',', '.') }}</div>
                             <div class="text-xs text-slate-500 mt-2">{{ $faturamento['meses'] }} {{ $faturamento['meses'] === 1 ? 'mês' : 'meses' }}</div>
                         </div>
 
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Crescimento</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Crescimento</div>
                             @if($faturamento['variacao'] === null)
                                 <div class="text-2xl font-bold text-slate-500">—</div>
                                 <div class="text-xs text-slate-500 mt-2">precisa de 2 meses</div>
@@ -256,7 +256,7 @@
                         </div>
 
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Retorno (ROAS)</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Retorno (ROAS)</div>
                             @if($faturamento['roas'] === null)
                                 <div class="text-2xl font-bold text-slate-500">—</div>
                                 <div class="text-xs text-slate-500 mt-2">informe o investimento</div>
@@ -267,7 +267,7 @@
                         </div>
 
                         <div class="rounded-xl border border-ink-600 bg-ink-800 p-5">
-                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Média mensal</div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 max-[379px]:tracking-normal">Média mensal</div>
                             <div class="text-2xl font-bold text-brand-400">R$ {{ number_format($faturamento['media'], 2, ',', '.') }}</div>
                             @if($faturamento['vendas'] > 0)
                                 <div class="text-xs text-slate-500 mt-2">{{ number_format($faturamento['vendas'], 0, ',', '.') }} vendas no período</div>

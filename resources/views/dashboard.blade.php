@@ -120,7 +120,7 @@
                 </header>
 
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-slate-300 min-w-[700px]">
+                    <table class="tabela-celular w-full text-left text-sm text-slate-300 min-w-[700px]">
                         <thead class="border-b border-ink-600 bg-ink-900/40 text-xs uppercase text-slate-400 tracking-wider">
                             <tr>
                                 <th class="px-5 py-3 font-semibold">Colaborador</th>
@@ -138,8 +138,8 @@
                                     <td class="px-5 py-3.5">
                                         <div class="flex items-center gap-3">
                                             <x-avatar :user="$member" :size="9" />
-                                            <div>
-                                                <div class="font-medium text-slate-200 flex items-center gap-2">
+                                            <div class="min-w-0">
+                                                <div class="font-medium text-slate-200 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                                                     {{ $member->name }}
                                                     @if($member->isAdmin())
                                                         <span class="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 font-semibold border border-brand-500/30">Admin</span>
@@ -147,13 +147,13 @@
                                                         <span class="text-[10px] px-1.5 py-0.5 rounded bg-ink-700 text-slate-400 border border-ink-600 font-medium">Colaborador</span>
                                                     @endif
                                                 </div>
-                                                <div class="text-xs text-slate-400 mt-0.5">{{ $member->email }}</div>
+                                                <div class="text-xs text-slate-400 mt-0.5 [overflow-wrap:anywhere]">{{ $member->email }}</div>
                                             </div>
                                         </div>
                                     </td>
 
                                     {{-- Barra de Progresso --}}
-                                    <td class="px-4 py-3.5 min-w-[160px]">
+                                    <td data-rotulo="Progresso" class="px-4 py-3.5 min-w-[160px]">
                                         <div class="flex items-center justify-between text-xs mb-1">
                                             <span class="font-medium {{ $member->progress_percent >= 100 && $member->tasks_total > 0 ? 'text-emerald-400' : 'text-slate-300' }}">
                                                 {{ $member->progress_percent }}%
@@ -169,21 +169,21 @@
                                     </td>
 
                                     {{-- Concluídas --}}
-                                    <td class="px-4 py-3.5 text-center">
+                                    <td data-rotulo="Concluídas" class="cel-terco px-4 py-3.5 text-center">
                                         <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                                             {{ $member->tasks_completed }}
                                         </span>
                                     </td>
 
                                     {{-- Pendentes --}}
-                                    <td class="px-4 py-3.5 text-center">
+                                    <td data-rotulo="Pendentes" class="cel-terco px-4 py-3.5 text-center">
                                         <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">
                                             {{ $member->tasks_pending }}
                                         </span>
                                     </td>
 
                                     {{-- Atrasos --}}
-                                    <td class="px-4 py-3.5 text-center">
+                                    <td data-rotulo="Atrasos" class="cel-terco px-4 py-3.5 text-center">
                                         @if($member->tasks_late > 0)
                                             <span class="inline-flex items-center justify-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">
                                                 {{ $member->tasks_late }}
@@ -196,10 +196,10 @@
                                     </td>
 
                                     {{-- Última Tarefa --}}
-                                    <td class="px-5 py-3.5">
+                                    <td data-rotulo="Última demanda" class="px-5 py-3.5">
                                         @if($member->latest_task)
                                             <button @click="$dispatch('open-task-modal', '{{ route('tasks.show', $member->latest_task) }}')"
-                                                    class="text-left group/item max-w-[220px] block truncate">
+                                                    class="text-left group/item block w-full truncate sm:max-w-[220px]">
                                                 <div class="text-xs font-medium text-slate-200 group-hover/item:text-brand-400 truncate transition">
                                                     {{ $member->latest_task->title }}
                                                 </div>
@@ -270,7 +270,7 @@
                         @forelse($lateTasks as $task)
                             <li class="flex items-center justify-between gap-3 px-5 py-3.5 hover:bg-ink-800/50 transition">
                                 <div class="min-w-0 flex-1">
-                                    <button @click="$dispatch('open-task-modal', '{{ route('tasks.show', $task) }}')" class="text-left group block truncate">
+                                    <button @click="$dispatch('open-task-modal', '{{ route('tasks.show', $task) }}')" class="text-left group block w-full truncate">
                                         <span class="truncate text-sm font-medium text-slate-200 group-hover:text-brand-400 transition">{{ $task->title }}</span>
                                         <div class="truncate text-xs text-slate-400 mt-0.5">
                                             {{ $task->client->name }} · {{ $task->project->name }}

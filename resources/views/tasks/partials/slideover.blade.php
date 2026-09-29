@@ -327,10 +327,10 @@
                         </div>
                         
                         <div x-show="open" style="display: none;" class="p-3 border-t border-ink-800">
-                            <form method="POST" @submit.prevent="uploadAttachment($event)" action="{{ route('attachments.store', $task) }}" class="mb-3 flex items-center gap-2">
+                            <form method="POST" @submit.prevent="uploadAttachment($event)" action="{{ route('attachments.store', $task) }}" class="mb-3 flex flex-wrap items-center gap-2">
                                 @csrf
                                 <input type="hidden" name="folder_id" value="{{ $folder->id }}">
-                                <input type="file" name="files[]" multiple required class="text-[11px] text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-800 file:px-2 file:py-1 file:text-[11px] file:text-slate-200 hover:file:bg-slate-600">
+                                <input type="file" name="files[]" multiple required class="min-w-0 max-w-full text-[11px] text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-800 file:px-2 file:py-1 file:text-[11px] file:text-slate-200 hover:file:bg-slate-600">
                                 <button type="submit" class="rounded bg-ink-800 px-2 py-1 text-[11px] font-medium text-slate-200 hover:bg-slate-600" :disabled="uploading">Enviar</button>
                             </form>
                             
@@ -352,9 +352,9 @@
                     @if($task->folders->isNotEmpty())
                         <h4 class="text-xs font-semibold text-slate-500 uppercase mb-2">Arquivos Soltos</h4>
                     @endif
-                    <form method="POST" @submit.prevent="uploadAttachment($event)" action="{{ route('attachments.store', $task) }}" class="mb-3 flex items-center gap-2">
+                    <form method="POST" @submit.prevent="uploadAttachment($event)" action="{{ route('attachments.store', $task) }}" class="mb-3 flex flex-wrap items-center gap-2">
                         @csrf
-                        <input type="file" name="files[]" multiple required class="text-xs text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-800 file:px-3 file:py-1.5 file:text-xs file:text-slate-200 hover:file:bg-slate-600">
+                        <input type="file" name="files[]" multiple required class="min-w-0 max-w-full text-xs text-slate-400 file:mr-2 file:rounded file:border-0 file:bg-ink-800 file:px-3 file:py-1.5 file:text-xs file:text-slate-200 hover:file:bg-slate-600">
                         <button type="submit" class="rounded bg-ink-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-600" :disabled="uploading">
                             <span x-show="!uploading">Enviar</span>
                             <span x-show="uploading">Enviando...</span>
@@ -624,7 +624,7 @@
                                 @endif
                             </div>
                             
-                            <div x-show="!editing" class="mt-1 text-sm text-slate-300 whitespace-pre-wrap" x-text="body"></div>
+                            <div x-show="!editing" class="mt-1 text-sm text-slate-300 whitespace-pre-wrap [overflow-wrap:anywhere]" x-text="body"></div>
                             
                             <div x-show="editing" style="display: none;" class="mt-2">
                                 <form @submit.prevent="updateComment('{{ route('comments.update', $comment) }}', $event, body); editing = false" class="flex flex-col gap-2">
