@@ -2,6 +2,12 @@
 
 return [
 
+    // API de postagem automática (sistema parceiro que publica nas redes).
+    'api_postagem' => [
+        'limite_por_minuto' => (int) env('API_POSTAGEM_LIMITE_POR_MINUTO', 120),
+    ],
+
+
     /*
     |--------------------------------------------------------------------------
     | Third Party Services

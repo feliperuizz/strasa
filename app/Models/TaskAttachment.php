@@ -11,6 +11,13 @@ class TaskAttachment extends Model
 {
     use BelongsToCompany;
 
+    /**
+     * Enviar, reordenar ou excluir um anexo atualiza o updated_at da tarefa.
+     * É por ele que o sistema parceiro (API de postagem) percebe que a arte
+     * de um post mudou.
+     */
+    protected $touches = ['task'];
+
     protected $fillable = [
         'company_id', 'task_id', 'folder_id', 'uploaded_by',
         'disk', 'path', 'original_name', 'mime_type', 'size', 'is_image', 'position',

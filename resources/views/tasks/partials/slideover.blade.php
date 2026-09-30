@@ -274,6 +274,42 @@
             <hr class="my-6 border-ink-800">
         @endif
 
+        {{-- Postagem automática: o que o sistema parceiro informou pela API. --}}
+        @if($task->exists && $task->publications->isNotEmpty())
+            <div class="mb-6">
+                <h3 class="mb-2 flex items-center gap-2 font-semibold text-slate-200">
+                    <svg class="h-4 w-4 text-teal-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    Postagem automática
+                </h3>
+                <ul class="divide-y divide-ink-700/70 overflow-hidden rounded-lg border border-ink-700 bg-ink-800/60">
+                    @foreach($task->publications as $pub)
+                        <li class="px-4 py-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-medium text-slate-200">{{ $pub->redeLabel() }}</span>
+                                <span class="rounded-full border px-2 py-0.5 text-[11px] font-semibold {{ $pub->tom() }}">{{ $pub->statusLabel() }}</span>
+                                <span class="ml-auto text-[11px] text-slate-500">
+                                    @if($pub->status === 'published' && $pub->published_at)
+                                        {{ $pub->published_at->copy()->setTimezone('America/Sao_Paulo')->format('d/m H:i') }}
+                                    @elseif($pub->scheduled_for)
+                                        para {{ $pub->scheduled_for->copy()->setTimezone('America/Sao_Paulo')->format('d/m H:i') }}
+                                    @else
+                                        {{ $pub->reported_at?->copy()->setTimezone('America/Sao_Paulo')->format('d/m H:i') }}
+                                    @endif
+                                </span>
+                            </div>
+                            @if($pub->status === 'failed' && $pub->error_message)
+                                <p class="mt-1 text-[12.5px] text-rose-300 [overflow-wrap:anywhere]">{{ $pub->error_message }}</p>
+                            @endif
+                            @if($pub->permalink)
+                                <a href="{{ $pub->permalink }}" target="_blank" rel="noopener" class="mt-1 inline-block text-[12.5px] text-brand-300 hover:underline [overflow-wrap:anywhere]">Ver post publicado ↗</a>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+            <hr class="my-6 border-ink-800">
+        @endif
+
         {{-- Anexos --}}
         {{-- Anexos e Pastas. A ordem aqui (pastas, depois soltos; dentro de cada
              uma, a do arraste) é a do carrossel no card e no painel do cliente.

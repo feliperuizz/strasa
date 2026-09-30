@@ -73,6 +73,41 @@ class Task extends Model
         return $this->belongsTo(Column::class);
     }
 
+    /** Situação da postagem em cada rede, informada pelo sistema parceiro (API). */
+    public function publications(): HasMany
+    {
+        return $this->hasMany(TaskPublication::class)->orderBy('network');
+    }
+
+    /**
+     * Conclui a tarefa: marca como publicada e move para a coluna marcada como
+     * "concluído" no quadro, se houver. Sem coluna marcada, conclui no lugar.
+     *
+     * Usado pelo botão de concluir e pela API de postagem automática (quando o
+     * sistema parceiro avisa que o post foi ao ar).
+     *
+     * @return array{0: ?Column, 1: bool}  [coluna de destino, se mudou de coluna]
+     */
+    public function concluir(): array
+    {
+        $destino = Column::withoutGlobalScopes()
+            ->where('project_id', $this->project_id)
+            ->where('marks_published', true)
+            ->orderBy('position')
+            ->first();
+
+        $origemId = $this->column_id;
+        $mudou = $destino && $origemId !== $destino->id;
+
+        $this->update([
+            'column_id' => $destino?->id ?? $this->column_id,
+            'is_published' => true,
+            'published_at' => $this->published_at ?? now(),
+        ]);
+
+        return [$destino, $mudou];
+    }
+
     public function assignees(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'task_user');

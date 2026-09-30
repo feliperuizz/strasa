@@ -117,5 +117,28 @@
         @if($task->is_published)
             <span class="mt-2 inline-block rounded bg-emerald-900/40 px-1.5 py-0.5 text-[10px] text-emerald-400" data-selo-concluido>● Publicado</span>
         @endif
+
+        {{-- Postagem automática (retorno do sistema parceiro pela API). Só lê
+             a relação se veio carregada: nada de uma consulta por card. --}}
+        @php
+            $postagens = $task->relationLoaded('publications') ? $task->publications : collect();
+            $falhas = $postagens->where('status', 'failed');
+            $publicadas = $postagens->where('status', 'published');
+        @endphp
+        @if($postagens->isNotEmpty())
+            @php
+                [$textoPostagem, $tomPostagem] = match (true) {
+                    $falhas->isNotEmpty() => ['Falha ao postar: '.$falhas->map->redeLabel()->join(', '), 'bg-rose-500/15 text-rose-300 border-rose-500/30'],
+                    $publicadas->isNotEmpty() => ['Postado: '.$publicadas->map->redeLabel()->join(', '), 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'],
+                    $postagens->where('status', 'cancelled')->count() === $postagens->count() => ['Postagem cancelada', 'bg-ink-700 text-slate-400 border-ink-600'],
+                    default => ['Agendado: '.$postagens->whereIn('status', ['scheduled', 'publishing'])->map->redeLabel()->join(', '), 'bg-sky-500/10 text-sky-300 border-sky-500/25'],
+                };
+            @endphp
+            <span class="mt-2 inline-flex max-w-full items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium {{ $tomPostagem }}"
+                  title="Retorno do sistema de postagem automática">
+                <svg class="h-2.5 w-2.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                <span class="min-w-0">{{ $textoPostagem }}</span>
+            </span>
+        @endif
     </div>
 </div>

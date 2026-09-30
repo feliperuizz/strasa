@@ -30,6 +30,7 @@ class TaskActivity extends Model
     public const TYPE_ATTACHMENT_ADDED = 'attachment_added';
     public const TYPE_ATTACHMENT_REMOVED = 'attachment_removed';
     public const TYPE_ATTACHMENTS_REORDERED = 'attachments_reordered';
+    public const TYPE_AUTO_POST = 'auto_post';
     public const TYPE_FOLDER_CREATED = 'folder_created';
     public const TYPE_CHECKLIST_ADDED = 'checklist_added';
     public const TYPE_CHECKLIST_DONE = 'checklist_done';
@@ -125,6 +126,7 @@ class TaskActivity extends Model
         self::TYPE_ATTACHMENT_ADDED => 'anexou arquivo',
         self::TYPE_ATTACHMENT_REMOVED => 'removeu arquivo',
         self::TYPE_ATTACHMENTS_REORDERED => 'reordenou carrossel',
+        self::TYPE_AUTO_POST => 'postagem automática',
         self::TYPE_FOLDER_CREATED => 'criou pasta',
         self::TYPE_CHECKLIST_ADDED => 'item de checklist',
         self::TYPE_CHECKLIST_DONE => 'concluiu item',
@@ -147,6 +149,7 @@ class TaskActivity extends Model
             self::TYPE_ASSIGNEE_CHANGED => '#fbbf24',
             self::TYPE_ATTACHMENT_ADDED, self::TYPE_FOLDER_CREATED, self::TYPE_ATTACHMENTS_REORDERED => '#38bdf8',
             self::TYPE_COMMENTED => '#c084fc',
+            self::TYPE_AUTO_POST => '#2dd4bf',
             self::TYPE_CAPTION_CHANGED => '#60a5fa',
             default => '#94a3b8',
         };

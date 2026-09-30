@@ -22,6 +22,7 @@ use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\IntegrationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -155,6 +156,14 @@ Route::middleware(['auth', 'tenant'])->group(function () {
 
     /* Time / convites ---------------------------------------------------- */
     Route::get('log-de-atividades', [ActivityLogController::class, 'index'])->name('activity-log.index');
+
+    // Integrações: chaves da API de postagem automática (só admin; checado no controller).
+    Route::get('integracoes', [IntegrationController::class, 'index'])->name('integrations.index');
+    Route::post('integracoes/chaves', [IntegrationController::class, 'store'])->name('integrations.store');
+    Route::patch('integracoes/chaves/{chave}', [IntegrationController::class, 'update'])->name('integrations.update');
+    Route::post('integracoes/chaves/{chave}/renovar', [IntegrationController::class, 'regenerate'])->name('integrations.regenerate');
+    Route::post('integracoes/chaves/{chave}/revogar', [IntegrationController::class, 'revoke'])->name('integrations.revoke');
+    Route::delete('integracoes/chaves/{chave}', [IntegrationController::class, 'destroy'])->name('integrations.destroy');
     Route::get('team', [TeamController::class, 'index'])->name('team.index');
     Route::post('team/invitations', [TeamController::class, 'store'])->name('team.invitations.store');
     Route::delete('team/invitations/{invitation}', [TeamController::class, 'destroy'])->name('team.invitations.destroy');

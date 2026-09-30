@@ -73,7 +73,10 @@ class ActivityLogController extends Controller
     private function agrupar(Collection $atividades, Collection $dias): Collection
     {
         return $atividades
-            ->groupBy(fn (TaskActivity $a) => $a->user_id ?: 'cliente')
+            // Sem usuário: ou foi o cliente pelo painel de aprovação, ou o
+            // sistema parceiro pela API de postagem (cada chave num grupo).
+            ->groupBy(fn (TaskActivity $a) => $a->user_id
+                ?: (($a->meta['via'] ?? null) === 'api' ? 'api-'.($a->meta['api_token_id'] ?? 0) : 'cliente'))
             ->map(function (Collection $doUsuario, $chave) use ($dias) {
                 $resumo = $doUsuario
                     ->groupBy('type')
@@ -86,8 +89,14 @@ class ActivityLogController extends Controller
                     ->mapWithKeys(fn (Carbon $dia) => [$dia->toDateString() => $doUsuario->filter(fn ($a) => $a->created_at->isSameDay($dia))->values()])
                     ->filter(fn ($lista) => $lista->isNotEmpty());
 
+                $semUsuario = $chave === 'cliente' || str_starts_with((string) $chave, 'api-');
+
                 return [
-                    'pessoa' => $chave === 'cliente' ? null : $doUsuario->first()->user,
+                    'pessoa' => $semUsuario ? null : $doUsuario->first()->user,
+                    'rotulo' => $chave === 'cliente'
+                        ? 'Clientes (painel de aprovação)'
+                        : 'Integração: '.($doUsuario->first()->meta['author'] ?? 'API de postagem'),
+                    'integracao' => str_starts_with((string) $chave, 'api-'),
                     'chave' => $chave,
                     'total' => $doUsuario->count(),
                     'resumo' => $resumo->values()->all(),

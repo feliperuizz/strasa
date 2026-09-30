@@ -83,7 +83,7 @@
                             @endif
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
-                                    <span class="text-sm font-semibold text-slate-100 truncate">{{ $pessoa?->name ?? 'Clientes (painel de aprovação)' }}</span>
+                                    <span class="text-sm font-semibold text-slate-100 truncate">{{ $pessoa?->name ?? $grupo['rotulo'] }}</span>
                                     @if($pessoa?->isDeactivated())
                                         <span class="rounded-full border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide text-rose-300">Desativado</span>
                                     @endif

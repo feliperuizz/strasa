@@ -281,19 +281,7 @@ class TaskController extends Controller
         // Sem nenhuma coluna marcada, a automação está desligada: a tarefa é
         // concluída onde está, sem mudar de coluna. Antes isso devolvia 422 e
         // um alerta pedindo para marcar uma coluna — parecia erro do sistema.
-        $destino = $task->project->columns()
-            ->where('marks_published', true)
-            ->orderBy('position')
-            ->first();
-
-        $origem = $task->column;
-        $mudouDeColuna = $destino && $origem && $origem->id !== $destino->id;
-
-        $task->update([
-            'column_id' => $destino?->id ?? $task->column_id,
-            'is_published' => true,
-            'published_at' => $task->published_at ?? now(),
-        ]);
+        [$destino, $mudouDeColuna] = $task->concluir();
 
         if ($mudouDeColuna) {
             $this->log($task, TaskActivity::TYPE_COLUMN_CHANGED,
@@ -321,7 +309,7 @@ class TaskController extends Controller
         $this->authorize('view', $task);
 
         // Mesmas relações que o BoardController carrega para desenhar o card.
-        $task->load(['assignees', 'tags', 'attachments', 'folders', 'items', 'approvals']);
+        $task->load(['assignees', 'tags', 'attachments', 'folders', 'items', 'approvals', 'publications']);
 
         return response()->json([
             'id' => $task->id,

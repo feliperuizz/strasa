@@ -57,7 +57,7 @@
                         <label class="flex items-center gap-2">
                             <input type="hidden" name="is_publish_column" value="0">
                             <input type="checkbox" name="is_publish_column" value="1" {{ $column->is_publish_column ? 'checked' : '' }} class="rounded border-ink-600 bg-ink-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-ink-800">
-                            <span class="text-[11px] leading-tight text-slate-400">Notificar Postagens desta coluna hoje</span>
+                            <span class="text-[11px] leading-tight text-slate-400">Fila de postagem: avisar o responsável no horário e liberar para a API de postagem automática</span>
                         </label>
 
                         {{-- Arrastar um card para cá o envia ao painel do cliente. --}}
