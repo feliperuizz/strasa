@@ -36,7 +36,7 @@
     </div>
 
     <p class="aviso">
-        URL base: <code>{{ rtrim(config('app.url'), '/') }}/api/v1</code>. Para testar aqui, clique em
+        URL base: <code>{{ $raiz }}/api/v1</code>. Para testar aqui, clique em
         <strong>Authorize</strong> e cole a chave (<code>str_...</code>) criada pela agência no STRASA.
         A chave fica só neste navegador.
     </p>

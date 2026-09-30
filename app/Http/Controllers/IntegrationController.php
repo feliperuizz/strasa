@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Api\DocumentacaoApiController;
 use App\Http\Resources\Api\PostResource;
 use App\Models\ApiToken;
 use App\Models\Client;
@@ -53,7 +54,7 @@ class IntegrationController extends Controller
             'retornos' => $retornos,
             'prontos' => $naFila->filter(fn ($t) => PostResource::motivoNaoPronto($t) === null)->count(),
             'travados' => $naFila->reject(fn ($t) => PostResource::motivoNaoPronto($t) === null)->values(),
-            'raiz' => rtrim((string) config('app.url'), '/'),
+            'raiz' => DocumentacaoApiController::raiz(),
             'chaveCriada' => session('chave_criada'),
         ]);
     }
