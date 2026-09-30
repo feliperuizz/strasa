@@ -9,8 +9,9 @@ use App\Models\TaskPublication;
  * Especificação OpenAPI 3.1 da API de postagem automática.
  *
  * Escrita à mão (e não gerada) para ter descrições e exemplos que a IA/equipe
- * do parceiro consiga seguir sem perguntar nada. O endereço do servidor vem
- * do APP_URL, então em produção já sai com o domínio certo.
+ * do parceiro consiga seguir sem perguntar nada. O endereço do servidor é o
+ * domínio pelo qual a documentação foi aberta (DocumentacaoApiController::raiz),
+ * não o APP_URL.
  */
 class EspecificacaoApi
 {
