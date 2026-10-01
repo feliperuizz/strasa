@@ -227,12 +227,16 @@
         @php $aprovacao = $task->currentApproval(); @endphp
         @if($task->client?->portal)
             <div x-data="{ enviando: false, estado: '{{ $aprovacao?->status ?? '' }}' }" class="mb-6">
-                <div class="flex items-center justify-between gap-3 rounded-lg border border-ink-700 bg-ink-800/60 px-4 py-3">
+                <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-700 bg-ink-800/60 px-4 py-3">
                     <div class="min-w-0">
                         <div class="text-[13px] font-semibold text-slate-200">Painel de aprovação</div>
 
                         <div class="mt-0.5 text-[11.5px] text-slate-400">
-                            @if($aprovacao?->isPending())
+                            @if($aprovacao?->isWithdrawn())
+                                <span class="text-slate-300 font-medium">Excluída do painel</span>
+                                {{ $aprovacao->withdrawer ? 'por '.$aprovacao->withdrawer->name : '' }} · {{ $aprovacao->withdrawn_at->format('d/m H:i') }}.
+                                {{ $task->client->name }} não vê mais esta peça.
+                            @elseif($aprovacao?->isPending())
                                 Aguardando {{ $task->client->name }} desde {{ $aprovacao->submitted_at?->diffForHumans() }}
                             @elseif($aprovacao?->isApproved())
                                 <span class="text-emerald-400 font-medium">Aprovado</span>
@@ -246,7 +250,7 @@
                         </div>
                     </div>
 
-                    <div class="shrink-0">
+                    <div class="flex flex-wrap items-center gap-2">
                         @if($aprovacao?->isPending())
                             <button type="button" x-bind:disabled="enviando"
                                     @click="enviando = true; cancelarAprovacao('{{ route('approvals.cancel', $task) }}')"
@@ -254,10 +258,19 @@
                                 Retirar do painel
                             </button>
                         @else
+                            {{-- Respondida e ainda no painel: dá para desistir da peça
+                                 (ex.: ajuste pedido que não vamos fazer) sem apagar o card. --}}
+                            @if($aprovacao && ! $aprovacao->isWithdrawn())
+                                <button type="button" x-bind:disabled="enviando"
+                                        @click="excluirDoPainel('{{ route('approvals.withdraw', $task) }}', @js($task->client->name))"
+                                        class="rounded-lg border border-ink-600 px-3 py-1.5 text-[12px] font-semibold text-slate-300 hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-200 transition disabled:opacity-50">
+                                    Excluir do painel
+                                </button>
+                            @endif
                             <button type="button" x-bind:disabled="enviando"
                                     @click="enviando = true; enviarAprovacao('{{ route('approvals.submit', $task) }}')"
                                     class="rounded-lg bg-brand-600 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-brand-500 transition disabled:opacity-50">
-                                <span x-text="enviando ? 'Enviando…' : '{{ $aprovacao ? 'Reenviar para aprovação' : 'Enviar para aprovação' }}'"></span>
+                                <span x-text="enviando ? 'Enviando…' : '{{ ! $aprovacao ? 'Enviar para aprovação' : ($aprovacao->isWithdrawn() ? 'Enviar de novo' : 'Reenviar para aprovação') }}'"></span>
                             </button>
                         @endif
                     </div>

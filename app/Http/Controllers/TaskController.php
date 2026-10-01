@@ -192,10 +192,13 @@ class TaskController extends Controller
         $origin = $task->column;
         $changedColumn = $origin->id !== $target->id;
 
+        // A tela (window.moverCardNoServidor) entende esta resposta: abre a
+        // caixinha pedindo o motivo e repete o movimento com ele.
         if ($changedColumn && $target->requires_rejection_reason && blank($data['rejection_reason'] ?? null)) {
             return response()->json([
                 'ok' => false,
                 'requires_reason' => true,
+                'column_name' => $target->name,
                 'message' => 'Informe o motivo da rejeição.',
             ], 422);
         }

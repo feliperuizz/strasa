@@ -31,6 +31,7 @@ class TaskApproval extends Model
         'company_id', 'client_id', 'task_id', 'round', 'status',
         'submitted_at', 'submitted_by', 'origin_column_id',
         'responded_at', 'reviewer_name', 'feedback',
+        'withdrawn_at', 'withdrawn_by',
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class TaskApproval extends Model
         return [
             'submitted_at' => 'datetime',
             'responded_at' => 'datetime',
+            'withdrawn_at' => 'datetime',
             'round' => 'integer',
         ];
     }
@@ -71,7 +73,18 @@ class TaskApproval extends Model
         return $this->belongsTo(Column::class, 'origin_column_id');
     }
 
+    public function withdrawer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'withdrawn_by');
+    }
+
     /* Scopes -------------------------------------------------------------- */
+
+    /** O que o cliente enxerga: tudo, menos as peças excluídas do painel. */
+    public function scopeVisibleToClient(Builder $query): Builder
+    {
+        return $query->whereNull('task_approvals.withdrawn_at');
+    }
 
     public function scopePending(Builder $query): Builder
     {
@@ -103,5 +116,11 @@ class TaskApproval extends Model
     public function isRejected(): bool
     {
         return $this->status === self::REJECTED;
+    }
+
+    /** A agência excluiu a peça do painel do cliente (o card continua). */
+    public function isWithdrawn(): bool
+    {
+        return $this->withdrawn_at !== null;
     }
 }

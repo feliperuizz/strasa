@@ -131,17 +131,16 @@
                     return;
                 }
                 
-                fetch(`{{ url('/tasks') }}/${this.taskId}/move`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ column_id: columnId })
-                }).then(() => {
+                this.open = false;
+
+                // Coluna que exige motivo (ex.: "Rejeitado") abre a caixinha.
+                window.moverCardNoServidor(this.taskId, { column_id: columnId }).then(() => {
                     if (window.saveScrollPositions) window.saveScrollPositions();
                     window.location.reload();
+                }).catch(err => {
+                    if (err && err.message === '__cancelado__') { return; }
+                    if (err && err.message === '__sessao__') { window.sessaoExpirou(419); return; }
+                    alert('Não foi possível mover o card.' + String.fromCharCode(10, 10) + (err && err.message ? err.message : err));
                 });
             },
 

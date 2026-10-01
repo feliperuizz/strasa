@@ -77,6 +77,11 @@
                                 <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide {{ $cores }}">
                                     {{ $aprovacao->statusLabel() }}
                                 </span>
+                                @if($aprovacao->isWithdrawn())
+                                    <div class="mt-1 text-[11px] text-slate-500" title="Excluída do painel pela equipe: o cliente não vê mais esta peça.">
+                                        Fora do painel · {{ $aprovacao->withdrawn_at->format('d/m') }}
+                                    </div>
+                                @endif
                                 @if($aprovacao->responded_at)
                                     <div class="mt-1.5 text-[11.5px] text-slate-500">
                                         {{ $aprovacao->reviewer_name }}<br>

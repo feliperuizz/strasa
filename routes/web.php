@@ -176,6 +176,7 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::get('aprovacoes', [ApprovalsController::class, 'index'])->name('approvals.index');
     Route::post('tasks/{task}/approval', [ApprovalsController::class, 'submit'])->name('approvals.submit');
     Route::delete('tasks/{task}/approval', [ApprovalsController::class, 'cancel'])->name('approvals.cancel');
+    Route::post('tasks/{task}/approval/withdraw', [ApprovalsController::class, 'withdraw'])->name('approvals.withdraw');
     Route::post('comments/{comment}/visibility', [ApprovalsController::class, 'toggleCommentVisibility'])
         ->name('comments.visibility');
 

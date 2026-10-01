@@ -7,7 +7,8 @@
     // BoardController, então não custa uma query por card.
     $aprovacao = $task->currentApproval();
 
-    $selo = match ($aprovacao?->status) {
+    // Excluída do painel do cliente: o card volta a ser só interno, sem selo.
+    $selo = $aprovacao?->isWithdrawn() ? null : match ($aprovacao?->status) {
         'approved' => ['Aprovado',      'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', 'border-l-emerald-500'],
         'rejected' => ['Ajuste pedido', 'bg-rose-500/15 text-rose-400 border-rose-500/30',          'border-l-rose-500'],
         'pending'  => ['Aguardando',    'bg-amber-500/15 text-amber-400 border-amber-500/30',       'border-l-amber-500'],

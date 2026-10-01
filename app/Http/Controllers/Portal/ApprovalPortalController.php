@@ -298,15 +298,18 @@ class ApprovalPortalController extends Controller
                     ->from('task_approvals')
                     ->whereColumn('task_approvals.task_id', 'tasks.id')
                     ->where('task_approvals.company_id', $portal->company_id)
-                    ->where('task_approvals.client_id', $portal->client_id);
+                    ->where('task_approvals.client_id', $portal->client_id)
+                    ->whereNull('task_approvals.withdrawn_at');
             });
     }
 
+    /** Peças excluídas do painel pela agência somem daqui (lista, tela e mídia). */
     private function aprovacoesDoPortal(ClientPortal $portal)
     {
         return TaskApproval::withoutGlobalScopes()
             ->where('company_id', $portal->company_id)
             ->where('client_id', $portal->client_id)
+            ->visibleToClient()
             ->with(['task' => fn ($q) => $q->withoutGlobalScopes()->with(['attachments', 'folders'])])
             ->orderByDesc('submitted_at');
     }

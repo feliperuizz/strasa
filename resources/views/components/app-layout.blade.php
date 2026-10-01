@@ -723,6 +723,110 @@
     };
 
     /**
+     * Caixinha que pede um texto (o motivo da rejeição). Devolve uma Promise
+     * com o texto, ou null se a pessoa cancelar. Ctrl+Enter confirma, Esc
+     * cancela. Montada na hora, sem Alpine: o quadro chama de dentro do
+     * SortableJS.
+     */
+    window.pedirMotivo = function (opcoes) {
+        opcoes = opcoes || {};
+
+        return new Promise(function (resolver) {
+            var fundo = document.createElement('div');
+            fundo.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4';
+            fundo.innerHTML =
+                '<div class="w-full max-w-md rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-2xl" role="dialog" aria-modal="true">'
+                + '<h3 data-titulo class="text-base font-semibold text-slate-100"></h3>'
+                + '<p data-ajuda class="mt-1 text-sm text-slate-400"></p>'
+                + '<textarea data-campo rows="3" class="mt-3 block w-full resize-y rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-0"></textarea>'
+                + '<p data-erro class="mt-1 hidden text-xs text-rose-300">Escreva o motivo para continuar.</p>'
+                + '<div class="mt-4 flex flex-wrap justify-end gap-2">'
+                + '<button type="button" data-cancelar class="rounded-lg border border-ink-600 px-3.5 py-2 text-sm font-medium text-slate-300 hover:bg-ink-700">Cancelar</button>'
+                + '<button type="button" data-confirmar class="rounded-lg bg-rose-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-rose-500"></button>'
+                + '</div></div>';
+
+            var pegar = function (s) { return fundo.querySelector('[data-' + s + ']'); };
+            pegar('titulo').textContent = opcoes.titulo || 'Motivo';
+            pegar('ajuda').textContent = opcoes.ajuda || '';
+            pegar('campo').placeholder = opcoes.exemplo || '';
+            pegar('confirmar').textContent = opcoes.botao || 'Confirmar';
+
+            var fechar = function (valor) {
+                document.removeEventListener('keydown', teclas, true);
+                fundo.remove();
+                resolver(valor);
+            };
+            var confirmar = function () {
+                var texto = pegar('campo').value.trim();
+                if (!texto) {
+                    pegar('erro').classList.remove('hidden');
+                    pegar('campo').focus();
+                    return;
+                }
+                fechar(texto);
+            };
+            var teclas = function (e) {
+                if (e.key === 'Escape') { e.preventDefault(); fechar(null); }
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); confirmar(); }
+            };
+
+            pegar('confirmar').addEventListener('click', confirmar);
+            pegar('cancelar').addEventListener('click', function () { fechar(null); });
+            fundo.addEventListener('mousedown', function (e) { if (e.target === fundo) { fechar(null); } });
+            document.addEventListener('keydown', teclas, true);
+
+            document.body.appendChild(fundo);
+            setTimeout(function () { pegar('campo').focus(); }, 30);
+        });
+    };
+
+    /**
+     * Move o card de coluna no servidor. Se a coluna de destino exige motivo
+     * (ex.: "Rejeitado"), pergunta e repete o pedido com ele. Antes o servidor
+     * pedia o motivo e a tela só mostrava um erro, sem ter onde escrever.
+     *
+     * Resolve com a resposta; rejeita com Error('__cancelado__') se a pessoa
+     * desistir na caixinha, Error('__sessao__') se a sessão expirou, ou com a
+     * mensagem do servidor.
+     */
+    window.moverCardNoServidor = function (taskId, corpo) {
+        var enviar = function (dados) {
+            return fetch(`{{ url('/tasks') }}/${taskId}/move`, {
+                method: 'POST',
+                keepalive: true,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(dados)
+            }).then(function (res) {
+                if (res.status === 419) { throw new Error('__sessao__'); }
+
+                return res.json().catch(function () { return {}; }).then(function (j) {
+                    if (res.status === 422 && j.requires_reason) {
+                        return window.pedirMotivo({
+                            titulo: 'Por que está indo para "' + (j.column_name || 'Rejeitado') + '"?',
+                            ajuda: 'O motivo fica registrado no card e no histórico.',
+                            exemplo: 'Ex.: o cliente pediu ajuste e não vamos seguir com esta postagem.',
+                            botao: 'Mover card'
+                        }).then(function (motivo) {
+                            if (motivo === null) { throw new Error('__cancelado__'); }
+                            return enviar(Object.assign({}, dados, { rejection_reason: motivo }));
+                        });
+                    }
+                    if (!res.ok || j.ok === false) {
+                        throw new Error(j.message || ('HTTP ' + res.status));
+                    }
+                    return j;
+                });
+            });
+        };
+
+        return enviar(corpo);
+    };
+
+    /**
      * Checklist do card, no estilo do Trello: linha limpa com prazo e foto do
      * responsavel a direita, texto que vira editor ao clicar, compositor que
      * so pergunta o nome. Mora aqui pelo mesmo motivo do seletorDeFlags — o
@@ -1386,6 +1490,36 @@
                     })
                     .then(() => this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`))
                     .catch(() => alert('Falha de conexão ao retirar do painel.'));
+                },
+
+                /**
+                 * Desiste da peça já respondida (ex.: ajuste pedido que não
+                 * vamos fazer): some do painel do cliente, o card fica.
+                 */
+                excluirDoPainel(url, cliente) {
+                    var quebra = String.fromCharCode(10, 10);
+                    if (!confirm('Excluir esta peça do painel de aprovação de ' + cliente + '?' + quebra
+                        + 'O cliente deixa de ver a peça. O card continua aqui no quadro para a equipe.')) {
+                        return;
+                    }
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => {
+                        if (window.sessaoExpirou(res.status)) { return; }
+                        return res.json().then(data => {
+                            if (!res.ok) { alert(data.message || 'Não foi possível excluir do painel.'); }
+                            // O selo do card no quadro some ao fechar o card
+                            // (o fechamento já troca só aquele card).
+                            this.$dispatch('open-task-modal', `{{ url('/tasks') }}/${this.action.split('/').pop()}/edit`);
+                        });
+                    })
+                    .catch(() => alert('Falha de conexão ao excluir do painel.'));
                 },
 
                 /**

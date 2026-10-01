@@ -157,47 +157,24 @@
                             // Atualiza os contadores imediatamente (otimista).
                             updateColumnCounts();
 
-                            // Persiste no servidor. keepalive evita o cancelamento da request
-                            // caso a página navegue/recarregue logo em seguida.
-                            fetch(`{{ url('/tasks') }}/${taskId}/move`, {
-                                method: 'POST',
-                                keepalive: true,
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                    'Accept': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    column_id: newColumnId,
-                                    ordered_ids: order
-                                })
-                            })
-                            .then(async res => {
-                                if (res.status === 419) {
-                                    // Sessao expirada: o card volta pelo catch
-                                    // e a pagina recarrega para novo login.
-                                    throw new Error('__sessao__');
-                                }
-                                if (!res.ok) {
-                                    let detail = '';
-                                    try { const j = await res.json(); detail = j.message || JSON.stringify(j.errors || j); }
-                                    catch (e) { detail = (await res.text().catch(() => '')).slice(0, 400); }
-                                    throw new Error('HTTP ' + res.status + (detail ? ' — ' + detail : ''));
-                                }
-                                return res.json();
-                            })
-                            .then(data => {
-                                if (!data || data.ok === false) {
-                                    throw new Error((data && data.message) || 'Falha ao mover');
-                                }
+                            // Persiste no servidor (keepalive lá dentro evita o cancelamento
+                            // se a página navegar logo em seguida). Coluna que exige motivo,
+                            // como "Rejeitado", abre a caixinha pedindo o motivo.
+                            window.moverCardNoServidor(taskId, {
+                                column_id: newColumnId,
+                                ordered_ids: order
                             })
                             .catch(err => {
-                                // Falhou no servidor: devolve o card para a coluna de origem
-                                // (mantém board e banco consistentes) e avisa o usuário.
+                                // Falhou no servidor (ou a pessoa desistiu de informar o
+                                // motivo): devolve o card para a coluna de origem, mantendo
+                                // quadro e banco iguais.
                                 const ref = fromList.children[evt.oldIndex] || null;
                                 fromList.insertBefore(itemEl, ref);
                                 updateColumnCounts();
 
+                                if (err && err.message === '__cancelado__') {
+                                    return;
+                                }
                                 if (err && err.message === '__sessao__') {
                                     window.sessaoExpirou(419);
                                     return;
@@ -308,26 +285,17 @@
                     return;
                 }
                 
-                fetch(`{{ url('/tasks') }}/${this.taskId}/move`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ column_id: columnId })
-                }).then(async res => {
-                    if (window.sessaoExpirou(res.status)) { return; }
-                    if (!res.ok) {
-                        const j = await res.json().catch(() => ({}));
-                        throw new Error(j.message || ('HTTP ' + res.status));
-                    }
+                const taskId = this.taskId;
+                this.open = false;
+
+                window.moverCardNoServidor(taskId, { column_id: columnId }).then(() => {
                     // Busca o card ja na coluna nova, sem recarregar a pagina.
-                    window.atualizarCardDoQuadro(this.taskId);
+                    window.atualizarCardDoQuadro(taskId);
                 }).catch(err => {
+                    if (err && err.message === '__cancelado__') { return; }
+                    if (err && err.message === '__sessao__') { window.sessaoExpirou(419); return; }
                     alert('Não foi possível mover o card.' + String.fromCharCode(10, 10) + (err && err.message ? err.message : err));
                 });
-                this.open = false;
             },
 
             deleteTask() {

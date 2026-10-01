@@ -128,6 +128,24 @@ class ApprovalsController extends Controller
         return response()->json(['ok' => true, 'message' => 'Envio cancelado.']);
     }
 
+    /**
+     * "Excluir do painel do cliente": a peça some do painel em qualquer
+     * situação (aguardando, aprovada ou com ajuste pedido) e o card fica.
+     */
+    public function withdraw(Request $request, Task $task): JsonResponse
+    {
+        $this->authorize('update', $task);
+
+        if (! $this->approvals->withdraw($task, $request->user())) {
+            return response()->json([
+                'ok' => false,
+                'message' => 'Esta peça não está no painel do cliente.',
+            ], 422);
+        }
+
+        return response()->json(['ok' => true, 'message' => 'Peça excluída do painel do cliente.']);
+    }
+
     /** Marca um comentário interno como visível para o cliente. */
     public function toggleCommentVisibility(Request $request, \App\Models\TaskComment $comment): JsonResponse
     {

@@ -132,6 +132,41 @@ class ApprovalService
     }
 
     /**
+     * A agência desiste da peça: ela sai do painel do cliente, mas o card
+     * continua no quadro para a equipe decidir o que fazer (ex.: o cliente
+     * pediu ajuste e não vamos seguir com a postagem).
+     *
+     * Uma rodada ainda sem resposta é apagada, como no "Retirar do painel".
+     * As respondidas ficam no histórico (aba Aprovações), só escondidas do
+     * cliente. Um novo envio depois disso abre a rodada seguinte normalmente.
+     */
+    public function withdraw(Task $task, ?User $user = null): bool
+    {
+        $rodadas = $task->approvals()->whereNull('withdrawn_at')->get();
+
+        if ($rodadas->isEmpty()) {
+            return false;
+        }
+
+        DB::transaction(function () use ($task, $user, $rodadas) {
+            foreach ($rodadas as $rodada) {
+                if ($rodada->isPending()) {
+                    $rodada->delete();
+
+                    continue;
+                }
+
+                $rodada->forceFill(['withdrawn_at' => now(), 'withdrawn_by' => $user?->id])->save();
+            }
+
+            $this->log($task, TaskActivity::TYPE_COLUMN_CHANGED,
+                'excluiu a peça do painel de aprovação do cliente', [], $user?->id);
+        });
+
+        return true;
+    }
+
+    /**
      * Comentário avulso do cliente (sem aprovar nem reprovar).
      */
     public function comment(TaskApproval $aprovacao, string $autor, string $corpo): TaskComment
