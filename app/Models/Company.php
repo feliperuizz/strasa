@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     protected $fillable = ['name', 'slug'];
 
     public function users(): HasMany

@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TaskItem extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     protected $fillable = ['task_id', 'description', 'is_completed', 'position', 'assignee_id', 'due_date'];
 
     protected function casts(): array

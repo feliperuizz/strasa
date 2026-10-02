@@ -440,7 +440,7 @@
             'membros' => $membrosDoChecklist,
             'urlCriar' => route('items.store', $task),
             'urlItens' => url('/items'),
-            'hoje' => now()->format('Y-m-d'),
+            'hoje' => \App\Support\Fuso::hojeTexto(),
         ]))">
             <div class="flex items-center justify-between mb-2">
                 <h3 class="font-semibold text-slate-200 flex items-center gap-2">

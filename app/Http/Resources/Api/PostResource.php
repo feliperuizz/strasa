@@ -40,7 +40,7 @@ class PostResource extends JsonResource
             'ready_to_publish' => $motivo === null,
             'not_ready_reason' => $motivo,
             'is_published' => (bool) $this->is_published,
-            'published_at' => $this->published_at?->toIso8601String(),
+            'published_at' => $this->published_at?->copy()->utc()->toIso8601String(),
             'client' => ClientResource::make($this->client),
             'project' => $this->project ? ['id' => $this->project->id, 'name' => $this->project->name] : null,
             'column' => $this->column ? [
@@ -53,7 +53,7 @@ class PostResource extends JsonResource
                 'status' => $aprovacao->status,
                 'round' => $aprovacao->round,
                 'reviewer_name' => $aprovacao->reviewer_name,
-                'responded_at' => $aprovacao->responded_at?->toIso8601String(),
+                'responded_at' => $aprovacao->responded_at?->copy()->utc()->toIso8601String(),
             ] : null,
             // Na ordem do carrossel (a mesma do card e do painel do cliente).
             'media' => $this->approvalMedia()->values()->map(
@@ -61,8 +61,8 @@ class PostResource extends JsonResource
             )->all(),
             'publications' => PublicationResource::collection($this->publications)->resolve($request),
             'strasa_url' => route('tasks.show', $this->id),
-            'created_at' => $this->created_at?->toIso8601String(),
-            'updated_at' => $this->updated_at?->toIso8601String(),
+            'created_at' => $this->created_at?->copy()->utc()->toIso8601String(),
+            'updated_at' => $this->updated_at?->copy()->utc()->toIso8601String(),
         ];
     }
 

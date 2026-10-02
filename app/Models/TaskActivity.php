@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class TaskActivity extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     public const TYPE_CREATED = 'created';

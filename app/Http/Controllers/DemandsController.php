@@ -59,7 +59,7 @@ class DemandsController extends Controller
             ->when($modo === 'sem-data', fn ($q) => $q->whereNull('publish_date'))
             ->when($modo === 'atrasadas', fn ($q) => $q
                 ->whereNotNull('publish_date')
-                ->whereDate('publish_date', '<', now()->toDateString())
+                ->whereDate('publish_date', '<', \App\Support\Fuso::hojeTexto())
                 ->where('is_published', false))
             ->when($modo === 'intervalo', fn ($q) => $q
                 ->whereNotNull('publish_date')
@@ -94,7 +94,7 @@ class DemandsController extends Controller
      */
     private function intervalo(?string $atalho, ?string $de, ?string $ate): array
     {
-        $hoje = now()->startOfDay();
+        $hoje = \App\Support\Fuso::hoje();
 
         return match ($atalho) {
             'hoje' => [$hoje->toDateString(), $hoje->toDateString(), 'intervalo'],
@@ -137,7 +137,7 @@ class DemandsController extends Controller
         foreach ($porPessoa as $id => $dados) {
             $porPessoa[$id]['atrasadas'] = $dados['tarefas']
                 ->filter(fn ($t) => $t->publish_date
-                    && $t->publish_date->isBefore(now()->startOfDay())
+                    && $t->publish_date->isBefore(\App\Support\Fuso::hoje())
                     && ! $t->is_published)
                 ->count();
 
@@ -152,7 +152,7 @@ class DemandsController extends Controller
     /** @return array<string, int> */
     private function resumo($tarefas): array
     {
-        $hoje = now()->startOfDay();
+        $hoje = \App\Support\Fuso::hoje();
 
         return [
             'total' => $tarefas->count(),

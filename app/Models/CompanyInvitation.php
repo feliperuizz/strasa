@@ -13,6 +13,8 @@ use Illuminate\Support\Str;
  */
 class CompanyInvitation extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     protected $fillable = [
         'company_id', 'invited_by', 'name', 'email', 'role',
         'token', 'accepted_at', 'expires_at',

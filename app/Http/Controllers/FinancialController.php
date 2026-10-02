@@ -18,7 +18,7 @@ class FinancialController extends Controller
         abort_unless($request->user()->isAdmin(), 403);
 
         $companyId = $request->user()->company_id;
-        $today = now()->toDateString();
+        $today = \App\Support\Fuso::hojeTexto();
 
         // Mensalidades: cria as cobranças que faltam até o mês seguinte. Fica
         // aqui além do agendador para a tela nunca abrir defasada.
@@ -31,7 +31,7 @@ class FinancialController extends Controller
             ->get();
 
         // 2. Filtros
-        $selectedMonth = $request->input('month', now()->format('Y-m'));
+        $selectedMonth = $request->input('month', \App\Support\Fuso::agora()->format('Y-m'));
         $selectedClient = $request->input('client_id');
         $selectedStatus = $request->input('status');
         $selectedMethod = $request->input('method');
@@ -229,7 +229,7 @@ class FinancialController extends Controller
         }
 
         if ($data['status'] === Payment::STATUS_PAID && empty($data['paid_at'])) {
-            $data['paid_at'] = now()->toDateString();
+            $data['paid_at'] = \App\Support\Fuso::hojeTexto();
         } elseif ($data['status'] !== Payment::STATUS_PAID) {
             $data['paid_at'] = null;
         }
@@ -282,7 +282,7 @@ class FinancialController extends Controller
         }
 
         if ($data['status'] === Payment::STATUS_PAID && empty($data['paid_at'])) {
-            $data['paid_at'] = now()->toDateString();
+            $data['paid_at'] = \App\Support\Fuso::hojeTexto();
         } elseif ($data['status'] !== Payment::STATUS_PAID) {
             $data['paid_at'] = null;
         }
@@ -314,7 +314,7 @@ class FinancialController extends Controller
 
         $payment->update([
             'status' => Payment::STATUS_PAID,
-            'paid_at' => $validated['paid_at'] ?? now()->toDateString(),
+            'paid_at' => $validated['paid_at'] ?? \App\Support\Fuso::hojeTexto(),
             'payment_method' => $validated['payment_method'] ?? ($payment->payment_method ?: Payment::METHOD_PIX),
         ]);
 

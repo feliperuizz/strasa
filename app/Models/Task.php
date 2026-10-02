@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     /** Tipos de conteúdo aceitos (rótulos para a UI). */

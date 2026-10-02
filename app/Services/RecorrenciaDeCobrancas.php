@@ -48,11 +48,11 @@ class RecorrenciaDeCobrancas
         return DB::transaction(function () use ($serie) {
             $removidas = (clone $serie)
                 ->where('status', Payment::STATUS_PENDING)
-                ->where('reference_month', '>', now()->format('Y-m'))
+                ->where('reference_month', '>', \App\Support\Fuso::agora()->format('Y-m'))
                 ->whereNull('attachment_path')
                 ->delete();
 
-            (clone $serie)->update(['recurrence_ended_at' => now()->toDateString()]);
+            (clone $serie)->update(['recurrence_ended_at' => \App\Support\Fuso::hojeTexto()]);
 
             return $removidas;
         });

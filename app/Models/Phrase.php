@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Phrase extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use HasFactory;
 
     protected $fillable = [

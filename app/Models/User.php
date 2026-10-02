@@ -12,6 +12,8 @@ use NotificationChannels\WebPush\HasPushSubscriptions;
 
 class User extends Authenticatable
 {
+    use Concerns\GuardaEmUtc;
+
     use HasFactory, Notifiable, HasPushSubscriptions;
 
     public const ROLE_ADMIN = 'admin';      // administrador

@@ -131,7 +131,7 @@
                             @foreach($dados['porDia'] as $dia => $tarefasDoDia)
                                 @php
                                     $data = $dia === 'sem-data' ? null : \Carbon\Carbon::parse($dia);
-                                    $atrasado = $data && $data->isBefore(now()->startOfDay());
+                                    $atrasado = \App\Support\Fuso::jaPassou($data);
                                 @endphp
 
                                 <div class="px-5 py-2 bg-ink-900/40 border-b border-ink-700/60">
@@ -140,8 +140,8 @@
                                             Sem data definida
                                         @else
                                             {{ $data->translatedFormat('D, d \d\e F') }}
-                                            @if($data->isToday()) · hoje
-                                            @elseif($data->isTomorrow()) · amanhã
+                                            @if(\App\Support\Fuso::ehHoje($data)) · hoje
+                                            @elseif(\App\Support\Fuso::ehAmanha($data)) · amanhã
                                             @elseif($atrasado) · atrasada
                                             @endif
                                         @endif

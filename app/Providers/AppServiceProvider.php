@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Database\MariaDbConnection;
+use App\Database\MySqlConnection;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Connection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -15,7 +18,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // O sistema roda no horário de Brasília e o banco guarda em UTC:
+        // as conexões convertem as datas das consultas para UTC.
+        Connection::resolverFor('mysql', fn ($pdo, $banco, $prefixo, $config) => new MySqlConnection($pdo, $banco, $prefixo, $config));
+        Connection::resolverFor('mariadb', fn ($pdo, $banco, $prefixo, $config) => new MariaDbConnection($pdo, $banco, $prefixo, $config));
     }
 
     /**

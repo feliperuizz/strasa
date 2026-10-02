@@ -106,7 +106,7 @@ class DashboardController extends Controller
     private function adminDashboard(Request $request): array
     {
         $companyId = $request->user()->company_id;
-        $today = now()->toDateString();
+        $today = \App\Support\Fuso::hojeTexto();
 
         // Os quatro contadores em UMA query só (antes eram 4 SELECT COUNT).
         $counts = Task::query()
@@ -204,7 +204,7 @@ class DashboardController extends Controller
     private function memberDashboard(Request $request): array
     {
         $user = $request->user();
-        $today = now()->toDateString();
+        $today = \App\Support\Fuso::hojeTexto();
 
         // Os quatro contadores em UMA query só (antes eram 4).
         $myCounts = Task::query()
@@ -297,19 +297,20 @@ class DashboardController extends Controller
      */
     private function publishedPerDayChart(\Illuminate\Database\Eloquent\Builder $query): array
     {
-        $start = now()->subDays(13)->startOfDay();
+        $start = \App\Support\Fuso::agora()->subDays(13)->startOfDay();
 
         $perDay = $query
             ->where('is_published', true)
             ->whereNotNull('published_at')
             ->where('published_at', '>=', $start)
-            ->selectRaw('DATE(published_at) as dia, COUNT(*) as total')
+            // published_at está em UTC no banco; o dia é o de Brasília (UTC−3, sem horário de verão).
+            ->selectRaw('DATE(DATE_SUB(published_at, INTERVAL 3 HOUR)) as dia, COUNT(*) as total')
             ->groupBy('dia')
             ->pluck('total', 'dia');
 
         $chartData = ['labels' => [], 'data' => []];
         for ($i = 13; $i >= 0; $i--) {
-            $date = now()->subDays($i);
+            $date = \App\Support\Fuso::agora()->subDays($i);
             $chartData['labels'][] = $date->format('d/m');
             $chartData['data'][] = (int) ($perDay[$date->toDateString()] ?? 0);
         }

@@ -33,9 +33,9 @@ class ActivityLogController extends Controller
 
         // Os dias do filtro, do mais recente para o mais antigo.
         $dias = collect(range(0, self::DIAS - 1))
-            ->map(fn ($i) => now()->subDays($i)->startOfDay());
+            ->map(fn ($i) => \App\Support\Fuso::agora()->subDays($i)->startOfDay());
 
-        $diaEscolhido = isset($filtros['dia']) ? Carbon::createFromFormat('Y-m-d', $filtros['dia'])->startOfDay() : null;
+        $diaEscolhido = isset($filtros['dia']) ? Carbon::createFromFormat('Y-m-d', $filtros['dia'], \App\Support\Fuso::BRASILIA)->startOfDay() : null;
         if ($diaEscolhido && ! $dias->contains(fn ($d) => $d->isSameDay($diaEscolhido))) {
             $diaEscolhido = null;
         }

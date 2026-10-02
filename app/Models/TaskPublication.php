@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class TaskPublication extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     public const REDES = [

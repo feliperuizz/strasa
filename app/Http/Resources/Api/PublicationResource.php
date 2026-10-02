@@ -21,9 +21,9 @@ class PublicationResource extends JsonResource
             'external_id' => $this->external_id,
             'permalink' => $this->permalink,
             'error_message' => $this->error_message,
-            'scheduled_for' => $this->scheduled_for?->toIso8601String(),
-            'published_at' => $this->published_at?->toIso8601String(),
-            'reported_at' => $this->reported_at?->toIso8601String(),
+            'scheduled_for' => $this->scheduled_for?->copy()->utc()->toIso8601String(),
+            'published_at' => $this->published_at?->copy()->utc()->toIso8601String(),
+            'reported_at' => $this->reported_at?->copy()->utc()->toIso8601String(),
         ];
     }
 }

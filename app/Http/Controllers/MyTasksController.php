@@ -83,7 +83,7 @@ class MyTasksController extends Controller
      */
     private function agruparPorDia(Collection $tasks): Collection
     {
-        $hoje = today();
+        $hoje = \App\Support\Fuso::hoje();
 
         $chaveDe = function (Task $t) use ($hoje) {
             if (! $t->publish_date) {

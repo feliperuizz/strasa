@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Column extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     protected $fillable = [

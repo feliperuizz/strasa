@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class Payment extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use HasFactory, BelongsToCompany;
 
     public const STATUS_PENDING = 'pending';
@@ -133,7 +135,7 @@ class Payment extends Model
             return false;
         }
 
-        return $this->due_date && $this->due_date->isPast() && ! $this->due_date->isToday();
+        return \App\Support\Fuso::jaPassou($this->due_date);
     }
 
     public function getEffectiveStatusAttribute(): string

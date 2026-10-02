@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TaskComment extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     protected $fillable = [

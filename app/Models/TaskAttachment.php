@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 class TaskAttachment extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     /**

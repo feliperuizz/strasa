@@ -28,13 +28,14 @@ Schedule::command('notifications:send-scheduled')->everyMinute();
 // Lembrete de 5 minutos antes da publicação
 Schedule::command('notifications:publish-reminders')->everyMinute();
 
-// E-mail de Briefing Diário (Todo dia às 09:00)
-Schedule::command('emails:daily-briefing')->dailyAt('09:00');
+// E-mail de Briefing Diário (Todo dia às 09:00 de Brasília — o servidor
+// roda em UTC; sem o fuso aqui, saía às 06:00).
+Schedule::command('emails:daily-briefing')->dailyAt('09:00')->timezone('America/Sao_Paulo');
 
 // Mensalidades do Financeiro: cria as cobranças do mês seguinte em todas as
 // empresas. A tela do Financeiro também gera ao abrir; isto garante que as
 // cobranças existam mesmo se ninguém abrir (ex.: para o briefing do dia).
-Schedule::command('financeiro:recorrencias')->dailyAt('00:10');
+Schedule::command('financeiro:recorrencias')->dailyAt('00:10')->timezone('America/Sao_Paulo');
 
 // Prévias leves das imagens antigas (as novas já nascem com prévia). Um lote
 // por vez, começando pelas peças que estão com o cliente; quando todas

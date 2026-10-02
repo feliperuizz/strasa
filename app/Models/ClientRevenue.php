@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ClientRevenue extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     protected $fillable = [

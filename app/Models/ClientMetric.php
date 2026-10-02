@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ClientMetric extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     /** Redes aceitas, com rótulo e cor usados nos gráficos. */

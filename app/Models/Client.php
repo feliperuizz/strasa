@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Storage;
 
 class Client extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     /**

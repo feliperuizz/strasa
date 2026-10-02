@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class TaskApproval extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     public const PENDING = 'pending';

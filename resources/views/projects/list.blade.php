@@ -54,7 +54,7 @@
                                             @if($task->publish_date || $task->tags->isNotEmpty())
                                                 <div class="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] font-normal sm:hidden">
                                                     @if($task->publish_date)
-                                                        <span class="{{ $task->publish_date->isPast() && !$task->is_published ? 'text-rose-400' : 'text-slate-400' }}">{{ $task->publish_date->format('d/m') }}</span>
+                                                        <span class="{{ \App\Support\Fuso::jaPassou($task->publish_date) && !$task->is_published ? 'text-rose-400' : 'text-slate-400' }}">{{ $task->publish_date->format('d/m') }}</span>
                                                     @endif
                                                     @foreach($task->tags as $tag)
                                                         <span class="rounded px-1.5 py-px text-[10px] font-medium" style="background: {{ $tag->color }}22; color: {{ $tag->color }}">{{ $tag->name }}</span>
@@ -73,7 +73,7 @@
                                                 <span class="text-xs text-slate-500">—</span>
                                             @endif
                                         </td>
-                                        <td class="hidden px-4 py-3 text-xs sm:table-cell {{ optional($task->publish_date)->isPast() && !$task->is_published ? 'text-rose-400' : 'text-slate-400' }}">
+                                        <td class="hidden px-4 py-3 text-xs sm:table-cell {{ \App\Support\Fuso::jaPassou($task->publish_date) && !$task->is_published ? 'text-rose-400' : 'text-slate-400' }}">
                                             {{ optional($task->publish_date)->format('d/m/Y') ?: '-' }}
                                         </td>
                                         <td class="hidden px-4 py-3 sm:table-cell">

@@ -19,6 +19,8 @@ use Symfony\Component\HttpFoundation\IpUtils;
  */
 class ApiToken extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     public const PREFIXO = 'str_';

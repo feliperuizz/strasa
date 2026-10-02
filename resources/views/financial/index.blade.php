@@ -193,7 +193,7 @@
                             @endforeach
                         </select>
                     </div>
-                    @if($search || $selectedClient || $selectedStatus || $selectedMethod || ($selectedMonth && $selectedMonth !== now()->format('Y-m')))
+                    @if($search || $selectedClient || $selectedStatus || $selectedMethod || ($selectedMonth && $selectedMonth !== \App\Support\Fuso::agora()->format('Y-m')))
                         <a href="{{ route('financial.index') }}" title="Limpar Filtros"
                            class="rounded-lg border border-ink-600 bg-ink-800 p-2 text-slate-400 hover:text-slate-200 hover:bg-ink-700 transition">
                             ✕
@@ -306,7 +306,7 @@
                                     </div>
                                     @if($isLate)
                                         <span class="text-[10px] text-rose-400 font-semibold uppercase">Vencido</span>
-                                    @elseif($payment->due_date->isToday() && !$isPaid)
+                                    @elseif(\App\Support\Fuso::ehHoje($payment->due_date) && !$isPaid)
                                         <span class="text-[10px] text-amber-400 font-semibold uppercase animate-pulse">Vence Hoje</span>
                                     @endif
                                 </td>
@@ -462,7 +462,7 @@
                                     {{-- Data de Vencimento --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Data de Vencimento *</label>
-                                        <input type="date" name="due_date" value="{{ now()->toDateString() }}" required
+                                        <input type="date" name="due_date" value="{{ \App\Support\Fuso::hojeTexto() }}" required
                                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
@@ -488,7 +488,7 @@
                                     {{-- Competência / Mês --}}
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Mês de Competência</label>
-                                        <input type="month" name="reference_month" value="{{ now()->format('Y-m') }}"
+                                        <input type="month" name="reference_month" value="{{ \App\Support\Fuso::agora()->format('Y-m') }}"
                                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 
@@ -691,7 +691,7 @@
                                 <div class="space-y-3">
                                     <div>
                                         <label class="mb-1 block text-xs font-medium text-slate-300">Data do Pagamento</label>
-                                        <input type="date" name="paid_at" value="{{ now()->toDateString() }}" required
+                                        <input type="date" name="paid_at" value="{{ \App\Support\Fuso::hojeTexto() }}" required
                                                class="w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200 focus:border-brand-500 focus:outline-none">
                                     </div>
 

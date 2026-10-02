@@ -413,8 +413,8 @@
                         <ul class="divide-y divide-ink-700/60">
                             @forelse($myPendingTasks as $task)
                                 @php
-                                    $isLate = $task->publish_date && $task->publish_date->isPast() && !$task->publish_date->isToday();
-                                    $isToday = $task->publish_date && $task->publish_date->isToday();
+                                    $isLate = \App\Support\Fuso::jaPassou($task->publish_date);
+                                    $isToday = \App\Support\Fuso::ehHoje($task->publish_date);
                                 @endphp
                                 <li class="flex items-center gap-3.5 px-5 py-3.5 hover:bg-ink-800/60 transition group">
                                     {{-- Indicador de Coluna --}}

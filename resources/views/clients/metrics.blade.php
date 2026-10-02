@@ -347,8 +347,8 @@
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label class="block text-xs font-medium text-slate-400 mb-1">Mês de referência *</label>
-                                <input type="month" name="reference_month" required max="{{ now()->format('Y-m') }}"
-                                       value="{{ old('reference_month', now()->format('Y-m')) }}"
+                                <input type="month" name="reference_month" required max="{{ \App\Support\Fuso::agora()->format('Y-m') }}"
+                                       value="{{ old('reference_month', \App\Support\Fuso::agora()->format('Y-m')) }}"
                                        class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">
                             </div>
                             <div>
@@ -414,8 +414,8 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-slate-400 mb-1">Data de referência *</label>
-                                <input type="date" name="reference_date" required max="{{ now()->toDateString() }}"
-                                       value="{{ old('reference_date', now()->toDateString()) }}"
+                                <input type="date" name="reference_date" required max="{{ \App\Support\Fuso::hojeTexto() }}"
+                                       value="{{ old('reference_date', \App\Support\Fuso::hojeTexto()) }}"
                                        class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">
                             </div>
                         </div>

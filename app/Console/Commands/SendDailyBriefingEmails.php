@@ -29,7 +29,7 @@ class SendDailyBriefingEmails extends Command
      */
     public function handle()
     {
-        $today = Carbon::now()->format('Y-m-d');
+        $today = \App\Support\Fuso::hojeTexto();
 
         // Find users with daily_briefing_email_enabled
         $users = User::whereNotNull('notification_settings')

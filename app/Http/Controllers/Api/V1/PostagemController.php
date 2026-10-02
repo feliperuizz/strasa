@@ -41,7 +41,7 @@ class PostagemController extends Controller
             'scope' => $chave->all_clients ? 'all_clients' : 'selected_clients',
             'clients' => ClientResource::collection($chave->clientesPermitidos()->orderBy('name')->get())->resolve($request),
             'auto_complete_on_published' => (bool) $chave->auto_complete,
-            'expires_at' => $chave->expires_at?->toIso8601String(),
+            'expires_at' => $chave->expires_at?->copy()->utc()->toIso8601String(),
             'rate_limit_per_minute' => (int) config('services.api_postagem.limite_por_minuto', 120),
             'media_url_ttl_days' => \App\Http\Resources\Api\MediaResource::VALIDADE_EM_DIAS,
             'timezone' => PostResource::FUSO,

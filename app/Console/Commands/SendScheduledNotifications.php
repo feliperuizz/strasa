@@ -11,7 +11,8 @@ class SendScheduledNotifications extends Command
 
     public function handle()
     {
-        $now = now()->format('H:i');
+        // Horários configurados pelas pessoas são de Brasília.
+        $now = \App\Support\Fuso::agora()->format('H:i');
 
         // Buscar todos os usuários que têm push subscriptions
         $users = \App\Models\User::whereHas('pushSubscriptions')->get();
@@ -24,7 +25,7 @@ class SendScheduledNotifications extends Command
                 // Conta tarefas atribuídas para hoje (assumindo publish_date ou due_date)
                 // O Strasa tem o campo publish_date nas tarefas
                 $tasksCount = \App\Models\Task::whereHas('assignees', fn($q) => $q->where('users.id', $user->id))
-                    ->whereDate('publish_date', now()->toDateString())
+                    ->whereDate('publish_date', \App\Support\Fuso::hojeTexto())
                     ->count();
 
                 if ($tasksCount > 0) {
@@ -35,7 +36,7 @@ class SendScheduledNotifications extends Command
             // Postagens
             if (!empty($settings['publish_enabled']) && ($settings['publish_time'] ?? '10:00') === $now) {
                 $publishCount = \App\Models\Task::whereHas('assignees', fn($q) => $q->where('users.id', $user->id))
-                    ->whereDate('publish_date', now()->toDateString())
+                    ->whereDate('publish_date', \App\Support\Fuso::hojeTexto())
                     ->whereHas('column', function ($query) {
                         $query->where('is_publish_column', true);
                     })

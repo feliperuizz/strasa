@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProjectNote extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     protected $fillable = ['project_id', 'user_id', 'content'];
 
     public function project()

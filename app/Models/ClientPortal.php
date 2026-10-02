@@ -17,6 +17,8 @@ use Illuminate\Support\Str;
  */
 class ClientPortal extends Model
 {
+    use Concerns\GuardaEmUtc;
+
     use BelongsToCompany;
 
     protected $fillable = [
