@@ -80,6 +80,59 @@ class Task extends Model
     }
 
     /**
+     * Situação da postagem, juntando o card e o retorno do sistema parceiro
+     * (API). Datas no fuso de Brasília, prontas para mostrar.
+     *
+     * - publicado: card concluído ou alguma rede informou "published";
+     * - agendado: o parceiro informou "scheduled"/"publishing" em alguma rede;
+     * - aguardando: nada informado ainda (quando = data/hora do card).
+     *
+     * @return array{estado: string, quando: ?\Illuminate\Support\Carbon, link: ?string, redes: string}
+     */
+    public function situacaoDePostagem(): array
+    {
+        $fuso = 'America/Sao_Paulo';
+        $postagens = $this->relationLoaded('publications') ? $this->publications : $this->publications()->get();
+        $nomes = fn ($lista) => $lista->map->redeLabel()->unique()->join(', ');
+
+        $publicadas = $postagens->where('status', 'published');
+        if ($this->is_published || $publicadas->isNotEmpty()) {
+            $quando = $publicadas->pluck('published_at')->filter()->max() ?? $this->published_at;
+
+            return [
+                'estado' => 'publicado',
+                'quando' => $quando?->copy()->setTimezone($fuso),
+                'link' => $publicadas->pluck('permalink')->filter()->first(),
+                'redes' => $nomes($publicadas),
+            ];
+        }
+
+        $agendadas = $postagens->whereIn('status', ['scheduled', 'publishing']);
+        if ($agendadas->isNotEmpty()) {
+            return [
+                'estado' => 'agendado',
+                'quando' => $agendadas->pluck('scheduled_for')->filter()->min()?->copy()->setTimezone($fuso) ?? $this->horarioDePublicacao(),
+                'link' => null,
+                'redes' => $nomes($agendadas),
+            ];
+        }
+
+        return ['estado' => 'aguardando', 'quando' => $this->horarioDePublicacao(), 'link' => null, 'redes' => ''];
+    }
+
+    /** Data + hora de publicação do card (digitadas no horário de Brasília), ou null. */
+    public function horarioDePublicacao(): ?\Illuminate\Support\Carbon
+    {
+        if (! $this->publish_date) {
+            return null;
+        }
+
+        $data = \Illuminate\Support\Carbon::parse($this->publish_date)->format('Y-m-d');
+
+        return \Illuminate\Support\Carbon::parse($data.' '.($this->publish_time ? substr((string) $this->publish_time, 0, 5) : '00:00'), 'America/Sao_Paulo');
+    }
+
+    /**
      * Conclui a tarefa: marca como publicada e move para a coluna marcada como
      * "concluído" no quadro, se houver. Sem coluna marcada, conclui no lugar.
      *

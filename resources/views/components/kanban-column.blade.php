@@ -6,11 +6,16 @@
     // card para lá sem perceber que isso dispara o painel do cliente.
     $ehAprovacao = $column->is_approval_column;
     $ehConcluido = $column->marks_published;
+    // "Aprovado / Agendado": recebe o card aprovado pelo cliente e é de onde
+    // a API de postagem automática puxa.
+    $ehAprovados = $column->is_publish_column && ! $ehAprovacao && ! $ehConcluido;
 @endphp
 
 <div class="flex w-[280px] shrink-0 flex-col backdrop-blur-md rounded-xl p-2 h-full shadow-md transition-colors
             @if($ehAprovacao)
                 bg-ink-900/95 border border-amber-500/40 ring-1 ring-amber-500/10
+            @elseif($ehAprovados)
+                bg-ink-900/95 border border-teal-500/40 ring-1 ring-teal-500/10
             @else
                 bg-ink-800/80 border border-white/5
             @endif"
@@ -22,14 +27,19 @@
                 <svg class="w-3.5 h-3.5 shrink-0 text-amber-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
+            @elseif($ehAprovados)
+                <svg class="w-3.5 h-3.5 shrink-0 text-teal-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+                     title="Aprovados: daqui sai para a postagem automática">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
             @elseif($ehConcluido)
                 <svg class="w-3.5 h-3.5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
                      title="Destino do botão de concluir">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                 </svg>
             @endif
-            <span class="text-[13px] font-semibold uppercase tracking-wide truncate {{ $ehAprovacao ? 'text-amber-300' : ($ehConcluido ? 'text-emerald-300' : 'text-slate-300') }}">{{ $column->name }}</span>
-            <span class="column-count text-[13px] font-medium {{ $ehAprovacao ? 'text-amber-500/70' : 'text-slate-500' }}">{{ $tasks->count() }}</span>
+            <span class="text-[13px] font-semibold uppercase tracking-wide truncate {{ $ehAprovacao ? 'text-amber-300' : ($ehAprovados ? 'text-teal-300' : ($ehConcluido ? 'text-emerald-300' : 'text-slate-300')) }}">{{ $column->name }}</span>
+            <span class="column-count text-[13px] font-medium {{ $ehAprovacao ? 'text-amber-500/70' : ($ehAprovados ? 'text-teal-500/70' : 'text-slate-500') }}">{{ $tasks->count() }}</span>
         </div>
         <div class="relative flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button @click="window.quickCreateTask({{ $project->id }}, {{ $column->id }})"
@@ -57,14 +67,14 @@
                         <label class="flex items-center gap-2">
                             <input type="hidden" name="is_publish_column" value="0">
                             <input type="checkbox" name="is_publish_column" value="1" {{ $column->is_publish_column ? 'checked' : '' }} class="rounded border-ink-600 bg-ink-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-ink-800">
-                            <span class="text-[11px] leading-tight text-slate-400">Fila de postagem: avisar o responsável no horário e liberar para a API de postagem automática</span>
+                            <span class="text-[11px] leading-tight text-slate-400">Aprovado / agendado: recebe o card quando o cliente aprova, avisa o responsável no horário e libera para a API de postagem automática</span>
                         </label>
 
                         {{-- Arrastar um card para cá o envia ao painel do cliente. --}}
                         <label class="flex items-center gap-2">
                             <input type="hidden" name="is_approval_column" value="0">
                             <input type="checkbox" name="is_approval_column" value="1" {{ $column->is_approval_column ? 'checked' : '' }} class="rounded border-ink-600 bg-ink-900 text-brand-500 focus:ring-brand-500 focus:ring-offset-ink-800">
-                            <span class="text-[11px] leading-tight text-slate-400">Enviar para aprovação do cliente</span>
+                            <span class="text-[11px] leading-tight text-slate-400">Enviar para aprovação do cliente (cria a coluna "Aprovado / Agendado" ao lado, se não houver)</span>
                         </label>
 
                         <button class="w-full rounded bg-brand-600 py-1 text-xs font-medium text-white hover:bg-brand-500 mt-2">Salvar</button>

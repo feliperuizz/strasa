@@ -40,17 +40,31 @@ Guia de integração para o sistema que publica posts nas redes sociais a partir
 
 ## 1. O que a API faz
 
-O STRASA é o sistema de gestão da agência. Cada **post** é um card no quadro do cliente. Quando a agência arrasta o card para a coluna de **fila de postagem**, com data e hora definidas, o post fica **pronto** e aparece para você nesta API.
+O STRASA é o sistema de gestão da agência. Cada **post** é um card no quadro do cliente, que anda pelas colunas:
+
+```
+… → Aprovação → Aprovado / Agendado → Postado
+        │               │                 ▲
+        │               │                 └─ você informa "published": o card vai sozinho para cá
+        │               └─ é DAQUI que a API entrega os posts prontos (com data e hora)
+        └─ o cliente aprova no painel de aprovação: o card vai sozinho para "Aprovado / Agendado"
+```
+
+Quando o card está na coluna **Aprovado / Agendado**, com data e hora definidas, o post fica **pronto** e aparece para você nesta API. (A agência também pode arrastar um card para lá direto, quando aprovou por fora.)
 
 Você:
 
 1. **busca** os posts prontos: legenda, data/hora e mídias (na ordem do carrossel);
-2. **publica** nas redes, no horário indicado;
-3. **informa de volta** (webhook de retorno) se publicou ou falhou, em cada rede.
+2. **agenda** no seu sistema e **informa** `scheduled` (obrigatório);
+3. **publica** nas redes, no horário indicado;
+4. **informa** `published` ou `failed` (obrigatório), em cada rede.
 
-O STRASA mostra esse retorno no card, no histórico e no painel da agência. Quando você informa `published`, o card é marcado como publicado automaticamente.
+O STRASA mostra esse retorno no card ("Agendado: Instagram · 02/10 18:00", "Postado: Instagram"), no histórico, no painel da agência e no painel do cliente ("Agendado para…", "Publicado"). Quando você informa `published`, o card vai para "Postado" automaticamente.
 
-**Regra de ouro:** só publique posts com `ready_to_publish: true`, e confirme com `GET /posts/{id}` logo antes de publicar.
+**Regras de ouro:**
+
+- só publique posts com `ready_to_publish: true`, e confirme com `GET /posts/{id}` logo antes de publicar;
+- **o retorno é obrigatório** (seção 4.1): sem ele a agência e o cliente não sabem se o post foi programado ou publicado.
 
 ---
 
@@ -86,11 +100,13 @@ Um post está pronto quando **todas** estas condições valem:
 | Condição | Se faltar, `not_ready_reason` = |
 |---|---|
 | ainda não foi publicado | `already_published` |
-| está na coluna de fila de postagem | `not_in_publish_queue` |
+| está na coluna **Aprovado / Agendado** (`column.is_publish_queue: true`) | `not_in_publish_queue` |
 | tem data de publicação | `missing_publish_date` |
 | tem horário de publicação | `missing_publish_time` |
 
-Se um post sair da fila (a agência arrastou de volta para ajustes, por exemplo), ele deixa de estar pronto: **não publique**.
+Se um post sair dessa coluna (a agência arrastou de volta para ajustes, por exemplo), ele deixa de estar pronto: **não publique**, desagende e informe `cancelled`.
+
+`approval` traz a última resposta do painel de aprovação (`status: "approved"`, quem aprovou e quando) — informativo; quem decide se está pronto é a coluna.
 
 ### Data e hora
 - `scheduled_at`: quando publicar, ISO 8601 com o fuso de Brasília. Ex.: `2026-10-01T18:00:00-03:00`.
@@ -118,7 +134,7 @@ Se um post sair da fila (a agência arrastou de volta para ajustes, por exemplo)
 | GET | `/clients` | Clientes que a chave enxerga |
 | GET | `/posts` | Listar posts (padrão: só os prontos) |
 | GET | `/posts/{id}` | Ver um post (use antes de publicar) |
-| POST | `/posts/{id}/publications` | **Webhook de retorno**: informar a postagem |
+| POST | `/posts/{id}/publications` | **Webhook de retorno (OBRIGATÓRIO)**: informar o status da postagem |
 | GET | `/media/{id}?...` | Baixar a mídia (link assinado, já vem no post) |
 
 ### GET /posts
@@ -155,7 +171,7 @@ Resposta (resumida):
       "published_at": null,
       "client": { "id": 5, "name": "Construtora Horizonte", "slug": "construtora-horizonte", "networks": ["instagram", "facebook"] },
       "project": { "id": 4, "name": "Lançamento Jardins 2026" },
-      "column": { "id": 12, "name": "Programado para publicação", "is_publish_queue": true },
+      "column": { "id": 12, "name": "Aprovado / Agendado", "is_publish_queue": true },
       "tags": ["Programado"],
       "approval": { "status": "approved", "round": 1, "reviewer_name": "Ricardo", "responded_at": "2026-09-29T20:10:00+00:00" },
       "media": [
@@ -174,9 +190,29 @@ Resposta (resumida):
 }
 ```
 
-### POST /posts/{id}/publications — webhook de retorno
+### POST /posts/{id}/publications — webhook de retorno (OBRIGATÓRIO)
 
 Informe o que aconteceu em **cada rede**. Chame a cada mudança; reenviar é seguro (o mesmo post + rede é atualizado, nunca duplicado).
+
+#### 4.1 Retorno obrigatório: quando chamar
+
+Este retorno **não é opcional**. É ele que mostra para a agência e para o cliente se o post foi programado e se foi ao ar. Chame **em até 1 minuto** depois de cada acontecimento, **uma chamada por rede**:
+
+| Quando acontecer no seu sistema | Envie `status` | Junto com | O que aparece no STRASA |
+|---|---|---|---|
+| Agendou o post | `scheduled` | `scheduled_for` | Card: "Agendado: Instagram · 02/10 18:00". Cliente: "Agendado para 02/10 às 18:00" |
+| Mudou o horário (reagendou) | `scheduled` de novo | o novo `scheduled_for` | O horário novo |
+| Começou a enviar (opcional) | `publishing` | — | Card: "Publicando: Instagram" |
+| Foi ao ar | `published` | `permalink`, `external_id`, `published_at` | Card vai para "Postado" com "Postado: Instagram". Cliente: "Publicado" + link |
+| Deu erro | `failed` | `error_message` (claro, em português) | Card: "Falha ao postar: Instagram" + o motivo |
+| Desagendou (post saiu da coluna, 404, `ready_to_publish: false`) | `cancelled` | — | Card: "Postagem cancelada" |
+
+Regras:
+
+- **Nunca descarte um retorno.** Se a chamada falhar (sem conexão, `5xx`, `429`), guarde e repita com espera crescente (10 s, 1 min, 5 min, 30 min… por até 24 h). Repetir é seguro.
+- Informe **todas** as redes em que o post foi agendado/publicado, uma chamada por rede.
+- `scheduled_for` e `published_at` em ISO 8601 com fuso (ex.: `2026-10-02T18:00:00-03:00`); sem fuso, o STRASA entende horário de Brasília.
+- Resposta `200` = registrado. `404` = o post não existe mais para a sua chave: não publique.
 
 Campos:
 
@@ -224,13 +260,13 @@ Resposta:
    - primeira vez: `GET /posts` (sem `updated_since`), percorrendo todas as páginas;
    - depois: `GET /posts?updated_since=<meta.server_time da consulta anterior>`;
    - para cada post recebido, crie ou atualize o agendamento no seu sistema (legenda, horário e mídias podem ter mudado).
-4. **Informar o agendamento:** ao agendar, `POST /posts/{id}/publications` com `status: "scheduled"` e `scheduled_for`, uma chamada por rede.
+4. **Informar o agendamento (obrigatório):** ao agendar, `POST /posts/{id}/publications` com `status: "scheduled"` e `scheduled_for`, uma chamada por rede. Reagendou? Informe de novo.
 5. **Na hora de publicar** (alguns minutos antes de `scheduled_at`):
    - `GET /posts/{id}`;
    - se vier **404** ou `ready_to_publish: false`: **não publique** e informe `status: "cancelled"`;
    - se `scheduled_at` mudou: reagende;
    - baixe as mídias pelos `url` novos, na ordem de `position` (converta imagens para JPEG se a rede exigir) e publique com a `caption` exatamente como veio.
-6. **Informar o resultado:** `published` (com `permalink` e `external_id`) ou `failed` (com `error_message`), uma chamada por rede.
+6. **Informar o resultado (obrigatório):** `published` (com `permalink` e `external_id`) ou `failed` (com `error_message`), uma chamada por rede.
 7. **Se o retorno falhar** (rede, 5xx, 429): tente de novo com espera crescente (ex.: 10 s, 1 min, 5 min, 30 min). É seguro repetir.
 
 Pseudocódigo:
@@ -300,7 +336,8 @@ Todo erro vem neste formato:
 - [ ] Só publica com `ready_to_publish: true`, confirmado por `GET /posts/{id}` na hora.
 - [ ] Legenda publicada exatamente como veio (`\n` = quebra de linha).
 - [ ] Mídias na ordem de `position`, com links novos, imagens em JPEG quando a rede exigir.
-- [ ] Retorno `scheduled` / `published` / `failed` / `cancelled` por rede, com nova tentativa em caso de falha.
+- [ ] **Retorno obrigatório** em até 1 minuto: `scheduled` ao agendar (e ao reagendar), `published` ao ir ao ar, `failed` em erro, `cancelled` ao desagendar — por rede.
+- [ ] Fila de retornos com nova tentativa (espera crescente, por até 24 h): nenhum retorno se perde.
 - [ ] Trata 401/403/404/422/429/500 conforme a tabela acima.
 
 ---

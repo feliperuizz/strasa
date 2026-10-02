@@ -62,9 +62,10 @@ class Project extends Model
     public function createDefaultColumns(): void
     {
         $position = 0;
+        $aprovacao = null;
 
         foreach ($this->client->columnsTemplate() as $col) {
-            $this->columns()->create([
+            $coluna = $this->columns()->create([
                 'company_id' => $this->company_id,
                 'name' => $col['name'],
                 'key' => $col['key'] ?? null,
@@ -72,7 +73,17 @@ class Project extends Model
                 'position' => $position++,
                 'marks_published' => $col['marks_published'] ?? false,
                 'requires_rejection_reason' => $col['requires_rejection_reason'] ?? false,
+                'is_approval_column' => $col['is_approval_column'] ?? false,
+                'is_publish_column' => $col['is_publish_column'] ?? false,
             ]);
+
+            $aprovacao ??= $coluna->is_approval_column ? $coluna : null;
+        }
+
+        // Template próprio com coluna de aprovação mas sem a de aprovados:
+        // a "Aprovado / Agendado" entra à direita, como no padrão.
+        if ($aprovacao) {
+            Column::garantirAprovadosAoLado($aprovacao);
         }
     }
 }

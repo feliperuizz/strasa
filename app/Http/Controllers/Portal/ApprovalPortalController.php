@@ -109,16 +109,24 @@ class ApprovalPortalController extends Controller
     {
         $portal = $this->portalDaRequest($request);
 
-        $aprovacoes = $this->aprovacoesDoPortal($portal)->get();
+        // Só a rodada mais recente de cada peça: um "ajuste pedido" da
+        // versão 1 não precisa continuar na tela depois que a 2 foi aprovada.
+        $aprovacoes = $this->aprovacoesDoPortal($portal)->get()->unique('task_id');
 
         $pendentes = $aprovacoes->where('status', TaskApproval::PENDING);
-        $respondidas = $aprovacoes->whereIn('status', [TaskApproval::APPROVED, TaskApproval::REJECTED]);
+        $aprovadas = $aprovacoes->where('status', TaskApproval::APPROVED)
+            ->each(fn (TaskApproval $a) => $a->setAttribute('postagem', $a->task->situacaoDePostagem()));
+
+        // Aprovada continua à vista até ir ao ar; depois desce para "Já publicadas".
+        [$publicadas, $aguardandoPostagem] = $aprovadas->partition(fn (TaskApproval $a) => $a->postagem['estado'] === 'publicado');
 
         return view('portal.index', [
             'portal' => $portal,
             'client' => $portal->client,
             'pendentes' => $pendentes,
-            'respondidas' => $respondidas->sortByDesc('responded_at'),
+            'aprovadas' => $aguardandoPostagem->sortBy(fn (TaskApproval $a) => $a->postagem['quando']?->timestamp ?? PHP_INT_MAX)->values(),
+            'ajustes' => $aprovacoes->where('status', TaskApproval::REJECTED)->sortByDesc('responded_at')->values(),
+            'publicadas' => $publicadas->sortByDesc(fn (TaskApproval $a) => $a->postagem['quando']?->timestamp ?? 0)->values(),
         ]);
     }
 
@@ -135,6 +143,7 @@ class ApprovalPortalController extends Controller
             'client' => $portal->client,
             'approval' => $aprovacao,
             'task' => $task,
+            'postagem' => $aprovacao->isApproved() ? $task->situacaoDePostagem() : null,
             'midias' => $task->approvalMedia(),
             'comentarios' => $this->comentariosVisiveis($task),
         ]);
@@ -310,7 +319,10 @@ class ApprovalPortalController extends Controller
             ->where('company_id', $portal->company_id)
             ->where('client_id', $portal->client_id)
             ->visibleToClient()
-            ->with(['task' => fn ($q) => $q->withoutGlobalScopes()->with(['attachments', 'folders'])])
+            ->with(['task' => fn ($q) => $q->withoutGlobalScopes()->with([
+                'attachments', 'folders',
+                'publications' => fn ($p) => $p->withoutGlobalScopes(),
+            ])])
             ->orderByDesc('submitted_at');
     }
 

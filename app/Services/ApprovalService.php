@@ -80,12 +80,35 @@ class ApprovalService
                 'aprovou a peça no painel do cliente',
                 ['approval_id' => $aprovacao->id, 'author' => $reviewerName]);
 
+            // Aprovado → coluna "Aprovado / Agendado", de onde a API de
+            // postagem puxa. O cliente continua vendo a peça no painel.
+            $this->moverParaAprovados($task, ['approval_id' => $aprovacao->id, 'author' => $reviewerName]);
+
             if (filled($feedback)) {
                 $this->registrarComentarioDoCliente($task, $reviewerName, $feedback);
             }
         });
 
         $this->notificarResponsaveis($aprovacao, 'approved');
+    }
+
+    /**
+     * A equipe arrastou para "Aprovado / Agendado" uma peça que ainda
+     * aguardava o cliente (ex.: ele aprovou pelo WhatsApp). A rodada vira
+     * aprovada em nome da equipe, em vez de sumir do painel: o cliente
+     * continua vendo a peça, agora como aprovada, até ela ser postada.
+     */
+    public function approveByTeam(TaskApproval $aprovacao, User $user): void
+    {
+        $aprovacao->forceFill([
+            'status' => TaskApproval::APPROVED,
+            'responded_at' => now(),
+            'reviewer_name' => $user->name.' (equipe)',
+        ])->save();
+
+        $this->log($aprovacao->task, TaskActivity::TYPE_PUBLISHED,
+            'aprovou a peça pela equipe (sem esperar o painel do cliente)',
+            ['approval_id' => $aprovacao->id], $user->id);
     }
 
     /**
@@ -209,6 +232,32 @@ class ApprovalService
             ->where('marks_published', false)
             ->orderBy('position')
             ->first();
+    }
+
+    /**
+     * Leva o card aprovado para a coluna "Aprovado / Agendado". Não mexe se
+     * ele já está lá, se já foi publicado, ou se o quadro não tem essa coluna.
+     */
+    private function moverParaAprovados(Task $task, array $meta = []): void
+    {
+        $atual = Column::withoutGlobalScopes()->find($task->column_id);
+
+        if ($task->is_published || ($atual && ($atual->is_publish_column || $atual->marks_published))) {
+            return;
+        }
+
+        $destino = Column::destinoDosAprovados($task->project_id, $atual?->is_approval_column ? $atual : null);
+
+        if (! $destino || $destino->id === $task->column_id) {
+            return;
+        }
+
+        $ultima = Task::withoutGlobalScopes()->where('column_id', $destino->id)->max('position');
+
+        $task->forceFill(['column_id' => $destino->id, 'position' => $ultima === null ? 0 : $ultima + 1])->save();
+
+        $this->log($task, TaskActivity::TYPE_COLUMN_CHANGED,
+            'moveu de "'.($atual?->name ?? '?').'" para "'.$destino->name.'" (aprovado pelo cliente)', $meta);
     }
 
     private function registrarComentarioDoCliente(Task $task, string $autor, string $corpo): TaskComment

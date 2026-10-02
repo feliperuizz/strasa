@@ -240,16 +240,19 @@ class TaskController extends Controller
                 }
 
                 // Coluna de aprovação: arrastar para dentro submete a peça ao
-                // painel do cliente; arrastar para fora cancela um envio que
-                // ainda não foi respondido.
+                // painel do cliente. Arrastar para "Aprovado / Agendado" uma
+                // peça ainda sem resposta aprova em nome da equipe (o cliente
+                // continua vendo, como aprovada). Arrastar para qualquer outra
+                // coluna cancela o envio que ainda não foi respondido.
+                $pendente = $task->approvals()->first();
+                $pendente = $pendente?->isPending() ? $pendente : null;
+
                 if ($target->is_approval_column && $task->client_id) {
                     app(ApprovalService::class)->submit($task, auth()->user(), $origin);
-                } elseif ($origin->is_approval_column) {
-                    $pendente = $task->approvals()->first();
-
-                    if ($pendente && $pendente->isPending()) {
-                        $pendente->delete();
-                    }
+                } elseif ($pendente && $target->is_publish_column) {
+                    app(ApprovalService::class)->approveByTeam($pendente, auth()->user());
+                } elseif ($pendente && $origin->is_approval_column) {
+                    $pendente->delete();
                 }
             }
         });

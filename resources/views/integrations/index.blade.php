@@ -7,12 +7,17 @@
     </x-slot>
 
     @php
-        $mensagemParceiro = "Olá! Seguem os dados para integrar com o STRASA (API de postagem automática):\n\n"
-            ."• Documentação interativa (Swagger): {$raiz}/api/docs\n"
-            ."• Guia completo para a IA/desenvolvedor: {$raiz}/api/docs.md\n"
-            ."• Especificação OpenAPI: {$raiz}/api/openapi.json\n"
-            ."• URL base da API: {$raiz}/api/v1\n\n"
-            ."A chave de acesso (str_...) vai em mensagem separada. Guardem só no servidor: ela não pode ser recuperada, só substituída.";
+        // Logo depois de criar/renovar, a mensagem já leva a chave: um só
+        // "copiar e colar" para o parceiro (copiar a chave e depois a
+        // mensagem fazia a segunda apagar a primeira da área de transferência).
+        $chaveNova = $chaveCriada['segredo'] ?? null;
+        $mensagemParceiro = "Olá! Seguem os dados da API do STRASA para a postagem automática.\n\n"
+            ."Documentação completa, para a IA/desenvolvedor de vocês (endpoints, regras e exemplos):\n{$raiz}/api/docs.md\n\n"
+            ."A mesma documentação em página interativa, para testar pelo navegador:\n{$raiz}/api/docs\n\n"
+            .($chaveNova
+                ? "Chave de acesso (vai no cabeçalho \"Authorization: Bearer <chave>\"):\n{$chaveNova}\n\n"
+                    ."Guardem a chave só no servidor de vocês. Se ela vazar, me avisem que eu gero outra."
+                : "A chave de acesso eu mando em seguida. Ela vai no cabeçalho \"Authorization: Bearer <chave>\"; guardem só no servidor de vocês.");
     @endphp
 
     <div class="mx-auto w-full max-w-6xl space-y-6 p-4 sm:p-6">
@@ -30,7 +35,7 @@
 
         {{-- Chave recém-criada: aparece UMA vez --}}
         @if($chaveCriada)
-            <section class="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/[0.07] p-5">
+            <section class="rounded-xl border-2 border-emerald-500/40 bg-emerald-500/[0.07] p-5" data-chave-nova>
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="grid h-7 w-7 place-items-center rounded-full bg-emerald-500/20 text-emerald-300">✓</span>
                     <h2 class="font-semibold text-emerald-200">
@@ -38,84 +43,113 @@
                     </h2>
                 </div>
                 <p class="mt-2 text-sm text-slate-300">
-                    <strong class="text-amber-300">Copie agora:</strong> por segurança ela não aparece de novo (o STRASA guarda só uma impressão digital dela).
+                    <strong class="text-amber-300">Copie agora:</strong> por segurança a chave só aparece desta vez.
+                    Se perder, é só clicar em <strong class="text-slate-100">Gerar nova chave</strong> na lista abaixo.
                     @if(!empty($chaveCriada['renovada'])) A chave anterior já parou de funcionar. @endif
                 </p>
-                <div class="mt-3 flex flex-wrap items-stretch gap-2">
-                    <code class="min-w-0 flex-1 select-all break-all rounded-lg border border-ink-600 bg-ink-900 px-3 py-2.5 font-mono text-[13px] text-slate-100">{{ $chaveCriada['segredo'] }}</code>
-                    <button type="button" data-copiar="{{ $chaveCriada['segredo'] }}" onclick="copiarTexto(this)"
-                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500">Copiar chave</button>
+                <label class="mt-3 block">
+                    <span class="sr-only">Chave de acesso</span>
+                    <textarea id="chave-nova" readonly rows="1" spellcheck="false" data-autoaltura onfocus="selecionarTudo(this)" onclick="selecionarTudo(this)"
+                              class="block w-full resize-none overflow-hidden break-all rounded-lg border border-ink-600 bg-ink-900 px-3 py-2.5 font-mono text-[13px] leading-relaxed text-slate-100 focus:border-emerald-500 focus:outline-none">{{ $chaveNova }}</textarea>
+                </label>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="button" data-copiar="{{ $mensagemParceiro }}" data-selecionar="mensagem-parceiro" onclick="copiarTexto(this)"
+                            class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500">Copiar mensagem para o parceiro (com a chave)</button>
+                    <button type="button" data-copiar="{{ $chaveNova }}" data-selecionar="chave-nova" onclick="copiarTexto(this)"
+                            class="rounded-lg border border-emerald-500/40 px-4 py-2.5 text-sm font-medium text-emerald-200 hover:bg-emerald-500/10">Copiar só a chave</button>
                 </div>
-                <p class="mt-3 text-[12.5px] text-slate-400">Mande a chave ao parceiro por um canal diferente do da mensagem com os links (ex.: links por e-mail, chave por WhatsApp).</p>
+                <p class="mt-3 text-[12.5px] text-slate-400">
+                    A mensagem já leva o link da documentação e a chave: é só colar numa conversa privada com o responsável técnico do parceiro (não mande em grupo).
+                </p>
             </section>
         @endif
 
-        {{-- Para o parceiro --}}
+        {{-- O que mandar para o parceiro --}}
         <section class="rounded-xl border border-ink-600 bg-ink-800 p-5">
             <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <h2 class="font-semibold text-slate-200">Documentação para o parceiro</h2>
-                    <p class="mt-0.5 text-sm text-slate-400">É isto que você envia para a empresa do sistema de postagem (a IA deles implementa a partir do guia).</p>
+                <div class="min-w-0 flex-1">
+                    <h2 class="font-semibold text-slate-200">O que mandar para o parceiro</h2>
+                    <p class="mt-0.5 text-sm text-slate-400">
+                        Só duas coisas: o link da documentação e a chave de acesso. A documentação é uma só, em dois formatos:
+                        texto para a IA deles ler e implementar, e uma página interativa para uma pessoa testar clicando.
+                    </p>
                 </div>
-                <button type="button" data-copiar="{{ $mensagemParceiro }}" onclick="copiarTexto(this)"
-                        class="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-brand-500">Copiar mensagem para o parceiro</button>
+                <button type="button" data-copiar="{{ $mensagemParceiro }}" data-selecionar="mensagem-parceiro" onclick="copiarTexto(this)"
+                        class="rounded-lg bg-brand-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-brand-500">
+                    {{ $chaveNova ? 'Copiar mensagem (com a chave)' : 'Copiar mensagem para o parceiro' }}
+                </button>
             </div>
 
             <dl class="mt-4 grid gap-2 sm:grid-cols-2">
-                @foreach([
-                    ['Documentação interativa (Swagger)', $raiz.'/api/docs'],
-                    ['Guia completo (para IA/desenvolvedor)', $raiz.'/api/docs.md'],
-                    ['Especificação OpenAPI 3.1', $raiz.'/api/openapi.json'],
-                    ['URL base da API', $raiz.'/api/v1'],
-                ] as [$rotulo, $link])
-                    <div class="flex min-w-0 items-center gap-2 rounded-lg border border-ink-700 bg-ink-900/60 px-3 py-2">
-                        <div class="min-w-0 flex-1">
-                            <dt class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{{ $rotulo }}</dt>
-                            <dd class="truncate font-mono text-[12.5px] text-slate-200">
-                                @if(str_ends_with($link, '/api/v1'))
-                                    {{ $link }}
-                                @else
-                                    <a href="{{ $link }}" target="_blank" rel="noopener" class="hover:text-brand-300 hover:underline">{{ $link }}</a>
-                                @endif
-                            </dd>
-                        </div>
-                        <button type="button" data-copiar="{{ $link }}" onclick="copiarTexto(this)"
-                                class="shrink-0 rounded-md px-2 py-1 text-[11px] font-medium text-slate-400 hover:bg-ink-700 hover:text-slate-200">Copiar</button>
-                    </div>
-                @endforeach
+                @include('integrations.partials.linha-link', ['id' => 'link-guia', 'rotulo' => 'Documentação para a IA deles (a principal)', 'link' => $raiz.'/api/docs.md'])
+                @include('integrations.partials.linha-link', ['id' => 'link-docs', 'rotulo' => 'A mesma, em página interativa (para testar)', 'link' => $raiz.'/api/docs'])
             </dl>
 
+            <details class="mt-3">
+                <summary class="cursor-pointer text-[12.5px] text-slate-400 hover:text-slate-200">Ver a mensagem que o botão copia</summary>
+                <textarea id="mensagem-parceiro" readonly rows="1" data-autoaltura onclick="selecionarTudo(this)"
+                          class="mt-2 block w-full resize-none overflow-hidden rounded-lg border border-ink-700 bg-ink-900/60 px-3 py-2.5 text-[13px] leading-relaxed text-slate-300 [overflow-wrap:anywhere] focus:border-brand-500 focus:outline-none">{{ $mensagemParceiro }}</textarea>
+            </details>
+
+            <details class="mt-2">
+                <summary class="cursor-pointer text-[12.5px] text-slate-400 hover:text-slate-200">Detalhes técnicos (só se eles pedirem)</summary>
+                <dl class="mt-2 grid gap-2 sm:grid-cols-2">
+                    @include('integrations.partials.linha-link', ['id' => 'link-openapi', 'rotulo' => 'Especificação OpenAPI (ferramentas importam)', 'link' => $raiz.'/api/openapi.json'])
+                    @include('integrations.partials.linha-link', ['id' => 'link-base', 'rotulo' => 'URL base da API (já está na documentação)', 'link' => $raiz.'/api/v1', 'abrir' => false])
+                </dl>
+            </details>
+
             <p class="mt-3 text-[12.5px] leading-relaxed text-slate-500">
-                Não é preciso informar IP: a integração usa o domínio acima, com HTTPS. O que vai para o parceiro são os posts
-                que estão na coluna marcada como <strong class="text-slate-300">fila de postagem</strong> (menu ⋯ da coluna, no quadro),
-                com data e hora definidas. Legenda, data/hora e as mídias na ordem do carrossel. A anotação interna, comentários e checklist nunca saem.
+                Não precisa de IP: eles acessam pelo endereço acima, com HTTPS. Só vão para o parceiro os posts da coluna
+                <strong class="text-slate-300">Aprovado / Agendado</strong> (o card vai para lá sozinho quando o cliente aprova)
+                que tenham data e horário: legenda, data/hora e as mídias na ordem do carrossel. Anotação interna, comentários e checklist nunca saem.
+                O parceiro é obrigado a avisar de volta quando agendar e quando publicar.
             </p>
         </section>
 
-        {{-- Fila de postagem agora --}}
+        {{-- Coluna "Aprovado / Agendado" agora --}}
         <section class="rounded-xl border border-ink-600 bg-ink-800 p-5">
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 class="font-semibold text-slate-200">Fila de postagem agora</h2>
+                <h2 class="font-semibold text-slate-200">Aprovado / Agendado agora</h2>
                 <span class="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
                     {{ $prontos }} {{ $prontos === 1 ? 'post pronto' : 'posts prontos' }} para o parceiro
                 </span>
             </div>
-            @if($travados->isEmpty())
-                <p class="mt-2 text-sm text-slate-500">Nenhum post travado. Tudo o que está na fila tem data e hora.</p>
-            @else
-                <p class="mt-2 text-sm text-amber-300">Estes estão na fila, mas <strong>não vão</strong> para o parceiro até ganharem data e hora:</p>
+
+            @if($atrasados->isEmpty() && $semRetorno->isEmpty() && $travados->isEmpty())
+                <p class="mt-2 text-sm text-slate-500">Tudo em dia: os posts aprovados têm data e hora, e o parceiro deu retorno de todos.</p>
+            @endif
+
+            @if($atrasados->isNotEmpty())
+                <p class="mt-3 text-sm text-rose-300">Passou do horário e o parceiro <strong>não avisou</strong> se publicou:</p>
+                <ul class="mt-2 divide-y divide-ink-700/70 overflow-hidden rounded-lg border border-rose-500/30">
+                    @foreach($atrasados as $t)
+                        @include('integrations.partials.item-fila', ['t' => $t,
+                            'selo' => 'era '.$t->horarioDePublicacao()->format('d/m H:i'),
+                            'tom' => 'border-rose-500/30 bg-rose-500/10 text-rose-300'])
+                    @endforeach
+                </ul>
+            @endif
+
+            @if($semRetorno->isNotEmpty())
+                <p class="mt-3 text-sm text-sky-300">Prontos, mas o parceiro ainda não avisou que agendou:</p>
+                <ul class="mt-2 divide-y divide-ink-700/70 overflow-hidden rounded-lg border border-ink-700">
+                    @foreach($semRetorno as $t)
+                        @include('integrations.partials.item-fila', ['t' => $t,
+                            'selo' => 'vai ao ar '.$t->horarioDePublicacao()->format('d/m H:i'),
+                            'tom' => 'border-sky-500/30 bg-sky-500/10 text-sky-300'])
+                    @endforeach
+                </ul>
+            @endif
+
+            @if($travados->isNotEmpty())
+                <p class="mt-3 text-sm text-amber-300">Estes estão aprovados, mas <strong>não vão</strong> para o parceiro até ganharem data e hora:</p>
                 <ul class="mt-2 divide-y divide-ink-700/70 overflow-hidden rounded-lg border border-ink-700">
                     @foreach($travados as $t)
                         @php $motivo = \App\Http\Resources\Api\PostResource::motivoNaoPronto($t); @endphp
-                        <li class="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5 text-sm">
-                            <span class="h-2 w-2 shrink-0 rounded-full" style="background: {{ $t->client?->color ?? '#64748b' }}"></span>
-                            <a href="{{ route('tasks.show', $t) }}" @click.prevent="$dispatch('open-task-modal', '{{ route('tasks.show', $t) }}')"
-                               class="min-w-0 flex-1 font-medium text-slate-200 hover:text-brand-300">{{ $t->title ?: 'Sem título' }}</a>
-                            <span class="text-xs text-slate-500">{{ $t->client?->name }}</span>
-                            <span class="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
-                                {{ ['missing_publish_date' => 'sem data', 'missing_publish_time' => 'sem horário'][$motivo] ?? $motivo }}
-                            </span>
-                        </li>
+                        @include('integrations.partials.item-fila', ['t' => $t,
+                            'selo' => ['missing_publish_date' => 'sem data', 'missing_publish_time' => 'sem horário'][$motivo] ?? $motivo,
+                            'tom' => 'border-amber-500/30 bg-amber-500/10 text-amber-300'])
                     @endforeach
                 </ul>
             @endif
@@ -300,31 +334,102 @@
 
     @push('scripts')
     <script>
-        // Copia o texto do data-copiar do botão; sem clipboard API (ou se o
-        // navegador negar a permissão), cai no execCommand.
+        // Seleciona todo o texto de um campo (ou de um elemento qualquer),
+        // para a pessoa copiar à mão quando o navegador não deixa copiar.
+        window.selecionarTudo = function (el) {
+            if ('selectionStart' in el) {
+                if (document.activeElement !== el) { el.focus({ preventScroll: true }); }
+                el.select();
+                el.setSelectionRange(0, el.value.length);
+                return;
+            }
+            var faixa = document.createRange();
+            faixa.selectNodeContents(el);
+            var selecao = window.getSelection();
+            selecao.removeAllRanges();
+            selecao.addRange(faixa);
+        };
+
+        // Caixa de texto do tamanho do conteúdo (a chave quebra em 2-3
+        // linhas no celular; a mensagem tem ~10).
+        window.ajustarAltura = function (el) {
+            if (!el || el.tagName !== 'TEXTAREA') { return; }
+            el.style.height = 'auto';
+            el.style.height = (el.scrollHeight + el.offsetHeight - el.clientHeight) + 'px';
+        };
+        var ajustarTodas = function () { document.querySelectorAll('textarea[data-autoaltura]').forEach(window.ajustarAltura); };
+        ajustarTodas();
+        window.addEventListener('resize', ajustarTodas);
+        document.querySelectorAll('details').forEach(function (d) { d.addEventListener('toggle', ajustarTodas); });
+
+        // Copia o data-copiar do botão. Tenta a API moderna; se o navegador
+        // recusar ou não tiver, o jeito antigo; se nada funcionar, deixa o
+        // texto selecionado na tela (data-selecionar) para copiar à mão.
+        // O botão só diz "Copiado!" quando copiou de verdade.
         window.copiarTexto = function (botao) {
             var texto = botao.getAttribute('data-copiar');
             // Guarda o rótulo na primeira vez: dois cliques seguidos não
             // podem deixar o botão preso em "Copiado!".
             var original = botao.dataset.rotulo || (botao.dataset.rotulo = botao.textContent);
-            var feito = function () {
-                botao.textContent = 'Copiado!';
-                setTimeout(function () { botao.textContent = original; }, 1600);
+            var mostrar = function (mensagem, ms) {
+                botao.textContent = mensagem;
+                clearTimeout(botao._volta);
+                botao._volta = setTimeout(function () { botao.textContent = original; }, ms);
             };
-            var semApi = function () {
+            var copiou = function () {
+                window.strasaCopiou = true;
+                mostrar('Copiado!', 1800);
+            };
+            var jeitoAntigo = function () {
+                // Receita do clipboard.js: readonly (o teclado não abre no
+                // celular), fonte de 12pt (o iPhone não dá zoom) e
+                // setSelectionRange (o iPhone ignora só o select()).
                 var area = document.createElement('textarea');
                 area.value = texto;
+                area.setAttribute('readonly', '');
+                area.style.cssText = 'position:absolute;left:-9999px;top:' + (window.pageYOffset || document.documentElement.scrollTop) + 'px;font-size:12pt;border:0;padding:0;margin:0';
                 document.body.appendChild(area);
                 area.select();
-                try { document.execCommand('copy'); feito(); } catch (e) { /* segue selecionado */ }
+                area.setSelectionRange(0, texto.length);
+                var ok = false;
+                try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
                 document.body.removeChild(area);
+                return ok;
             };
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(texto).then(feito, semApi);
+            var aMao = function () {
+                var alvo = botao.dataset.selecionar && document.getElementById(botao.dataset.selecionar);
+                if (!alvo) {
+                    mostrar('Não deu para copiar', 4000);
+                    return;
+                }
+                var caixa = alvo.closest('details');
+                if (caixa) { caixa.open = true; }
+                window.ajustarAltura(alvo);
+                alvo.scrollIntoView({ block: 'center' });
+                window.selecionarTudo(alvo);
+                mostrar('Selecionei: copie à mão', 6000);
+            };
+            var semApi = function () {
+                if (jeitoAntigo()) { copiou(); } else { aMao(); }
+            };
+
+            if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+                navigator.clipboard.writeText(texto).then(copiou, semApi);
                 return;
             }
             semApi();
         };
+
+        // Chave recém-criada ainda não copiada: avisa antes de sair da página,
+        // porque ela não aparece de novo. Ctrl+C à mão também conta.
+        if (document.querySelector('[data-chave-nova]')) {
+            document.addEventListener('copy', function () { window.strasaCopiou = true; });
+            window.addEventListener('beforeunload', function (evento) {
+                if (window.strasaCopiou) { return; }
+                evento.preventDefault();
+                evento.returnValue = '';
+            });
+        }
     </script>
     @endpush
 </x-app-layout>

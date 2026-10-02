@@ -137,6 +137,8 @@
     .verdict b { display: block; font-size: 15px; margin-bottom: 5px; }
     .verdict small { font-size: 13px; color: var(--muted); }
     .verdict .note { margin-top: 10px; font-size: 14px; white-space: pre-wrap; }
+    .verdict .agenda-peca { margin-top: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
+    .verdict .agenda-peca a { color: var(--ok); text-decoration: underline; }
 
     /* ------------------ Comentários ------------------ */
     .thread { display: flex; flex-direction: column; gap: 13px; margin-bottom: 18px; }
@@ -310,8 +312,27 @@
                     <b>{{ $approval->isApproved() ? '✓ Peça aprovada' : 'Ajuste solicitado' }}</b>
                     <small>
                         por {{ $approval->reviewer_name }} ·
-                        {{ $approval->responded_at?->format('d/m/Y \à\s H:i') }}
+                        {{ $approval->responded_at?->copy()->setTimezone('America/Sao_Paulo')->format('d/m/Y \à\s H:i') }}
                     </small>
+                    {{-- Aprovada: quando vai (ou foi) ao ar, pelo retorno da postagem. --}}
+                    @if($postagem)
+                        @php
+                            $quando = $postagem['quando'];
+                            $redes = filled($postagem['redes']) ? ' · '.$postagem['redes'] : '';
+                        @endphp
+                        <div class="agenda-peca">
+                            @if($postagem['estado'] === 'publicado')
+                                ✓ Publicado{{ $quando ? ' em '.$quando->format('d/m \à\s H:i') : '' }}{{ $redes }}
+                                @if($postagem['link'])
+                                    · <a href="{{ $postagem['link'] }}" target="_blank" rel="noopener">Ver post</a>
+                                @endif
+                            @elseif($postagem['estado'] === 'agendado')
+                                Agendado{{ $quando ? ' para '.$quando->format('d/m \à\s H:i') : '' }}{{ $redes }}
+                            @elseif($quando)
+                                Previsto para ir ao ar em {{ $quando->format('d/m \à\s H:i') }}
+                            @endif
+                        </div>
+                    @endif
                     @if(filled($approval->feedback))
                         <div class="note">{{ $approval->feedback }}</div>
                     @endif

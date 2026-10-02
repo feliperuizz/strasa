@@ -98,6 +98,24 @@
         .answered-row .txt { flex: 1 1 calc(100% - 56px); }
         .answered-row .badge { margin-left: 56px; }
     }
+
+    /* Aprovadas que ainda vão ao ar: o horário em destaque. */
+    .answered-row .txt .agenda { display: block; font-size: 12.5px; color: var(--text); font-weight: 600; margin-top: 2px; }
+    .badge-scheduled { background: #e8f1ff; color: #1d5bbf; }
+
+    /* Já publicadas: recolhidas, para não poluir a tela. */
+    details.published { margin-top: 42px; }
+    details.published > summary {
+        list-style: none; cursor: pointer;
+        display: flex; align-items: center; gap: 10px;
+        font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--dim);
+        margin-bottom: 16px;
+    }
+    details.published > summary::-webkit-details-marker { display: none; }
+    details.published > summary::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+    details.published > summary .seta { transition: transform 0.2s; }
+    details.published[open] > summary .seta { transform: rotate(90deg); }
 @endsection
 
 @section('content')
@@ -110,7 +128,7 @@
         <div class="welcome">{{ $portal->welcome_message }}</div>
     @endif
 
-    @if($pendentes->isEmpty() && $respondidas->isEmpty())
+    @if($pendentes->isEmpty() && $aprovadas->isEmpty() && $ajustes->isEmpty() && $publicadas->isEmpty())
         <div class="empty-state">
             <div class="big">📭</div>
             <h3>Nada por aqui ainda</h3>
@@ -158,38 +176,37 @@
             </div>
         @endif
 
-        @if($respondidas->isNotEmpty())
-            <div class="section-title">Já respondidas</div>
+        {{-- Aprovadas: continuam à vista até irem ao ar, com o horário. --}}
+        @if($aprovadas->isNotEmpty())
+            <div class="section-title">Aprovadas · vão ao ar em breve</div>
 
             <div class="answered">
-                @foreach($respondidas as $aprovacao)
-                    @php
-                        $task = $aprovacao->task;
-                        $capa = $task->approvalMedia()->firstWhere('is_image', true);
-                    @endphp
-
-                    <a class="answered-row" href="{{ route('portal.show', [$portal->token, $aprovacao->id]) }}">
-                        @if($capa)
-                            <img class="mini" src="{{ route('portal.media', [$portal->token, $capa->id, 'v' => 'mini']) }}"
-                                 alt="" loading="lazy" decoding="async">
-                        @else
-                            <span class="mini"></span>
-                        @endif
-
-                        <span class="txt">
-                            <b>{{ $task->title }}</b>
-                            <small>
-                                {{ $aprovacao->reviewer_name }} ·
-                                {{ $aprovacao->responded_at?->format('d/m/Y \à\s H:i') }}
-                            </small>
-                        </span>
-
-                        <span class="badge {{ $aprovacao->isApproved() ? 'badge-approved' : 'badge-rejected' }}">
-                            {{ $aprovacao->isApproved() ? 'Aprovado' : 'Ajuste pedido' }}
-                        </span>
-                    </a>
+                @foreach($aprovadas as $aprovacao)
+                    @include('portal.partials.linha-respondida', ['aprovacao' => $aprovacao, 'postagem' => $aprovacao->postagem])
                 @endforeach
             </div>
+        @endif
+
+        @if($ajustes->isNotEmpty())
+            <div class="section-title">Ajustes pedidos</div>
+
+            <div class="answered">
+                @foreach($ajustes as $aprovacao)
+                    @include('portal.partials.linha-respondida', ['aprovacao' => $aprovacao, 'postagem' => null])
+                @endforeach
+            </div>
+        @endif
+
+        @if($publicadas->isNotEmpty())
+            <details class="published">
+                <summary><span class="seta">›</span> Já publicadas ({{ $publicadas->count() }})</summary>
+
+                <div class="answered">
+                    @foreach($publicadas as $aprovacao)
+                        @include('portal.partials.linha-respondida', ['aprovacao' => $aprovacao, 'postagem' => $aprovacao->postagem])
+                    @endforeach
+                </div>
+            </details>
         @endif
 
     @endif

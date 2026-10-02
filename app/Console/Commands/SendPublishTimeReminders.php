@@ -28,7 +28,10 @@ class SendPublishTimeReminders extends Command
      */
     public function handle()
     {
-        $now = Carbon::now();
+        // Data e hora de publicação são digitadas no horário de Brasília; o
+        // servidor roda em UTC. Comparar com o relógio em UTC disparava o
+        // lembrete umas 3 horas antes do horário do post.
+        $now = Carbon::now('America/Sao_Paulo');
         $targetTime = $now->copy()->addMinutes(5)->format('H:i:00');
         $today = $now->format('Y-m-d');
 

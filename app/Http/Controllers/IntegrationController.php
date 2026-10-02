@@ -39,21 +39,36 @@ class IntegrationController extends Controller
             ->limit(30)
             ->get();
 
-        // Fila de postagem agora: o que vai e o que está travado (sem data/hora).
+        // Coluna "Aprovado / Agendado" agora: o que vai, o que está travado
+        // (sem data/hora) e o que está sem o retorno obrigatório do parceiro.
         $naFila = Task::where('company_id', $companyId)
             ->where('is_published', false)
             ->whereHas('column', fn ($q) => $q->where('is_publish_column', true))
-            ->with(['client:id,name,color', 'column'])
+            ->with(['client:id,name,color', 'column', 'publications'])
             ->orderBy('publish_date')
             ->orderBy('publish_time')
             ->get();
+
+        $prontos = $naFila->filter(fn ($t) => PostResource::motivoNaoPronto($t) === null);
+
+        // Passou 15 min do horário e nenhuma rede informou publicado/falhou.
+        $atrasados = $prontos->filter(fn (Task $t) => $t->horarioDePublicacao()?->lt(now()->subMinutes(15))
+            && $t->publications->whereIn('status', ['published', 'failed'])->isEmpty())->values();
+
+        // Pronto, mas o parceiro ainda não disse que agendou (só faz sentido
+        // com alguma chave ativa — sem integração, ninguém vai responder).
+        $semRetorno = $chaves->contains(fn (ApiToken $c) => $c->estaAtiva())
+            ? $prontos->filter(fn (Task $t) => $t->publications->isEmpty() && ! $atrasados->contains('id', $t->id))->values()
+            : collect();
 
         return view('integrations.index', [
             'chaves' => $chaves,
             'clientes' => Client::where('company_id', $companyId)->whereNull('archived_at')->orderBy('name')->get(['id', 'name', 'color']),
             'retornos' => $retornos,
-            'prontos' => $naFila->filter(fn ($t) => PostResource::motivoNaoPronto($t) === null)->count(),
+            'prontos' => $prontos->count(),
             'travados' => $naFila->reject(fn ($t) => PostResource::motivoNaoPronto($t) === null)->values(),
+            'atrasados' => $atrasados,
+            'semRetorno' => $semRetorno,
             'raiz' => DocumentacaoApiController::raiz(),
             'chaveCriada' => session('chave_criada'),
         ]);

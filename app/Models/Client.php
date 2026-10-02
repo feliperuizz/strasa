@@ -13,15 +13,24 @@ class Client extends Model
 {
     use BelongsToCompany;
 
-    /** Colunas padrão usadas quando o cliente não define um template próprio. */
+    /**
+     * Colunas padrão usadas quando o cliente não define um template próprio.
+     *
+     * "Aprovado / Agendado" fica sempre à direita da "Aprovação": recebe o
+     * card quando o cliente aprova e é de onde a API de postagem puxa.
+     */
     public const DEFAULT_COLUMNS = [
-        ['name' => 'Documentos',         'key' => 'documents',   'color' => '#64748b'],
-        ['name' => 'A Fazer',            'key' => 'todo',        'color' => '#3b82f6'],
-        ['name' => 'Em Andamento',       'key' => 'in_progress', 'color' => '#eab308'],
-        ['name' => 'Fila de Publicação', 'key' => 'queue',       'color' => '#a855f7'],
-        ['name' => 'Postado',            'key' => 'posted',      'color' => '#22c55e', 'marks_published' => true],
-        ['name' => 'Rejeitado',          'key' => 'rejected',    'color' => '#ef4444', 'requires_rejection_reason' => true],
+        ['name' => 'Documentos',          'key' => 'documents',   'color' => '#64748b'],
+        ['name' => 'A Fazer',             'key' => 'todo',        'color' => '#3b82f6'],
+        ['name' => 'Em Andamento',        'key' => 'in_progress', 'color' => '#eab308'],
+        ['name' => 'Aprovação',           'key' => 'approval',    'color' => '#f59e0b', 'is_approval_column' => true],
+        ['name' => 'Aprovado / Agendado', 'key' => 'approved',    'color' => '#14b8a6', 'is_publish_column' => true],
+        ['name' => 'Postado',             'key' => 'posted',      'color' => '#22c55e', 'marks_published' => true],
+        ['name' => 'Rejeitado',           'key' => 'rejected',    'color' => '#ef4444', 'requires_rejection_reason' => true],
     ];
+
+    /** O padrão antigo (antes da Aprovação + Aprovado / Agendado), para a migração reconhecer. */
+    public const OLD_DEFAULT_COLUMN_NAMES = ['Documentos', 'A Fazer', 'Em Andamento', 'Fila de Publicação', 'Postado', 'Rejeitado'];
 
     protected $fillable = [
         'company_id', 'name', 'slug', 'segment',

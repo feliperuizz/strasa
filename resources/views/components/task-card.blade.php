@@ -128,11 +128,16 @@
         @endphp
         @if($postagens->isNotEmpty())
             @php
+                // Horário que o parceiro informou, no fuso de Brasília.
+                $hora = fn ($lista, $campo) => ($d = $lista->pluck($campo)->filter()->min()) ? ' · '.$d->copy()->setTimezone('America/Sao_Paulo')->format('d/m H:i') : '';
+                $agendadas = $postagens->whereIn('status', ['scheduled', 'publishing']);
                 [$textoPostagem, $tomPostagem] = match (true) {
                     $falhas->isNotEmpty() => ['Falha ao postar: '.$falhas->map->redeLabel()->join(', '), 'bg-rose-500/15 text-rose-300 border-rose-500/30'],
-                    $publicadas->isNotEmpty() => ['Postado: '.$publicadas->map->redeLabel()->join(', '), 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'],
-                    $postagens->where('status', 'cancelled')->count() === $postagens->count() => ['Postagem cancelada', 'bg-ink-700 text-slate-400 border-ink-600'],
-                    default => ['Agendado: '.$postagens->whereIn('status', ['scheduled', 'publishing'])->map->redeLabel()->join(', '), 'bg-sky-500/10 text-sky-300 border-sky-500/25'],
+                    $publicadas->isNotEmpty() => ['Postado: '.$publicadas->map->redeLabel()->join(', ').$hora($publicadas, 'published_at')
+                        .($agendadas->isNotEmpty() ? ' · agendado: '.$agendadas->map->redeLabel()->join(', ') : ''), 'bg-emerald-500/10 text-emerald-300 border-emerald-500/25'],
+                    $agendadas->isNotEmpty() => [($agendadas->where('status', 'publishing')->isNotEmpty() ? 'Publicando: ' : 'Agendado: ')
+                        .$agendadas->map->redeLabel()->join(', ').$hora($agendadas, 'scheduled_for'), 'bg-sky-500/10 text-sky-300 border-sky-500/25'],
+                    default => ['Postagem cancelada', 'bg-ink-700 text-slate-400 border-ink-600'],
                 };
             @endphp
             <span class="mt-2 inline-flex max-w-full items-center gap-1 rounded border px-1.5 py-0.5 text-[10px] font-medium {{ $tomPostagem }}"

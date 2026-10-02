@@ -54,6 +54,8 @@ class ColumnController extends Controller
                     ->update(['marks_published' => false]);
             }
 
+            $viraAprovacao = ($data['is_approval_column'] ?? false) && ! $column->is_approval_column;
+
             $column->update([
                 'name' => $data['name'],
                 'color' => $data['color'] ?? $column->color,
@@ -61,6 +63,12 @@ class ColumnController extends Controller
                 'is_approval_column' => $data['is_approval_column'] ?? false,
                 'marks_published' => $ehConcluido,
             ]);
+
+            // Toda coluna de aprovação tem a "Aprovado / Agendado" à direita:
+            // é para lá que o card vai quando o cliente aprova.
+            if ($viraAprovacao) {
+                Column::garantirAprovadosAoLado($column->fresh());
+            }
         });
 
         $this->forgetCache($column->project);
