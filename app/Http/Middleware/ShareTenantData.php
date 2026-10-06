@@ -91,16 +91,9 @@ class ShareTenantData
                 ->get()
         );
 
-        // A ordem da sidebar é preferência de cada usuário, então é aplicada
+        // Ordem e pastas da barra são de cada usuário, então são aplicadas
         // depois do cache, que é compartilhado pela empresa inteira.
-        $order = $user->sidebar_client_order;
-        if (is_array($order) && ! empty($order)) {
-            $sidebarClients = $sidebarClients->sortBy(function ($client) use ($order) {
-                $pos = array_search($client->id, $order);
-
-                return $pos !== false ? $pos : 99999;
-            })->values();
-        }
+        $sidebarItens = \App\Support\BarraLateral::montar($sidebarClients, $user->sidebar_client_order);
 
         // Badge da aba "Aprovações": peças aguardando resposta do cliente.
         $aguardandoAprovacao = Cache::remember(
@@ -118,6 +111,7 @@ class ShareTenantData
 
         View::share('currentCompany', $company);
         View::share('sidebarClients', $sidebarClients);
+        View::share('sidebarItens', $sidebarItens);
         View::share('aguardandoAprovacao', $aguardandoAprovacao);
 
         return $next($request);

@@ -179,3 +179,22 @@ select {
         font-size: 16px !important;
     }
 }
+
+/*
+ * Barra lateral de clientes (pastas de cada usuário). Durante o arraste as
+ * pastas fechadas abrem, para dar onde soltar o cliente; pasta vazia mostra
+ * a área de soltar com uma dica.
+ */
+#sidebar-client-list.arrastando .sidebar-folder-list {
+    display: block !important;
+}
+.sidebar-folder-list {
+    min-height: 6px;
+}
+.sidebar-folder-list:not(:has(.sidebar-client-item))::before {
+    content: 'Arraste clientes para cá';
+    display: block;
+    padding: 4px 8px;
+    font-size: 11.5px;
+    color: rgb(100 116 139);
+}

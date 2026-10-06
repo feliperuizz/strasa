@@ -75,15 +75,20 @@ class ProfileController extends Controller
         return redirect()->route('profile.edit')->with('status', 'Perfil atualizado com sucesso!');
     }
 
+    /**
+     * Guarda a barra lateral do usuário: ordem dos clientes e pastas.
+     * Aceita também o formato antigo ("order": lista de ids).
+     */
     public function updateSidebarOrder(Request $request)
     {
         $data = $request->validate([
-            'order' => ['required', 'array'],
+            'layout' => ['nullable', 'array', 'max:1000'],
+            'order' => ['nullable', 'array', 'max:1000'],
             'order.*' => ['integer'],
         ]);
 
         $request->user()->update([
-            'sidebar_client_order' => $data['order'],
+            'sidebar_client_order' => \App\Support\BarraLateral::normalizar($data['layout'] ?? $data['order'] ?? []),
         ]);
 
         return response()->json(['status' => 'success']);

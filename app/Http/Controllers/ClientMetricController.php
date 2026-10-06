@@ -5,11 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\Client;
 use App\Models\ClientMetric;
 use App\Models\ClientRevenue;
+use App\Support\Fuso;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Métricas de redes sociais por cliente, lançadas à mão.
+ * Métricas de redes sociais por cliente, lançadas à mão no fechamento de
+ * cada mês.
+ *
+ * Um lançamento por rede por mês: o registro guarda o dia 1 do mês de
+ * referência. Relançar o mesmo mês atualiza em vez de duplicar — e
+ * consolida lançamentos antigos daquele mês (de antes do fechamento mensal,
+ * quando se escolhia o dia).
  *
  * DESEMPENHO: a tela inteira sai de UMA consulta. As séries dos gráficos, os
  * cards de resumo e a tabela são derivados em memória da mesma coleção — nada
@@ -17,34 +28,51 @@ use Illuminate\Http\Request;
  */
 class ClientMetricController extends Controller
 {
+    /** Meses mostrados quando ninguém escolheu o período. */
+    private const MESES_PADRAO = 12;
+
     public function index(Request $request, Client $client)
     {
         $this->authorize('view', $client);
 
         $filtros = $request->validate([
             'network' => ['nullable', 'string', 'max:30'],
-            'periodo' => ['nullable', 'in:90,180,365,todos'],
+            'de' => ['nullable', 'date_format:Y-m'],
+            'ate' => ['nullable', 'date_format:Y-m'],
         ]);
 
-        $periodo = $filtros['periodo'] ?? '365';
         $rede = $filtros['network'] ?? null;
+        $ate = $filtros['ate'] ?? Fuso::agora()->format('Y-m');
+        $de = $filtros['de'] ?? Carbon::createFromFormat('Y-m-d', $ate.'-01')->subMonths(self::MESES_PADRAO - 1)->format('Y-m');
 
-        $registros = ClientMetric::query()
-            ->where('client_id', $client->id)
-            ->network($rede)
-            ->when($periodo !== 'todos', fn ($q) => $q->whereDate('reference_date', '>=', now()->subDays((int) $periodo)))
-            ->with('creator:id,name')
-            ->orderBy('reference_date')
-            ->get();
+        if ($de > $ate) {
+            [$de, $ate] = [$ate, $de];
+        }
+
+        $registros = $this->umPorMes(
+            ClientMetric::query()
+                ->where('client_id', $client->id)
+                ->network($rede)
+                ->entreMeses($de, $ate)
+                ->with('creator:id,name')
+                ->orderBy('reference_date')
+                ->orderBy('id')
+                ->get()
+        );
 
         return view('clients.metrics', [
             'client' => $client,
-            'registros' => $registros->sortByDesc('reference_date')->values(),
+            'registros' => $registros->sortByDesc(fn (ClientMetric $m) => $m->mes().'|'.$m->network)->values(),
             'series' => $this->series($registros),
             'resumo' => $this->resumo($registros),
             'redesUsadas' => $registros->pluck('network')->unique()->values(),
-            'faturamento' => $this->faturamento($client, $periodo),
-            'filtros' => ['network' => $rede, 'periodo' => $periodo],
+            'faturamento' => $this->faturamento($client, $de, $ate),
+            'filtros' => [
+                'network' => $rede,
+                'de' => $de,
+                'ate' => $ate,
+                'personalizado' => $rede || isset($filtros['de']) || isset($filtros['ate']),
+            ],
         ]);
     }
 
@@ -54,28 +82,53 @@ class ClientMetricController extends Controller
 
         $dados = $this->validar($request);
 
-        // Relançar a mesma rede na mesma data atualiza em vez de duplicar —
-        // é o comportamento que a equipe espera ao corrigir um número.
-        ClientMetric::updateOrCreate(
-            [
-                'client_id' => $client->id,
-                'network' => $dados['network'],
-                'reference_date' => $dados['reference_date'],
-            ],
-            $dados + [
-                'company_id' => $client->company_id,
-                'created_by' => $request->user()->id,
-            ]
-        );
+        DB::transaction(function () use ($dados, $client, $request) {
+            $doMes = $this->lancamentosDoMes($client->id, $dados['network'], $dados['reference_month']);
 
-        return back()->with('status', 'Métrica registrada.');
+            // Relançar o mesmo mês atualiza (é o que a equipe espera ao
+            // corrigir um número) e junta os lançamentos antigos do mês.
+            $manter = $doMes->shift();
+            $doMes->each->delete();
+
+            $valores = $this->valores($dados);
+
+            if ($manter) {
+                $manter->update($valores);
+            } else {
+                ClientMetric::create($valores + [
+                    'client_id' => $client->id,
+                    'company_id' => $client->company_id,
+                    'created_by' => $request->user()->id,
+                ]);
+            }
+        });
+
+        return back()->with('status', 'Métrica de '.ClientMetric::rotuloDe(Carbon::createFromFormat('Y-m-d', $dados['reference_month'].'-01')).' registrada.');
     }
 
     public function update(Request $request, ClientMetric $metric): RedirectResponse
     {
         $this->authorize('update', $metric->client);
 
-        $metric->update($this->validar($request));
+        $dados = $this->validar($request);
+        $mesmoLugar = $dados['network'] === $metric->network && $dados['reference_month'] === $metric->mes();
+
+        $outros = $this->lancamentosDoMes($metric->client_id, $dados['network'], $dados['reference_month'])
+            ->reject(fn (ClientMetric $m) => $m->id === $metric->id);
+
+        // Mudou de rede ou de mês e lá já tem lançamento: não sobrescreve
+        // o outro sem querer.
+        if (! $mesmoLugar && $outros->isNotEmpty()) {
+            return back()
+                ->withErrors(['reference_month' => 'Já existe lançamento de '.(ClientMetric::NETWORKS[$dados['network']]['label'] ?? $dados['network'])
+                    .' em '.$outros->first()->rotuloDoMes().'. Edite aquele lançamento.'])
+                ->withInput();
+        }
+
+        DB::transaction(function () use ($metric, $dados, $outros) {
+            $outros->each->delete();
+            $metric->update($this->valores($dados));
+        });
 
         return back()->with('status', 'Métrica atualizada.');
     }
@@ -84,7 +137,9 @@ class ClientMetricController extends Controller
     {
         $this->authorize('update', $metric->client);
 
-        $metric->delete();
+        // A tela mostra um lançamento por rede por mês: remover tira o mês
+        // inteiro (inclusive lançamentos antigos do mesmo mês).
+        $this->lancamentosDoMes($metric->client_id, $metric->network, $metric->mes())->each->delete();
 
         return back()->with('status', 'Métrica removida.');
     }
@@ -93,23 +148,95 @@ class ClientMetricController extends Controller
 
     private function validar(Request $request): array
     {
+        // Médias aceitam o jeito brasileiro: "2,2" → 2.2, "1.234,5" → 1234.5,
+        // "1.234" → 1234 (ponto seguido de 3 dígitos é milhar: decimal aqui
+        // tem no máximo 2 casas). "2.2" com ponto também vale.
+        foreach (ClientMetric::DECIMAIS as $campo) {
+            $valor = $request->input($campo);
+
+            if (! is_string($valor) || trim($valor) === '') {
+                continue;
+            }
+
+            $valor = str_replace(' ', '', trim($valor));
+
+            if (str_contains($valor, ',')) {
+                $valor = str_replace(['.', ','], ['', '.'], $valor);
+            } elseif (preg_match('/^\d{1,3}(\.\d{3})+$/', $valor)) {
+                $valor = str_replace('.', '', $valor);
+            }
+
+            $request->merge([$campo => $valor]);
+        }
+
+        $inteiro = ['nullable', 'integer', 'min:0', 'max:4294967295'];
+        $decimal = ['nullable', 'numeric', 'min:0', 'max:9999999999.99', 'decimal:0,2'];
+
         return $request->validate([
             'network' => ['required', 'string', 'in:'.implode(',', array_keys(ClientMetric::NETWORKS))],
-            'reference_date' => ['required', 'date', 'before_or_equal:today'],
-            'followers' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'avg_likes' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'avg_comments' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'avg_shares' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'views' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'profile_visits' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
-            'link_clicks' => ['nullable', 'integer', 'min:0', 'max:4294967295'],
+            'reference_month' => ['required', 'date_format:Y-m', 'before_or_equal:'.Fuso::agora()->format('Y-m')],
+            'followers' => $inteiro,
+            'avg_likes' => $decimal,
+            'avg_comments' => $decimal,
+            'avg_shares' => $decimal,
+            'views' => $inteiro,
+            'profile_visits' => $inteiro,
+            'link_clicks' => $inteiro,
             'posts_count' => ['nullable', 'integer', 'min:0', 'max:65535'],
             'notes' => ['nullable', 'string', 'max:1000'],
-        ]);
+        ], [
+            'reference_month.required' => 'Escolha o mês de referência.',
+            'reference_month.date_format' => 'Escolha o mês de referência (mês/ano).',
+            'reference_month.before_or_equal' => 'O mês de referência não pode ser no futuro.',
+            'network.required' => 'Escolha a rede social.',
+            'network.in' => 'Escolha a rede social.',
+            '*.integer' => ':attribute: use um número inteiro.',
+            '*.numeric' => ':attribute: use um número (ex.: 2,2).',
+            '*.decimal' => ':attribute: use no máximo 2 casas decimais (ex.: 2,25).',
+            '*.min' => ':attribute não pode ser negativo.',
+            '*.max' => ':attribute: valor alto demais.',
+        ], ClientMetric::FIELDS + ['notes' => 'Observação', 'reference_month' => 'Mês de referência']);
+    }
+
+    /** O que vai para o banco: o mês vira o dia 1 do mês de referência. */
+    private function valores(array $dados): array
+    {
+        return Arr::except($dados, 'reference_month') + ['reference_date' => $dados['reference_month'].'-01'];
     }
 
     /**
-     * Faturamento do PRÓPRIO CLIENTE, mês a mês.
+     * Lançamentos de uma rede num mês, do mais recente para o mais antigo.
+     * Normalmente um só; mais de um só existe em meses de antes do
+     * fechamento mensal.
+     */
+    private function lancamentosDoMes(int $clientId, string $rede, string $mes): Collection
+    {
+        $inicio = Carbon::createFromFormat('Y-m-d', $mes.'-01');
+
+        return ClientMetric::query()
+            ->where('client_id', $clientId)
+            ->where('network', $rede)
+            ->whereBetween('reference_date', [$inicio->toDateString(), $inicio->copy()->endOfMonth()->toDateString()])
+            ->orderByDesc('reference_date')
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    /**
+     * Um lançamento por rede por mês: em meses antigos com mais de uma
+     * leitura, vale a mais recente (o fechamento).
+     */
+    private function umPorMes(Collection $registros): Collection
+    {
+        return $registros
+            ->groupBy(fn (ClientMetric $m) => $m->network.'|'.$m->mes())
+            ->map(fn (Collection $doMes) => $doMes->last())
+            ->sortBy(fn (ClientMetric $m) => $m->mes())
+            ->values();
+    }
+
+    /**
+     * Faturamento do PRÓPRIO CLIENTE, mês a mês, no mesmo período das métricas.
      *
      * Vem dos lançamentos manuais (ClientRevenue), informados pelo cliente —
      * não da tabela `payments`, que é a cobrança da agência. São coisas
@@ -120,26 +247,18 @@ class ClientMetricController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function faturamento(Client $client, string $periodo): array
+    private function faturamento(Client $client, string $de, string $ate): array
     {
-        $meses = match ($periodo) {
-            '90' => 3,
-            '180' => 6,
-            'todos' => 36,
-            default => 12,
-        };
-
-        $desde = now()->startOfMonth()->subMonths($meses)->toDateString();
-
         $lancamentos = ClientRevenue::query()
             ->where('client_id', $client->id)
-            ->whereDate('reference_month', '>=', $desde)
+            ->whereDate('reference_month', '>=', $de.'-01')
+            ->whereDate('reference_month', '<=', $ate.'-01')
             ->orderBy('reference_month')
             ->get();
 
         $pontos = $lancamentos->map(fn (ClientRevenue $r) => [
             'mes' => $r->reference_month->format('Y-m'),
-            'rotulo' => $r->reference_month->format('m/y'),
+            'rotulo' => ClientMetric::rotuloDe($r->reference_month, true),
             'faturamento' => (float) $r->revenue,
             'investimento' => $r->ad_spend !== null ? (float) $r->ad_spend : null,
             'vendas' => $r->orders,
@@ -176,19 +295,19 @@ class ClientMetricController extends Controller
     }
 
     /**
-     * Séries para os gráficos, uma por rede.
+     * Séries para os gráficos, uma por rede, um ponto por mês.
      *
-     * Além dos totais, calcula o GANHO entre leituras consecutivas — é o
+     * Além dos totais, calcula o GANHO entre meses consecutivos — é o
      * número que a equipe quer ver ("quantos seguidores ganhamos no mês").
      *
      * @return array<string, mixed>
      */
-    private function series($registros): array
+    private function series(Collection $registros): array
     {
         $porRede = [];
 
         foreach ($registros->groupBy('network') as $rede => $leituras) {
-            $leituras = $leituras->sortBy('reference_date')->values();
+            $leituras = $leituras->sortBy(fn (ClientMetric $m) => $m->mes())->values();
 
             $pontos = [];
             $anterior = null;
@@ -199,8 +318,8 @@ class ClientMetricController extends Controller
                     : null;
 
                 $pontos[] = [
-                    'data' => $l->reference_date->format('d/m/Y'),
-                    'iso' => $l->reference_date->toDateString(),
+                    'mes' => $l->mes(),
+                    'rotulo' => $l->rotuloDoMes(true),
                     'seguidores' => $l->followers,
                     'ganho' => $ganho,
                     'curtidas' => $l->avg_likes,
@@ -233,14 +352,14 @@ class ClientMetricController extends Controller
      *
      * @return array<string, mixed>
      */
-    private function resumo($registros): array
+    private function resumo(Collection $registros): array
     {
         $seguidoresAtuais = 0;
         $ganhoPeriodo = 0;
         $temBase = false;
 
         foreach ($registros->groupBy('network') as $leituras) {
-            $comSeguidores = $leituras->whereNotNull('followers')->sortBy('reference_date')->values();
+            $comSeguidores = $leituras->whereNotNull('followers')->sortBy(fn (ClientMetric $m) => $m->mes())->values();
 
             if ($comSeguidores->isEmpty()) {
                 continue;
@@ -254,10 +373,10 @@ class ClientMetricController extends Controller
             }
         }
 
-        // A taxa de engajamento média do período usa o último lançamento de
-        // cada rede — média de médias antigas não diz nada útil.
+        // A taxa de engajamento média do período usa o último mês de cada
+        // rede — média de médias antigas não diz nada útil.
         $taxas = $registros->groupBy('network')
-            ->map(fn ($l) => $l->sortBy('reference_date')->last()?->engagementRate())
+            ->map(fn ($l) => $l->sortBy(fn (ClientMetric $m) => $m->mes())->last()?->engagementRate())
             ->filter()
             ->values();
 

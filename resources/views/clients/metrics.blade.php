@@ -24,9 +24,35 @@
         </div>
     </x-slot>
 
-    <div class="p-4 sm:p-6 space-y-6" x-data="{ modal: false, modalFat: false }" @abrir-metrica.window="modal = true">
+    @php
+        // Valor para um campo de média no formulário: vírgula decimal, sem
+        // separador de milhar (2.2 → "2,2"; 15 → "15").
+        $paraCampo = fn ($v) => $v === null ? '' : rtrim(rtrim(number_format((float) $v, 2, ',', ''), '0'), ',');
 
-        {{-- Filtros --}}
+        // Formulário em branco (lançar) ou o que voltou com erro de validação.
+        $formMetrica = old('_form') === 'metrica';
+        $formInicial = ['network' => old('network', array_key_first(\App\Models\ClientMetric::NETWORKS)), 'reference_month' => old('reference_month', \App\Support\Fuso::agora()->format('Y-m')), 'notes' => old('notes', '')];
+        foreach (\App\Models\ClientMetric::FIELDS as $campo => $rotulo) {
+            $formInicial[$campo] = $formMetrica ? (string) old($campo, '') : '';
+        }
+    @endphp
+
+    <div class="p-4 sm:p-6 space-y-6"
+         x-data="{
+             modal: {{ $formMetrica ? 'true' : 'false' }},
+             modalFat: {{ old('_form') === 'faturamento' ? 'true' : 'false' }},
+             editando: {{ $formMetrica && old('_editando') ? (int) old('_editando') : 'null' }},
+             vazio: @js(array_merge($formInicial, ['network' => array_key_first(\App\Models\ClientMetric::NETWORKS), 'reference_month' => \App\Support\Fuso::agora()->format('Y-m'), 'notes' => ''], array_fill_keys(array_keys(\App\Models\ClientMetric::FIELDS), ''))),
+             form: @js($formInicial),
+             urlNova: @js(route('clients.metrics.store', $client)),
+             urlEditar: @js(route('metrics.update', ['metric' => '__ID__'])),
+             nova() { this.editando = null; this.form = Object.assign({}, this.vazio); this.modal = true; },
+             editar(linha) { this.editando = linha.id; this.form = Object.assign({}, this.vazio, linha.form); this.modal = true; },
+             get acao() { return this.editando ? this.urlEditar.replace('__ID__', this.editando) : this.urlNova; },
+         }"
+         @abrir-metrica.window="nova()">
+
+        {{-- Filtros: mês a mês (as métricas são o fechamento de cada mês) --}}
         <form method="GET" class="flex flex-wrap items-end gap-3 rounded-xl border border-ink-600 bg-ink-800/60 p-4">
             <div>
                 <label class="block text-xs font-medium text-slate-400 mb-1">Rede</label>
@@ -38,18 +64,23 @@
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-medium text-slate-400 mb-1">Período</label>
-                <select name="periodo" class="rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">
-                    <option value="90" @selected($filtros['periodo'] === '90')>Últimos 3 meses</option>
-                    <option value="180" @selected($filtros['periodo'] === '180')>Últimos 6 meses</option>
-                    <option value="365" @selected($filtros['periodo'] === '365')>Último ano</option>
-                    <option value="todos" @selected($filtros['periodo'] === 'todos')>Tudo</option>
-                </select>
+                <label class="block text-xs font-medium text-slate-400 mb-1">De (mês/ano)</label>
+                <input type="month" name="de" value="{{ $filtros['de'] }}" max="{{ \App\Support\Fuso::agora()->format('Y-m') }}"
+                       class="rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500 [color-scheme:dark]">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Até (mês/ano)</label>
+                <input type="month" name="ate" value="{{ $filtros['ate'] }}" max="{{ \App\Support\Fuso::agora()->format('Y-m') }}"
+                       class="rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500 [color-scheme:dark]">
             </div>
             <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500 transition">Filtrar</button>
-            @if($filtros['network'] || $filtros['periodo'] !== '365')
+            @if($filtros['personalizado'])
                 <a href="{{ route('clients.metrics', $client) }}" class="px-2 py-2 text-sm text-slate-400 hover:text-slate-200">Limpar</a>
             @endif
+            <p class="w-full text-[11.5px] text-slate-500">
+                Mostrando de {{ \App\Models\ClientMetric::rotuloDe(\Illuminate\Support\Carbon::createFromFormat('Y-m-d', $filtros['de'].'-01')) }}
+                a {{ \App\Models\ClientMetric::rotuloDe(\Illuminate\Support\Carbon::createFromFormat('Y-m-d', $filtros['ate'].'-01')) }}.
+            </p>
         </form>
 
         {{-- ============================ REDES SOCIAIS ============================ --}}
@@ -61,11 +92,11 @@
                     <div class="text-3xl mb-3">📊</div>
                     <h3 class="text-slate-200 font-medium mb-1">Nenhuma métrica lançada ainda</h3>
                     <p class="text-sm text-slate-400 mb-4">
-                        Registre os números de cada rede periodicamente — o sistema calcula sozinho o
-                        ganho entre um lançamento e o seguinte.
+                        Registre os números de cada rede no fechamento do mês — o sistema calcula sozinho o
+                        ganho de um mês para o outro.
                     </p>
                     @can('update', $client)
-                        <button @click="modal = true" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500">
+                        <button @click="nova()" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500">
                             Lançar a primeira
                         </button>
                     @endcan
@@ -145,7 +176,7 @@
                             <table class="tabela-celular w-full text-sm whitespace-nowrap">
                                 <thead class="bg-ink-900/50 text-[11px] uppercase tracking-wider text-slate-500">
                                     <tr>
-                                        <th class="px-4 py-2.5 text-left font-semibold">Data</th>
+                                        <th class="px-4 py-2.5 text-left font-semibold">Mês</th>
                                         <th class="px-4 py-2.5 text-left font-semibold">Rede</th>
                                         <th class="px-4 py-2.5 text-right font-semibold">Seguidores</th>
                                         <th class="px-4 py-2.5 text-right font-semibold">Curtidas</th>
@@ -161,27 +192,35 @@
                                 </thead>
                                 <tbody class="divide-y divide-ink-700">
                                     @foreach($registros as $m)
+                                        @php
+                                            // Dados para "Editar" abrir o formulário já preenchido.
+                                            $linha = ['id' => $m->id, 'form' => ['network' => $m->network, 'reference_month' => $m->mes(), 'notes' => (string) $m->notes]];
+                                            foreach (\App\Models\ClientMetric::FIELDS as $campo => $rotulo) {
+                                                $linha['form'][$campo] = in_array($campo, \App\Models\ClientMetric::DECIMAIS, true) ? $paraCampo($m->{$campo}) : (string) ($m->{$campo} ?? '');
+                                            }
+                                        @endphp
                                         <tr class="hover:bg-ink-700/30">
-                                            <td data-rotulo="Data" class="cel-metade px-4 py-2.5 text-slate-300">{{ $m->reference_date->format('d/m/Y') }}</td>
+                                            <td data-rotulo="Mês" class="cel-metade px-4 py-2.5 text-slate-300">{{ $m->rotuloDoMes() }}</td>
                                             <td data-rotulo="Rede" class="cel-metade px-4 py-2.5">
                                                 <span class="inline-flex items-center gap-1.5 text-slate-300">
                                                     <span class="h-2 w-2 rounded-full" style="background: {{ $m->networkColor() }}"></span>
                                                     {{ $m->networkLabel() }}
                                                 </span>
                                             </td>
-                                            <td data-rotulo="Seguidores" class="cel-terco px-4 py-2.5 text-right text-slate-200 font-medium">{{ $m->followers !== null ? number_format($m->followers, 0, ',', '.') : '—' }}</td>
-                                            <td data-rotulo="Curtidas" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->avg_likes !== null ? number_format($m->avg_likes, 0, ',', '.') : '—' }}</td>
-                                            <td data-rotulo="Coment." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->avg_comments !== null ? number_format($m->avg_comments, 0, ',', '.') : '—' }}</td>
-                                            <td data-rotulo="Compart." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->avg_shares !== null ? number_format($m->avg_shares, 0, ',', '.') : '—' }}</td>
-                                            <td data-rotulo="Visualiz." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->views !== null ? number_format($m->views, 0, ',', '.') : '—' }}</td>
-                                            <td data-rotulo="Visitas" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->profile_visits !== null ? number_format($m->profile_visits, 0, ',', '.') : '—' }}</td>
-                                            <td data-rotulo="Cliques" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->link_clicks !== null ? number_format($m->link_clicks, 0, ',', '.') : '—' }}</td>
-                                            <td data-rotulo="Posts" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->posts_count ?? '—' }}</td>
+                                            <td data-rotulo="Seguidores" class="cel-terco px-4 py-2.5 text-right text-slate-200 font-medium">{{ \App\Models\ClientMetric::formatar($m->followers) }}</td>
+                                            <td data-rotulo="Curtidas" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ \App\Models\ClientMetric::formatar($m->avg_likes) }}</td>
+                                            <td data-rotulo="Coment." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ \App\Models\ClientMetric::formatar($m->avg_comments) }}</td>
+                                            <td data-rotulo="Compart." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ \App\Models\ClientMetric::formatar($m->avg_shares) }}</td>
+                                            <td data-rotulo="Visualiz." class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ \App\Models\ClientMetric::formatar($m->views) }}</td>
+                                            <td data-rotulo="Visitas" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ \App\Models\ClientMetric::formatar($m->profile_visits) }}</td>
+                                            <td data-rotulo="Cliques" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ \App\Models\ClientMetric::formatar($m->link_clicks) }}</td>
+                                            <td data-rotulo="Posts" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ \App\Models\ClientMetric::formatar($m->posts_count) }}</td>
                                             <td data-rotulo="Taxa" class="cel-terco px-4 py-2.5 text-right text-slate-400">{{ $m->engagementRate() !== null ? number_format($m->engagementRate(), 2, ',', '.').'%' : '—' }}</td>
                                             @can('update', $client)
                                                 <td class="px-4 py-2.5 text-right">
+                                                    <button type="button" @click="editar(@js($linha))" class="mr-3 text-xs text-brand-300 hover:text-brand-200">Editar</button>
                                                     <form method="POST" action="{{ route('metrics.destroy', $m) }}" class="inline"
-                                                          onsubmit="return confirm('Remover o lançamento de {{ $m->networkLabel() }} em {{ $m->reference_date->format('d/m/Y') }}?')">
+                                                          onsubmit="return confirm('Remover o lançamento de {{ $m->networkLabel() }} em {{ $m->rotuloDoMes() }}?')">
                                                         @csrf @method('DELETE')
                                                         <button type="submit" class="text-xs text-slate-500 hover:text-rose-400">Remover</button>
                                                     </form>
@@ -290,7 +329,7 @@
                                 @foreach($faturamento['lancamentos'] as $lanc)
                                     <div class="px-4 py-3 hover:bg-ink-700/30 group">
                                         <div class="flex items-center justify-between gap-2">
-                                            <span class="text-[13px] font-medium text-slate-200">{{ $lanc->reference_month->format('m/Y') }}</span>
+                                            <span class="text-[13px] font-medium text-slate-200">{{ \App\Models\ClientMetric::rotuloDe($lanc->reference_month) }}</span>
                                             <span class="text-[13px] font-semibold text-slate-100">R$ {{ number_format($lanc->revenue, 2, ',', '.') }}</span>
                                         </div>
                                         <div class="mt-1 flex flex-wrap items-center gap-x-3 text-[11px] text-slate-500">
@@ -308,7 +347,7 @@
                                             @endif
                                             @can('update', $client)
                                                 <form method="POST" action="{{ route('revenues.destroy', $lanc) }}" class="ml-auto opacity-0 group-hover:opacity-100 transition"
-                                                      onsubmit="return confirm('Remover o lançamento de {{ $lanc->reference_month->format('m/Y') }}?')">
+                                                      onsubmit="return confirm('Remover o lançamento de {{ \App\Models\ClientMetric::rotuloDe($lanc->reference_month) }}?')">
                                                     @csrf @method('DELETE')
                                                     <button type="submit" class="text-[11px] text-slate-500 hover:text-rose-400">remover</button>
                                                 </form>
@@ -338,6 +377,7 @@
 
                     <form method="POST" action="{{ route('clients.revenues.store', $client) }}" class="p-5 space-y-4">
                         @csrf
+                        <input type="hidden" name="_form" value="faturamento">
 
                         <div class="rounded-lg border border-ink-700 bg-ink-900/40 px-3 py-2 text-[12px] text-slate-400">
                             O quanto o negócio do cliente faturou no mês, informado por ele.
@@ -396,52 +436,61 @@
                  @click.self="modal = false" @keydown.escape.window="modal = false">
                 <div class="w-full max-w-2xl rounded-xl border border-ink-600 bg-ink-800 shadow-2xl">
                     <div class="flex items-center justify-between border-b border-ink-700 px-5 py-4">
-                        <h3 class="font-semibold text-slate-200">Lançar métrica</h3>
+                        <h3 class="font-semibold text-slate-200" x-text="editando ? 'Editar métrica' : 'Lançar métrica'">Lançar métrica</h3>
                         <button @click="modal = false" class="text-slate-500 hover:text-slate-200 text-xl leading-none">&times;</button>
                     </div>
 
-                    <form method="POST" action="{{ route('clients.metrics.store', $client) }}" class="p-5 space-y-4">
+                    <form method="POST" :action="acao" action="{{ route('clients.metrics.store', $client) }}" class="p-5 space-y-4">
                         @csrf
+                        <input type="hidden" name="_method" :value="editando ? 'PATCH' : 'POST'" value="POST">
+                        <input type="hidden" name="_form" value="metrica">
+                        <input type="hidden" name="_editando" :value="editando || ''">
 
                         <div class="grid gap-4 sm:grid-cols-2">
                             <div>
                                 <label class="block text-xs font-medium text-slate-400 mb-1">Rede social *</label>
-                                <select name="network" required class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">
+                                <select name="network" required x-model="form.network" class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">
                                     @foreach(\App\Models\ClientMetric::NETWORKS as $chave => $info)
-                                        <option value="{{ $chave }}" @selected(old('network') === $chave)>{{ $info['label'] }}</option>
+                                        <option value="{{ $chave }}">{{ $info['label'] }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-xs font-medium text-slate-400 mb-1">Data de referência *</label>
-                                <input type="date" name="reference_date" required max="{{ \App\Support\Fuso::hojeTexto() }}"
-                                       value="{{ old('reference_date', \App\Support\Fuso::hojeTexto()) }}"
-                                       class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500">
+                                <label class="block text-xs font-medium text-slate-400 mb-1">Mês de referência *</label>
+                                <input type="month" name="reference_month" required x-model="form.reference_month" max="{{ \App\Support\Fuso::agora()->format('Y-m') }}"
+                                       class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 focus:border-brand-500 focus:ring-brand-500 [color-scheme:dark]">
                             </div>
                         </div>
 
                         <div class="rounded-lg border border-ink-700 bg-ink-900/40 px-3 py-2 text-[12px] text-slate-400 space-y-1">
-                            <p>Seguidores: informe o <strong class="text-slate-300">total</strong> naquela data, não o ganho — o sistema calcula a variação sozinho.</p>
-                            <p>Curtidas, comentários e compartilhamentos: informe a <strong class="text-slate-300">média por publicação</strong>.</p>
+                            <p>Um lançamento por rede por mês: lançar de novo o mesmo mês <strong class="text-slate-300">atualiza</strong> os números.</p>
+                            <p>Seguidores: informe o <strong class="text-slate-300">total</strong> no fechamento do mês, não o ganho — o sistema calcula a variação sozinho.</p>
+                            <p>Curtidas, comentários e compartilhamentos: a <strong class="text-slate-300">média por publicação</strong>, com decimais se precisar (ex.: 2,2).</p>
                         </div>
 
                         <div class="grid gap-4 sm:grid-cols-3">
                             @foreach(\App\Models\ClientMetric::FIELDS as $campo => $rotulo)
                                 <div>
                                     <label class="block text-xs font-medium text-slate-400 mb-1">{{ $rotulo }}</label>
-                                    <input type="number" name="{{ $campo }}" min="0" value="{{ old($campo) }}" placeholder="—"
-                                           class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">
+                                    @if(in_array($campo, \App\Models\ClientMetric::DECIMAIS, true))
+                                        {{-- Texto (e não number) para aceitar vírgula: "2,2". --}}
+                                        <input type="text" name="{{ $campo }}" inputmode="decimal" autocomplete="off" x-model="form.{{ $campo }}" placeholder="ex.: 2,2"
+                                               class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">
+                                    @else
+                                        <input type="number" name="{{ $campo }}" min="0" step="1" inputmode="numeric" x-model="form.{{ $campo }}" placeholder="—"
+                                               class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
 
                         <div>
                             <label class="block text-xs font-medium text-slate-400 mb-1">Observação</label>
-                            <textarea name="notes" rows="2" maxlength="1000" placeholder="Ex.: campanha de lançamento no ar entre 10 e 20/11"
-                                      class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500">{{ old('notes') }}</textarea>
+                            <textarea name="notes" rows="2" maxlength="1000" x-model="form.notes" placeholder="Ex.: campanha de lançamento no ar entre 10 e 20/11"
+                                      class="w-full rounded-lg border-ink-600 bg-ink-700 text-sm text-slate-200 placeholder-slate-600 focus:border-brand-500 focus:ring-brand-500"></textarea>
                         </div>
 
-                        @if($errors->any())
+                        @if($errors->any() && old('_form') === 'metrica')
                             <div class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[13px] text-rose-300">
                                 {{ $errors->first() }}
                             </div>
@@ -449,7 +498,7 @@
 
                         <div class="flex justify-end gap-2 pt-1">
                             <button type="button" @click="modal = false" class="rounded-lg border border-ink-600 px-4 py-2 text-sm font-medium text-slate-300 hover:bg-ink-700">Cancelar</button>
-                            <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500">Salvar lançamento</button>
+                            <button type="submit" class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-500" x-text="editando ? 'Salvar alterações' : 'Salvar lançamento'">Salvar lançamento</button>
                         </div>
                     </form>
                 </div>
@@ -483,25 +532,24 @@
             var series = @json($series);
 
             if (Object.keys(series).length) {
-                // Eixo X comum: todas as datas presentes, em ordem cronológica.
+                // Eixo X comum: todos os meses presentes, em ordem cronológica.
                 var datas = [];
+                var rotuloDoMes = {};
                 Object.values(series).forEach(function (rede) {
                     rede.pontos.forEach(function (p) {
-                        if (datas.indexOf(p.iso) === -1) { datas.push(p.iso); }
+                        if (datas.indexOf(p.mes) === -1) { datas.push(p.mes); }
+                        rotuloDoMes[p.mes] = p.rotulo;
                     });
                 });
                 datas.sort();
 
-                var rotulos = datas.map(function (iso) {
-                    var partes = iso.split('-');
-                    return partes[2] + '/' + partes[1];
-                });
+                var rotulos = datas.map(function (mes) { return rotuloDoMes[mes]; });
 
-                /** Um dataset por rede, alinhado ao eixo de datas. */
+                /** Um dataset por rede, alinhado ao eixo de meses. */
                 function porRede(campo) {
                     return Object.values(series).map(function (rede) {
                         var mapa = {};
-                        rede.pontos.forEach(function (p) { mapa[p.iso] = p[campo]; });
+                        rede.pontos.forEach(function (p) { mapa[p.mes] = p[campo]; });
 
                         return {
                             label: rede.label,
@@ -517,18 +565,18 @@
                     });
                 }
 
-                /** Soma um campo entre todas as redes, por data. */
+                /** Soma um campo entre todas as redes, por mês (com decimais). */
                 function somaPorData(campo) {
                     return datas.map(function (d) {
                         var total = null;
                         Object.values(series).forEach(function (rede) {
                             rede.pontos.forEach(function (p) {
-                                if (p.iso === d && p[campo] !== null && p[campo] !== undefined) {
-                                    total = (total || 0) + p[campo];
+                                if (p.mes === d && p[campo] !== null && p[campo] !== undefined) {
+                                    total = (total || 0) + Number(p[campo]);
                                 }
                             });
                         });
-                        return total;
+                        return total === null ? null : Math.round(total * 100) / 100;
                     });
                 }
 

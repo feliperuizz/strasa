@@ -223,48 +223,35 @@
         </nav>
 
         <div class="px-4 pt-4 pb-1 flex items-center justify-between">
-            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Clientes</span>
-            @can('create', \App\Models\Client::class)
-                <a href="{{ route('clients.create') }}" class="text-slate-500 hover:text-slate-200" title="Novo cliente">＋</a>
-            @endcan
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500" title="Arraste para ordenar do seu jeito">Clientes</span>
+            <div class="flex items-center gap-2.5">
+                <button type="button" onclick="window.barraLateral.novaPasta()" class="text-slate-500 hover:text-slate-200" title="Nova pasta">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7zM12 11v4m-2-2h4"/>
+                    </svg>
+                </button>
+                @can('create', \App\Models\Client::class)
+                    <a href="{{ route('clients.create') }}" class="text-slate-500 hover:text-slate-200" title="Novo cliente">＋</a>
+                @endcan
+            </div>
         </div>
 
+        {{-- Ordem e pastas são de cada usuário: arraste clientes (e pastas)
+             para ordenar, e para dentro/fora das pastas. --}}
         <div class="px-2 pb-6 space-y-0.5" id="sidebar-client-list">
-            @forelse($sidebarClients as $client)
-                <div x-data="{ open: {{ request()->is('clients/'.$client->id.'*') || $client->projects->contains('id', request()->route('project')?->id) ? 'true' : 'false' }} }"
-                     data-client-id="{{ $client->id }}"
-                     class="sidebar-client-item">
-                    <button @click="open = !open"
-                            class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-slate-300 hover:bg-ink-700">
-                        <span class="text-slate-500" x-text="open ? '▾' : '▸'"></span>
-                        @if($client->logo_url)
-                            <img src="{{ $client->logo_url }}" class="h-5 w-5 rounded object-cover" alt="{{ $client->name }}">
-                        @else
-                            <span class="grid h-5 w-5 place-items-center rounded text-[10px] font-bold text-slate-200 shadow-sm" style="{{ $client->background_style ?: ('background: ' . ($client->color ?? '#'.substr(md5($client->name),0,6))) }}">
-                                {{ \Illuminate\Support\Str::substr($client->name,0,1) }}
-                            </span>
-                        @endif
-                        <span class="truncate flex-1">{{ $client->name }}</span>
-                    </button>
-                    <div x-show="open" x-cloak class="ml-7 space-y-0.5 border-l border-ink-600 pl-2">
-                        @foreach($client->projects as $project)
-                            <a href="{{ route('projects.board', $project) }}"
-                               class="block truncate rounded px-2 py-1 text-[13px] {{ (int) optional(request()->route('project'))->id === $project->id ? 'bg-ink-600 text-slate-200' : 'text-slate-400 hover:text-slate-200 hover:bg-ink-700' }}">
-                                {{ $project->name }}
-                            </a>
-                        @endforeach
-                        <a href="{{ route('clients.calendar', $client) }}" class="block rounded px-2 py-1 text-[12px] {{ request()->routeIs('clients.calendar') && (int) request()->route('client')?->id === $client->id ? 'text-brand-400' : 'text-slate-500 hover:text-brand-400' }}">▤ Calendário</a>
-                        <a href="{{ route('clients.metrics', $client) }}" class="block rounded px-2 py-1 text-[12px] {{ request()->routeIs('clients.metrics') && (int) request()->route('client')?->id === $client->id ? 'text-brand-400' : 'text-slate-500 hover:text-brand-400' }}">◗ Métricas</a>
-                        <a href="{{ route('clients.portal', $client) }}" class="block rounded px-2 py-1 text-[12px] {{ request()->routeIs('clients.portal') && (int) request()->route('client')?->id === $client->id ? 'text-brand-400' : 'text-slate-500 hover:text-brand-400' }}">✓ Aprovação</a>
-                        @can('create', \App\Models\Project::class)
-                            <a href="{{ route('projects.create', $client) }}" class="block rounded px-2 py-1 text-[12px] text-slate-500 hover:text-brand-400">＋ Novo projeto</a>
-                        @endcan
-                    </div>
-                </div>
+            @forelse($sidebarItens as $item)
+                @if($item['tipo'] === 'pasta')
+                    @include('partials.barra-pasta', ['pasta' => $item])
+                @else
+                    @include('partials.barra-cliente', ['client' => $item['cliente']])
+                @endif
             @empty
                 <p class="px-2 py-2 text-xs text-slate-500">Nenhum cliente ainda.</p>
             @endforelse
         </div>
+        <template id="modelo-pasta-barra">
+            @include('partials.barra-pasta', ['pasta' => ['id' => '', 'nome' => '', 'aberta' => true, 'clientes' => collect()]])
+        </template>
     </aside>
 
     {{-- ============================ CONTEÚDO ============================ --}}
@@ -723,32 +710,44 @@
     };
 
     /**
-     * Caixinha que pede um texto (o motivo da rejeição). Devolve uma Promise
-     * com o texto, ou null se a pessoa cancelar. Ctrl+Enter confirma, Esc
-     * cancela. Montada na hora, sem Alpine: o quadro chama de dentro do
-     * SortableJS.
+     * Caixinha que pede um texto (motivo da rejeição, nome de pasta...).
+     * Devolve uma Promise com o texto, ou null se a pessoa cancelar.
+     * Ctrl+Enter confirma (Enter, com linhaUnica), Esc cancela. Montada na
+     * hora, sem Alpine: o quadro chama de dentro do SortableJS.
+     *
+     * Opções: titulo, ajuda, exemplo, botao, erro, valor (texto inicial),
+     * linhaUnica (campo de uma linha), maximo (caracteres), tom ('brand'
+     * para o botão azul; o padrão é vermelho, de rejeição).
      */
     window.pedirMotivo = function (opcoes) {
         opcoes = opcoes || {};
 
         return new Promise(function (resolver) {
+            var classeCampo = 'mt-3 block w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-0';
             var fundo = document.createElement('div');
             fundo.className = 'fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4';
             fundo.innerHTML =
                 '<div class="w-full max-w-md rounded-xl border border-ink-600 bg-ink-800 p-5 shadow-2xl" role="dialog" aria-modal="true">'
                 + '<h3 data-titulo class="text-base font-semibold text-slate-100"></h3>'
                 + '<p data-ajuda class="mt-1 text-sm text-slate-400"></p>'
-                + '<textarea data-campo rows="3" class="mt-3 block w-full resize-y rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:outline-none focus:ring-0"></textarea>'
-                + '<p data-erro class="mt-1 hidden text-xs text-rose-300">Escreva o motivo para continuar.</p>'
+                + (opcoes.linhaUnica
+                    ? '<input data-campo type="text" autocomplete="off" class="' + classeCampo + '">'
+                    : '<textarea data-campo rows="3" class="resize-y ' + classeCampo + '"></textarea>')
+                + '<p data-erro class="mt-1 hidden text-xs text-rose-300"></p>'
                 + '<div class="mt-4 flex flex-wrap justify-end gap-2">'
                 + '<button type="button" data-cancelar class="rounded-lg border border-ink-600 px-3.5 py-2 text-sm font-medium text-slate-300 hover:bg-ink-700">Cancelar</button>'
-                + '<button type="button" data-confirmar class="rounded-lg bg-rose-600 px-3.5 py-2 text-sm font-semibold text-white hover:bg-rose-500"></button>'
+                + '<button type="button" data-confirmar class="rounded-lg px-3.5 py-2 text-sm font-semibold text-white '
+                + (opcoes.tom === 'brand' ? 'bg-brand-600 hover:bg-brand-500' : 'bg-rose-600 hover:bg-rose-500') + '"></button>'
                 + '</div></div>';
 
             var pegar = function (s) { return fundo.querySelector('[data-' + s + ']'); };
             pegar('titulo').textContent = opcoes.titulo || 'Motivo';
             pegar('ajuda').textContent = opcoes.ajuda || '';
+            if (!opcoes.ajuda) { pegar('ajuda').classList.add('hidden'); }
             pegar('campo').placeholder = opcoes.exemplo || '';
+            pegar('campo').value = opcoes.valor || '';
+            if (opcoes.maximo) { pegar('campo').maxLength = opcoes.maximo; }
+            pegar('erro').textContent = opcoes.erro || 'Escreva o motivo para continuar.';
             pegar('confirmar').textContent = opcoes.botao || 'Confirmar';
 
             var fechar = function (valor) {
@@ -767,7 +766,7 @@
             };
             var teclas = function (e) {
                 if (e.key === 'Escape') { e.preventDefault(); fechar(null); }
-                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); confirmar(); }
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey || opcoes.linhaUnica)) { e.preventDefault(); confirmar(); }
             };
 
             pegar('confirmar').addEventListener('click', confirmar);
@@ -776,7 +775,7 @@
             document.addEventListener('keydown', teclas, true);
 
             document.body.appendChild(fundo);
-            setTimeout(function () { pegar('campo').focus(); }, 30);
+            setTimeout(function () { pegar('campo').focus(); pegar('campo').select(); }, 30);
         });
     };
 
@@ -1558,34 +1557,170 @@
 </script>
 @stack('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const sidebarList = document.getElementById('sidebar-client-list');
-        if (sidebarList && typeof Sortable !== 'undefined') {
-            new Sortable(sidebarList, {
+    /**
+     * Barra lateral de clientes: cada usuário arrasta para ordenar, cria
+     * pastas e arrasta clientes para dentro/fora delas. Tudo fica guardado
+     * no próprio usuário (ver App\Support\BarraLateral).
+     *
+     * O arraste usa o modo "fallback" do SortableJS (eventos de mouse, não o
+     * arrastar nativo do navegador): funciona igual com listas aninhadas
+     * (pastas) e com os botões/links de dentro de cada item.
+     */
+    window.barraLateral = {
+        url: '{{ route('profile.sidebar-order') }}',
+
+        lista: function () { return document.getElementById('sidebar-client-list'); },
+
+        opcoes: function () {
+            var self = this;
+            return {
                 animation: 150,
+                forceFallback: true,
+                fallbackOnBody: true,
+                fallbackTolerance: 4,
+                swapThreshold: 0.65,
                 delay: 150,
                 delayOnTouchOnly: true,
-                onEnd: function (evt) {
-                    let order = [];
-                    sidebarList.querySelectorAll('.sidebar-client-item').forEach(el => {
-                        if(el.dataset.clientId) {
-                            order.push(el.dataset.clientId);
-                        }
+                ghostClass: 'opacity-40',
+                onStart: function () {
+                    window.__barraArrastou = true;
+                    // Pastas fechadas abrem durante o arraste, para dar onde soltar.
+                    self.lista().classList.add('arrastando');
+                },
+                onEnd: function () {
+                    // O clique que segue o soltar não pode abrir/fechar nada.
+                    setTimeout(function () { window.__barraArrastou = false; }, 0);
+                    self.lista().classList.remove('arrastando');
+                    self.contar();
+                    self.salvar();
+                },
+            };
+        },
+
+        ativar: function () {
+            var lista = this.lista();
+            if (!lista || typeof Sortable === 'undefined') { return; }
+
+            Sortable.create(lista, Object.assign(this.opcoes(), {
+                group: { name: 'barra-clientes', pull: true, put: true },
+                draggable: '.sidebar-client-item, .sidebar-folder',
+            }));
+
+            var self = this;
+            lista.querySelectorAll('[data-lista-pasta]').forEach(function (l) { self.ativarPasta(l); });
+        },
+
+        ativarPasta: function (listaDaPasta) {
+            if (typeof Sortable === 'undefined' || Sortable.get(listaDaPasta)) { return; }
+
+            Sortable.create(listaDaPasta, Object.assign(this.opcoes(), {
+                // Pasta dentro de pasta, não.
+                group: { name: 'barra-clientes', pull: true, put: function (para, de, arrastado) { return !arrastado.classList.contains('sidebar-folder'); } },
+                draggable: '.sidebar-client-item',
+            }));
+        },
+
+        /** A barra como ela está na tela, no formato guardado no usuário. */
+        layout: function () {
+            var itens = [];
+            Array.prototype.forEach.call(this.lista().children, function (el) {
+                if (el.classList.contains('sidebar-folder')) {
+                    var dados = window.Alpine ? Alpine.$data(el) : null;
+                    itens.push({
+                        pasta: el.dataset.pasta,
+                        nome: el.dataset.nome,
+                        aberta: !!(dados && dados.aberta),
+                        clientes: Array.prototype.map.call(
+                            el.querySelectorAll('[data-lista-pasta] > .sidebar-client-item'),
+                            function (c) { return parseInt(c.dataset.clientId, 10); }
+                        ),
                     });
-                    
-                    fetch('{{ route('profile.sidebar-order') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ order: order })
-                    });
+                } else if (el.classList.contains('sidebar-client-item')) {
+                    itens.push(parseInt(el.dataset.clientId, 10));
                 }
             });
-        }
-    });
+            return itens;
+        },
+
+        salvar: function () {
+            var self = this;
+            clearTimeout(this._espera);
+            this._espera = setTimeout(function () {
+                fetch(self.url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ layout: self.layout() })
+                }).then(function (res) { window.sessaoExpirou(res.status); });
+            }, 350);
+        },
+
+        contar: function () {
+            this.lista().querySelectorAll('.sidebar-folder').forEach(function (pasta) {
+                var conta = pasta.querySelector('[data-conta-pasta]');
+                if (conta) { conta.textContent = pasta.querySelectorAll('[data-lista-pasta] > .sidebar-client-item').length; }
+            });
+        },
+
+        novaPasta: function () {
+            var self = this;
+            window.pedirMotivo({
+                titulo: 'Nova pasta',
+                ajuda: 'Agrupe clientes na barra lateral: depois é só arrastar os clientes para dentro dela. Só você vê suas pastas.',
+                exemplo: 'Ex.: Varejo, Saúde, Clientes novos',
+                botao: 'Criar pasta',
+                erro: 'Dê um nome para a pasta.',
+                linhaUnica: true,
+                maximo: 60,
+                tom: 'brand'
+            }).then(function (nome) {
+                if (!nome) { return; }
+                var modelo = document.getElementById('modelo-pasta-barra');
+                var pasta = modelo.content.querySelector('.sidebar-folder').cloneNode(true);
+                pasta.dataset.pasta = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+                pasta.dataset.nome = nome;
+                pasta.querySelector('[data-nome-pasta]').textContent = nome;
+                self.lista().insertBefore(pasta, self.lista().firstElementChild);
+                self.ativarPasta(pasta.querySelector('[data-lista-pasta]'));
+                self.salvar();
+            });
+        },
+
+        renomear: function (pasta) {
+            var self = this;
+            window.pedirMotivo({
+                titulo: 'Renomear pasta',
+                botao: 'Salvar',
+                erro: 'Dê um nome para a pasta.',
+                valor: pasta.dataset.nome,
+                linhaUnica: true,
+                maximo: 60,
+                tom: 'brand'
+            }).then(function (nome) {
+                if (!nome) { return; }
+                pasta.dataset.nome = nome;
+                pasta.querySelector('[data-nome-pasta]').textContent = nome;
+                self.salvar();
+            });
+        },
+
+        /** Exclui só a pasta: os clientes dela voltam para a lista, no lugar dela. */
+        excluir: function (pasta) {
+            var quebra = String.fromCharCode(10, 10);
+            if (!confirm('Excluir a pasta "' + pasta.dataset.nome + '"?' + quebra + 'Os clientes dela continuam na barra, fora da pasta.')) { return; }
+            var lista = this.lista();
+            pasta.querySelectorAll('[data-lista-pasta] > .sidebar-client-item').forEach(function (cliente) {
+                lista.insertBefore(cliente, pasta);
+            });
+            pasta.remove();
+            this.salvar();
+        },
+    };
+
+    document.addEventListener('DOMContentLoaded', function () { window.barraLateral.ativar(); });
 </script>
 
 {{-- ============================ MOBILE BOTTOM NAVIGATION ============================ --}}

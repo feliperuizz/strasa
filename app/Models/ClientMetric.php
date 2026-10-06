@@ -6,12 +6,18 @@ use App\Models\Concerns\BelongsToCompany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
- * Uma leitura das métricas de uma rede social do cliente numa data.
+ * O fechamento mensal das métricas de uma rede social do cliente.
  *
- * Guardamos números absolutos (o total de seguidores naquele dia); o ganho
- * é derivado comparando lançamentos consecutivos.
+ * Um lançamento por rede por MÊS: `reference_date` guarda o dia 1 do mês de
+ * referência (o fechamento de setembro fica em 2026-09-01). Lançamentos
+ * antigos, de antes do fechamento mensal, podem ter outro dia — valem pelo
+ * mês deles, e relançar o mês os consolida num só.
+ *
+ * Guardamos números absolutos (o total de seguidores no fechamento); o
+ * ganho é derivado comparando meses consecutivos.
  */
 class ClientMetric extends Model
 {
@@ -49,6 +55,11 @@ class ClientMetric extends Model
         'posts_count' => 'Publicações',
     ];
 
+    /** Médias por publicação: aceitam casas decimais (2,2 comentários por post). */
+    public const DECIMAIS = ['avg_likes', 'avg_comments', 'avg_shares'];
+
+    private const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
     protected $fillable = [
         'company_id', 'client_id', 'network', 'reference_date',
         'followers', 'avg_likes', 'avg_comments', 'avg_shares', 'views',
@@ -61,9 +72,9 @@ class ClientMetric extends Model
         return [
             'reference_date' => 'date',
             'followers' => 'integer',
-            'avg_likes' => 'integer',
-            'avg_comments' => 'integer',
-            'avg_shares' => 'integer',
+            'avg_likes' => 'float',
+            'avg_comments' => 'float',
+            'avg_shares' => 'float',
             'views' => 'integer',
             'profile_visits' => 'integer',
             'link_clicks' => 'integer',
@@ -90,11 +101,12 @@ class ClientMetric extends Model
         return $network ? $query->where('network', $network) : $query;
     }
 
-    public function scopeBetween(Builder $query, ?string $de, ?string $ate): Builder
+    /** Lançamentos entre dois meses ("AAAA-MM"), inclusive. */
+    public function scopeEntreMeses(Builder $query, ?string $de, ?string $ate): Builder
     {
         return $query
-            ->when($de, fn ($q) => $q->whereDate('reference_date', '>=', $de))
-            ->when($ate, fn ($q) => $q->whereDate('reference_date', '<=', $ate));
+            ->when($de, fn ($q) => $q->whereDate('reference_date', '>=', $de.'-01'))
+            ->when($ate, fn ($q) => $q->whereDate('reference_date', '<=', Carbon::createFromFormat('Y-m-d', $ate.'-01')->endOfMonth()->toDateString()));
     }
 
     /* Helpers ------------------------------------------------------------- */
@@ -109,11 +121,43 @@ class ClientMetric extends Model
         return self::NETWORKS[$this->network]['color'] ?? '#64748B';
     }
 
+    /** Mês de referência como "AAAA-MM" (o valor dos campos de mês). */
+    public function mes(): string
+    {
+        return $this->reference_date->format('Y-m');
+    }
+
+    /** "set/2026" (ou "set/26" com $curto, para eixos de gráfico). */
+    public function rotuloDoMes(bool $curto = false): string
+    {
+        return self::rotuloDe($this->reference_date, $curto);
+    }
+
+    public static function rotuloDe(\DateTimeInterface $data, bool $curto = false): string
+    {
+        return self::MESES[(int) $data->format('n') - 1].'/'.$data->format($curto ? 'y' : 'Y');
+    }
+
+    /**
+     * Número no padrão brasileiro, com casas decimais só quando existem:
+     * 1.250 · 2,2 · 15,75. Null vira "—".
+     */
+    public static function formatar(int|float|null $valor): string
+    {
+        if ($valor === null) {
+            return '—';
+        }
+
+        $texto = number_format((float) $valor, 2, ',', '.');
+
+        return str_ends_with($texto, ',00') ? substr($texto, 0, -3) : rtrim($texto, '0');
+    }
+
     /**
      * Interações médias por publicação = curtidas + comentários +
      * compartilhamentos. Null quando nenhuma das três foi informada.
      */
-    public function engagementPerPost(): ?int
+    public function engagementPerPost(): ?float
     {
         $partes = [$this->avg_likes, $this->avg_comments, $this->avg_shares];
 
@@ -121,7 +165,7 @@ class ClientMetric extends Model
             return null;
         }
 
-        return (int) array_sum($partes);
+        return round((float) array_sum($partes), 2);
     }
 
     /**
