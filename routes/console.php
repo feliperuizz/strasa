@@ -48,17 +48,21 @@ Schedule::command('previas:gerar --limite=40')->everyFiveMinutes()->withoutOverl
 |--------------------------------------------------------------------------
 | Worker próprio, na conexão "video" (retry_after de 4 h): um render longo
 | não trava convites e avisos da fila padrão, nem é pego duas vezes.
-| runInBackground: o schedule:run do minuto não fica preso esperando o
-| render. withoutOverlapping(150): um worker por vez; a trava expira
-| sozinha se o processo morrer (e o video:vigiar destrava as vagas).
-| --max-jobs=1: o processo sai depois de cada edição e não acumula memória.
+|
+| SEM withoutOverlapping, de propósito: com runInBackground a trava só é
+| solta por um "schedule:finish" separado; quando o worker morria (limite de
+| threads/memória da hospedagem), a trava ficava presa por horas e nenhuma
+| edição saía da fila. Não precisa dela: a fila entrega cada edição a um
+| worker só (reserva atômica), e o próprio job limita quantas renderizam ao
+| mesmo tempo (video.fila.simultaneas). Um worker extra que acorde sem
+| trabalho sai na hora (--stop-when-empty).
+| --max-jobs=1: processo novo por edição, sem acumular memória.
 */
+Schedule::command('video:vigiar')->everyFiveMinutes();
+
 Schedule::command('queue:work video --queue=video --stop-when-empty --max-jobs=1 --tries=1 --timeout=7000 --memory=1024')
     ->everyMinute()
-    ->withoutOverlapping(150)
     ->runInBackground();
-
-Schedule::command('video:vigiar')->everyFiveMinutes();
 
 // Retenção de disco: brutos de edições antigas (o final fica).
 Schedule::command('video:limpar')->dailyAt('03:30')->timezone('America/Sao_Paulo');
