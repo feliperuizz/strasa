@@ -55,6 +55,24 @@ fi
 df -h "$HOME" | tail -1 | awk '{print "Disco na home: " $4 " livres de " $2}'
 
 # --- 1. FFmpeg ---------------------------------------------------------------
+passo "0. Python (para descompactar e para as legendas)"
+PYTHON=""
+UV=""
+for py in python3.12 python3.11 python3.10 python3.9 python3; do
+    if command -v "$py" >/dev/null 2>&1 && "$py" -c 'import sys, lzma; sys.exit(0 if sys.version_info >= (3, 9) else 1)' 2>/dev/null; then PYTHON="$(command -v "$py")"; break; fi
+done
+if [ -z "$PYTHON" ]; then
+    # Servidor sem Python (ou antigo): baixa o uv (Astral, .tar.gz) e um Python 3.11 próprio, tudo na home.
+    if [ ! -x "$BIN/uv" ]; then
+        echo "Sem Python 3.9+ no servidor: instalando um Python próprio na sua home (uv + Python 3.11, ~60 MB)…"
+        curl -fsSL https://github.com/astral-sh/uv/releases/latest/download/uv-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C "$BIN" --strip-components=1
+    fi
+    UV="$BIN/uv"
+    "$UV" python install --quiet 3.11
+    PYTHON="$("$UV" python find 3.11)"
+fi
+verde "Python: $("$PYTHON" --version 2>&1) em $PYTHON"
+
 passo "1. FFmpeg"
 if [ -x "$BIN/ffmpeg" ] && "$BIN/ffmpeg" -hide_banner -filters 2>/dev/null | grep -q ' ass '; then
     verde "Já instalado: $("$BIN/ffmpeg" -version | head -1)"
@@ -72,7 +90,7 @@ else
         tar -xJf "$TMP/ffmpeg.tar.xz" -C "$TMP"
     else
         echo "Sem o xz no servidor: descompactando com o Python…"
-        python3 -c 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(sys.argv[2])' "$TMP/ffmpeg.tar.xz" "$TMP"
+        "$PYTHON" -c 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(sys.argv[2])' "$TMP/ffmpeg.tar.xz" "$TMP"
     fi
     cp "$TMP"/ffmpeg-*-static/ffmpeg "$TMP"/ffmpeg-*-static/ffprobe "$BIN/"
     chmod +x "$BIN/ffmpeg" "$BIN/ffprobe"
@@ -107,19 +125,23 @@ fi
 
 # --- 3. Transcrição (opcional) -----------------------------------------------
 passo "3. Transcrição local (legendas)"
-PYTHON=""
-for py in python3.12 python3.11 python3.10 python3.9 python3; do
-    if command -v "$py" >/dev/null 2>&1 && "$py" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)' 2>/dev/null; then PYTHON="$(command -v "$py")"; break; fi
-done
 TRANSCRICAO=faster_whisper
 if [ "$COM_WHISPER" = 0 ]; then
     TRANSCRICAO=nenhum; amarelo "Pulado (--sem-whisper): vídeos sairão sem legenda automática."
-elif [ -z "$PYTHON" ]; then
-    TRANSCRICAO=nenhum
-    vermelho "Precisa de Python 3.9+ (achei: $(python3 --version 2>&1 || echo nenhum)). No cPanel/WHM peça ao suporte ou instale python3.11; depois rode este script de novo."
 else
-    "$PYTHON" -m pip install --user --quiet --upgrade pip >/dev/null 2>&1 || true
-    if "$PYTHON" -m pip install --user --quiet faster-whisper; then
+    # Ambiente isolado na home: não depende de pip/permissões do sistema.
+    VENV="$BASE/venv"
+    if [ ! -x "$VENV/bin/python" ]; then
+        if [ -n "$UV" ]; then "$UV" venv --quiet --python "$PYTHON" "$VENV"; else "$PYTHON" -m venv "$VENV"; fi
+    fi
+    if [ -n "$UV" ]; then
+        "$UV" pip install --quiet --python "$VENV/bin/python" faster-whisper && OK=1 || OK=0
+    else
+        "$VENV/bin/python" -m pip install --quiet --upgrade pip >/dev/null 2>&1 || true
+        "$VENV/bin/python" -m pip install --quiet faster-whisper && OK=1 || OK=0
+    fi
+    if [ "$OK" = 1 ]; then
+        PYTHON="$VENV/bin/python"
         verde "faster-whisper instalado em $PYTHON (o modelo 'small', ~500 MB, baixa na primeira legenda)."
     else
         TRANSCRICAO=nenhum; vermelho "Falhou ao instalar o faster-whisper. Veja a mensagem acima."
