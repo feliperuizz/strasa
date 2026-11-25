@@ -131,12 +131,15 @@ if [ "$COM_WHISPER" = 0 ]; then
 else
     # Ambiente isolado na home: não depende de pip/permissões do sistema.
     VENV="$BASE/venv"
+    [ -z "$UV" ] && [ -x "$BIN/uv" ] && UV="$BIN/uv"
     if [ ! -x "$VENV/bin/python" ]; then
         if [ -n "$UV" ]; then "$UV" venv --quiet --python "$PYTHON" "$VENV"; else "$PYTHON" -m venv "$VENV"; fi
     fi
     if [ -n "$UV" ]; then
         "$UV" pip install --quiet --python "$VENV/bin/python" faster-whisper && OK=1 || OK=0
     else
+        # Python do uv cria venv sem pip: garante o pip antes.
+        "$VENV/bin/python" -m pip --version >/dev/null 2>&1 || "$VENV/bin/python" -m ensurepip --upgrade >/dev/null 2>&1 || true
         "$VENV/bin/python" -m pip install --quiet --upgrade pip >/dev/null 2>&1 || true
         "$VENV/bin/python" -m pip install --quiet faster-whisper && OK=1 || OK=0
     fi
