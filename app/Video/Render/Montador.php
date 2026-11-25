@@ -598,6 +598,6 @@ class Montador
         }
 
         $entrada = $fonte['tipo'] === 'imagem' ? ['-i', $fonte['original']] : ['-ss', Ferramentas::s($capa['t']), '-i', $fonte['original']];
-        Ferramentas::ffmpeg([...$entrada, '-frames:v', '1', '-vf', implode(',', $filtros), '-q:v', '3', $saida], $this->pasta, null, null, 120);
+        Ferramentas::ffmpeg([...$entrada, '-frames:v', '1', '-vf', implode(',', $filtros), '-pix_fmt', 'yuvj420p', '-q:v', '3', $saida], $this->pasta, null, null, 120);
     }
 }

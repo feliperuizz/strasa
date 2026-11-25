@@ -232,7 +232,7 @@ class UploadController extends Controller
         try {
             Ferramentas::ffmpeg(array_merge(
                 $arquivo->tipo === 'video' ? ['-ss', Ferramentas::s(min(1.0, (float) $arquivo->duracao / 2))] : [],
-                ['-i', $arquivo->caminhoAbsoluto(), '-frames:v', '1', '-vf', 'scale=360:-2', '-q:v', '5', $destino]
+                ['-i', $arquivo->caminhoAbsoluto(), '-frames:v', '1', '-vf', 'scale=360:-2', '-pix_fmt', 'yuvj420p', '-q:v', '5', $destino]
             ), null, null, null, 60);
         } catch (\Throwable) {
             // Sem miniatura não é erro: a lista mostra um ícone.

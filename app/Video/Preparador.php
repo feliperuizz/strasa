@@ -70,7 +70,7 @@ class Preparador
                 $passo(0.2, "Preparando a foto {$arq->nome_original}");
                 $foto = "$trabalho/foto_{$chave}.jpg";
                 if (! is_file($foto)) {
-                    Ferramentas::ffmpeg(['-i', $origem, '-frames:v', '1', '-vf', "scale='min(2560,iw)':'min(2560,ih)':force_original_aspect_ratio=decrease", '-q:v', '2', $foto], $trabalho, null, null, 120);
+                    Ferramentas::ffmpeg(['-i', $origem, '-frames:v', '1', '-vf', "scale='min(2560,iw)':'min(2560,ih)':force_original_aspect_ratio=decrease", '-pix_fmt', 'yuvj420p', '-q:v', '2', $foto], $trabalho, null, null, 120);
                 }
                 $item['folhas'] = [$this->folhaDeFoto($arq, $foto, $trabalho)];
                 $inventario[$chave] = $item;
@@ -178,7 +178,7 @@ class Preparador
             Ferramentas::ffmpeg([
                 '-i', $proxy, '-an',
                 '-vf', 'fps=1/'.Ferramentas::s($intervalo).",$mini$rotulo,tile=4x3:padding=4:color=0x111111",
-                '-frames:v', (string) $folhas, '-q:v', '4', "folhas/{$chave}_%02d.jpg",
+                '-frames:v', (string) $folhas, '-pix_fmt', 'yuvj420p', '-q:v', '4', "folhas/{$chave}_%02d.jpg",
             ], $trabalho, null, null, 600);
 
             $existentes = glob("$dir/{$chave}_*.jpg") ?: [];
@@ -203,7 +203,7 @@ class Preparador
         $saida = "$dir/{$arq->chave()}_01.jpg";
 
         if (! is_file($saida)) {
-            Ferramentas::ffmpeg(['-i', $foto, '-frames:v', '1', '-vf', 'scale=720:720:force_original_aspect_ratio=decrease', '-q:v', '4', $saida], $trabalho, null, null, 60);
+            Ferramentas::ffmpeg(['-i', $foto, '-frames:v', '1', '-vf', 'scale=720:720:force_original_aspect_ratio=decrease', '-pix_fmt', 'yuvj420p', '-q:v', '4', $saida], $trabalho, null, null, 60);
         }
 
         return ['imagem' => $saida, 'tempos' => [0]];
