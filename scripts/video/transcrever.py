@@ -13,9 +13,22 @@ medium (melhor, ~2x mais lento e ~1,5 GB de RAM). Só biblioteca padrão
 além do faster-whisper.
 """
 
+import os
+
+# Hospedagem compartilhada limita threads por conta. Sem isto, o tokenizador
+# (Rust/rayon), o OpenMP e o onnxruntime abrem uma thread por núcleo (56!) e
+# morrem com "failed to spawn thread: Resource temporarily unavailable".
+# Precisa vir ANTES de importar o faster-whisper.
+_T = os.environ.get("VIDEO_THREADS", "2")
+for _var in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "RAYON_NUM_THREADS",
+             "NUMEXPR_NUM_THREADS", "CT2_INTER_THREADS", "ORT_NUM_THREADS"):
+    os.environ.setdefault(_var, _T)
+os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "0")
+
 import argparse
 import json
-import os
 import sys
 
 
@@ -35,7 +48,7 @@ def main() -> int:
         print("faster-whisper não instalado: python3 -m pip install --user faster-whisper", file=sys.stderr)
         return 2
 
-    modelo = WhisperModel(a.modelo, device="cpu", compute_type="int8", cpu_threads=max(1, a.threads))
+    modelo = WhisperModel(a.modelo, device="cpu", compute_type="int8", cpu_threads=max(1, a.threads), num_workers=1)
     segmentos, info = modelo.transcribe(
         a.audio,
         language=a.idioma or None,

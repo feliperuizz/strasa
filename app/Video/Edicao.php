@@ -155,7 +155,15 @@ class Edicao
         foreach ($comFala as $chave => $info) {
             $this->progresso(30 + (int) (10 * $n++ / max(1, count($comFala))), "Transcrevendo {$info['nome']}");
             DB::disconnect();
-            $porArquivo[$chave] = Transcricao::transcrever($this->pasta->absoluto("trabalho/audio_{$chave}.wav"), $contexto, (float) $info['duracao']);
+            try {
+                $porArquivo[$chave] = Transcricao::transcrever($this->pasta->absoluto("trabalho/audio_{$chave}.wav"), $contexto, (float) $info['duracao']);
+            } catch (FalhaDeFerramenta $e) {
+                // Sem legenda não é motivo para perder a edição: segue pelos silêncios.
+                // Nada é gravado, então "Tentar de novo" tenta transcrever outra vez.
+                $this->job->registrar('erro', 'A transcrição falhou e o vídeo vai sair sem legenda automática: '.$e->getMessage());
+
+                return [];
+            }
         }
 
         file_put_contents($arquivo, json_encode(['driver' => Transcricao::driver(), 'arquivos' => array_map(fn ($p) => ['palavras' => $p], $porArquivo)], JSON_UNESCAPED_UNICODE));

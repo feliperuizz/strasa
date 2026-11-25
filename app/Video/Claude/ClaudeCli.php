@@ -92,6 +92,9 @@ TXT;
             'DISABLE_AUTOUPDATER' => '1',
             'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC' => '1',
             'DISABLE_TELEMETRY' => '1',
+            // Hospedagem compartilhada limita threads por conta (56 núcleos = 56 threads por padrão).
+            'UV_THREADPOOL_SIZE' => '4',
+            'OMP_NUM_THREADS' => Ferramentas::threads(),
         ];
 
         if ($token = config('video.claude.token')) {

@@ -101,7 +101,11 @@ class Transcricao
             '--idioma', (string) config('video.transcricao.idioma', 'pt'),
             '--contexto', mb_substr($contexto, 0, 600),
             '--threads', Ferramentas::threads(),
-        ], dirname($wav), (int) config('video.transcricao.timeout', 1800), null, ['PYTHONIOENCODING' => 'utf-8']);
+        ], dirname($wav), (int) config('video.transcricao.timeout', 1800), null, array_merge(['PYTHONIOENCODING' => 'utf-8', 'TOKENIZERS_PARALLELISM' => 'false'], array_fill_keys(
+            // Limite de threads da hospedagem compartilhada (ver transcrever.py).
+            ['VIDEO_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'RAYON_NUM_THREADS', 'NUMEXPR_NUM_THREADS', 'ORT_NUM_THREADS'],
+            Ferramentas::threads()
+        )));
 
         $dados = json_decode((string) @file_get_contents($saida), true);
 
