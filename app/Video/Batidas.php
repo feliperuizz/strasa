@@ -24,7 +24,7 @@ class Batidas
         try {
             Ferramentas::rodar([
                 Ferramentas::ffmpegBin(), '-hide_banner', '-nostdin', '-y', '-v', 'error', '-t', (string) $maxSegundos,
-                '-i', $arquivo, '-ac', '1', '-ar', (string) self::TAXA, '-f', 's16le', $temp,
+                '-threads', Ferramentas::threads(), '-i', $arquivo, '-ac', '1', '-ar', (string) self::TAXA, '-threads', Ferramentas::threads(), '-f', 's16le', $temp,
             ], null, 180);
 
             return self::deAmostras((string) file_get_contents($temp));

@@ -160,7 +160,7 @@ class Ferramentas
      */
     public static function ffmpeg(array $args, ?string $cwd = null, ?float $duracao = null, ?callable $progresso = null, ?int $timeout = null): string
     {
-        $comando = array_merge([self::ffmpegBin(), '-hide_banner', '-nostdin', '-y'], $args);
+        $comando = array_merge([self::ffmpegBin(), '-hide_banner', '-nostdin', '-y', '-filter_threads', self::threads()], self::limitarThreads($args));
 
         $ultimo = 0.0;
         $aoSair = null;
@@ -183,6 +183,42 @@ class Ferramentas
         [, $stderr] = self::rodar($comando, $cwd, $timeout ?? (int) config('video.limites.ffmpeg_timeout', 3000), $aoSair);
 
         return $stderr;
+    }
+
+    /**
+     * Threads limitadas em TODO comando: decodificador (antes de cada -i) e
+     * codificador (antes da saída). Num servidor de 56 núcleos o FFmpeg abre
+     * dezenas de threads sozinho, e a hospedagem compartilhada limita threads
+     * por conta: "ff_frame_thread_encoder_init failed" / "Resource temporarily
+     * unavailable". Também deixa folga de CPU para o site.
+     */
+    private static function limitarThreads(array $args): array
+    {
+        $t = self::threads();
+        $saida = [];
+
+        foreach ($args as $i => $arg) {
+            if ($arg === '-i' && ($args[$i - 2] ?? null) !== '-threads') {
+                array_push($saida, '-threads', $t);
+            }
+            $saida[] = $arg;
+        }
+
+        // Antes do arquivo de saída (último argumento), se ninguém pôs.
+        $ultimo = array_pop($saida);
+        $temNaSaida = false;
+        for ($i = count($saida) - 1; $i >= 0 && $saida[$i] !== '-i'; $i--) {
+            if ($saida[$i] === '-threads') {
+                $temNaSaida = true;
+                break;
+            }
+        }
+        if (! $temNaSaida) {
+            array_push($saida, '-threads', $t);
+        }
+        $saida[] = $ultimo;
+
+        return $saida;
     }
 
     /** ffprobe em JSON. */
