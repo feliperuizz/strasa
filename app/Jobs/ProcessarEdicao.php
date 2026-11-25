@@ -33,7 +33,15 @@ class ProcessarEdicao implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public int $tries = 1;
+    /**
+     * 0 = sem limite de tentativas. Esperar a vez ($this->release) conta como
+     * tentativa no Laravel: com tries = 1, a 2ª edição enviada enquanto outra
+     * renderizava morria com "attempted too many times". O limite real é de
+     * tempo (retryUntil) e erro de verdade já vira "erro" dentro do handle().
+     */
+    public int $tries = 0;
+
+    public int $maxExceptions = 1;
 
     public int $timeout = 7000;
 
@@ -43,6 +51,11 @@ class ProcessarEdicao implements ShouldQueue
     {
         $this->onConnection(config('video.fila.conexao', 'video'));
         $this->onQueue(config('video.fila.nome', 'video'));
+    }
+
+    public function retryUntil(): \DateTimeInterface
+    {
+        return now()->addHours(12);
     }
 
     public function handle(): void
