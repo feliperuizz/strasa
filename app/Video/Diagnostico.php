@@ -93,6 +93,7 @@ class Diagnostico
             'sidechaincompress' => ['aviso', 'música abaixando sob a voz'],
             'zscale' => ['aviso', 'vídeo HDR do iPhone (sem ele, cor lavada)'],
             'gradients' => ['aviso', 'fundo animado do cartão final'],
+            'drawtext' => ['aviso', 'rótulo de tempo nas folhas de quadros (sem ele, sai sem rótulo)'],
             'whisper' => ['ok', 'transcrição pelo próprio FFmpeg (opcional)'],
         ] as $filtro => [$falta, $para]) {
             $tem = Ferramentas::temFiltro($filtro);

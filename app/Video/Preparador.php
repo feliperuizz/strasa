@@ -169,7 +169,9 @@ class Preparador
         $existentes = glob("$dir/{$chave}_*.jpg") ?: [];
 
         if (! $existentes) {
-            $rotulo = is_file("$trabalho/rotulo.ttf")
+            // Rótulo (arquivo + tempo) só se o FFmpeg tiver drawtext; o estático do
+            // servidor pode vir sem. Os tempos vão por escrito no contexto de qualquer jeito.
+            $rotulo = is_file("$trabalho/rotulo.ttf") && Ferramentas::temFiltro('drawtext')
                 ? ",drawbox=x=0:y=ih-34:w=iw:h=34:color=black@0.65:t=fill,drawtext=fontfile=rotulo.ttf:fontsize=22:fontcolor=white:x=8:y=h-28:text='{$chave}  %{pts\\:flt}s'"
                 : '';
 
