@@ -141,6 +141,13 @@ class Contexto
         foreach ($perfil->resumoParaClaude() as $chave => $valor) {
             $l[] = '- **'.str_replace('_', ' ', $chave).':** '.(is_array($valor) ? json_encode($valor, JSON_UNESCAPED_UNICODE) : $valor);
         }
+        $ajustes = array_filter((array) $job->opcao('identidade', []), fn ($v) => $v !== null && $v !== '');
+        if ($ajustes) {
+            $l[] = '- **Só nesta edição a equipe mudou:** '.json_encode($ajustes, JSON_UNESCAPED_UNICODE).' (vale isto, não o de cima).';
+        }
+        if (! $job->opcao('logo', true)) {
+            $l[] = '- **Esta edição vai SEM logo** (nem no canto, nem no cartão final). Não planeje nada que dependa da logo.';
+        }
         $l[] = '- O render já aplica cores, fonte, logo e estilo de legenda. Você escolhe o quê e quando.';
         $l[] = '';
 

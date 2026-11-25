@@ -92,6 +92,8 @@ class EdicaoController extends Controller
             'opcoes' => ['sometimes', 'array'],
             'opcoes.legendas' => ['sometimes', 'boolean'],
             'opcoes.cartao_final' => ['sometimes', 'boolean'],
+            'opcoes.logo' => ['sometimes', 'boolean'],
+            'identidade' => ['sometimes', 'array'],
             'ordem' => ['sometimes', 'array'],
             'ordem.*' => ['integer'],
         ]);
@@ -107,6 +109,11 @@ class EdicaoController extends Controller
 
         if (isset($dados['opcoes'])) {
             $dados['opcoes'] = array_merge($edicao->opcoes ?? [], array_map('boolval', $dados['opcoes']));
+        }
+
+        if (array_key_exists('identidade', $dados)) {
+            $dados['opcoes'] = array_merge($dados['opcoes'] ?? $edicao->opcoes ?? [], ['identidade' => self::limparIdentidade($dados['identidade'])]);
+            unset($dados['identidade']);
         }
 
         if (isset($dados['ordem'])) {
@@ -215,6 +222,8 @@ class EdicaoController extends Controller
             'cartao_titulo' => ['nullable', 'string', 'max:60'],
             'cartao_linhas' => ['nullable', 'string', 'max:300'],
             'cartao_ativo' => ['nullable', 'boolean'],
+            'logo' => ['nullable', 'boolean'],
+            'identidade' => ['nullable', 'array'],
         ]);
 
         $plano = $edicao->plano;
@@ -254,8 +263,20 @@ class EdicaoController extends Controller
 
         unset($plano['correcoes_automaticas']);
 
+        // Logo e identidade deste vídeo ficam nas opções da edição (o render lê de lá).
+        $edicao->forceFill(['opcoes' => array_merge($edicao->opcoes ?? [], [
+            'logo' => (bool) ($dados['logo'] ?? false),
+            'identidade' => self::limparIdentidade($dados['identidade'] ?? []),
+        ])])->save();
+
         $edicao->registrar('pedido', 'Edição rápida do plano'.($fora ? ' (tirou '.implode(', ', $fora).')' : '').($elFora ? ' (tirou '.implode(', ', $elFora).')' : '').'.', [], $request->user()->id);
         $edicao->forceFill(['status' => VideoJob::AJUSTANDO, 'progresso' => 0, 'mensagem' => 'Na fila', 'erro' => null, 'sinal_em' => now()])->save();
+        // Texto com codificação quebrada (colado de outro programa) não pode derrubar a fila.
+        array_walk_recursive($plano, function (&$v) {
+            if (is_string($v)) {
+                $v = mb_scrub($v, 'UTF-8');
+            }
+        });
         ProcessarEdicao::dispatch($edicao->id, 'rerenderizar', ['plano' => $plano]);
 
         return back();
@@ -406,6 +427,21 @@ class EdicaoController extends Controller
         }
 
         return redirect()->route('estudio.edicoes.show', $nova)->with('status', 'Edição duplicada com o mesmo material. Ajuste o briefing e envie.');
+    }
+
+    /** Só os campos ajustáveis, sem vazios: campo vazio = vale o do cliente. */
+    private static function limparIdentidade(array $dados): array
+    {
+        $limpo = [];
+        foreach (\App\Video\Identidade::AJUSTAVEIS as $campo) {
+            $valor = $dados[$campo] ?? null;
+            if ($valor === null || $valor === '') {
+                continue;
+            }
+            $limpo[$campo] = is_scalar($valor) ? mb_substr((string) $valor, 0, 40) : null;
+        }
+
+        return array_filter($limpo, fn ($v) => $v !== null);
     }
 
     public function destroy(VideoJob $edicao): RedirectResponse

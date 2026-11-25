@@ -172,6 +172,8 @@
                             @endif
                             <label class="inline-flex items-center gap-2"><input type="checkbox" class="rounded border-ink-500 bg-ink-900 text-brand-600" @checked($edicao->opcao('cartao_final', true)) @change="salvar({ opcoes: { cartao_final: $event.target.checked } })"> Cartão final com a chamada</label>
                         </div>
+
+                        @include('estudio.partials.identidade-edicao', ['modo' => 'autosave'])
                     </div>
 
                     <form method="POST" action="{{ route('estudio.edicoes.iniciar', $edicao) }}" class="rounded-2xl border border-ink-600 bg-gradient-to-br from-ink-800 to-ink-900 p-4 sm:p-5">
@@ -422,6 +424,8 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                @include('estudio.partials.identidade-edicao', ['modo' => 'form'])
 
                                 @if($edicao->aceitaAjustes() && ! $edicao->limpo_em)
                                     <div class="flex justify-end">

@@ -454,7 +454,7 @@ class Validador
             return '';
         }
 
-        $texto = trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', (string) $valor) ?? '');
+        $texto = trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', mb_scrub((string) $valor, 'UTF-8')) ?? '');
 
         return mb_substr($texto, 0, $max);
     }

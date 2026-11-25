@@ -351,10 +351,11 @@ class Edicao
         $musica = $this->musica();
 
         return new Montador(
-            $plano, $fontes, Identidade::de($perfil), $this->pasta->dir('renders'), $modo,
+            $plano, $fontes, Identidade::daEdicao($perfil, (array) $job->opcao('identidade', [])), $this->pasta->dir('renders'), $modo,
             $dim['largura'], $dim['altura'], $palavras ?? $this->palavras(),
             $musica ? ['caminho' => $musica['caminho'], 'duracao' => $musica['duracao']] : null,
-            is_file($logo) ? $logo : null, $arquivosDeFonte, $job->estiloInfo()['fala'],
+            // "Sem logo" nesta edição: nem marca d'água nem logo no cartão final.
+            $job->opcao('logo', true) && is_file($logo) ? $logo : null, $arquivosDeFonte, $job->estiloInfo()['fala'],
         );
     }
 
