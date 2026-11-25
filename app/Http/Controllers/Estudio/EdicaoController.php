@@ -318,7 +318,7 @@ class EdicaoController extends Controller
         $arquivos = [[$edicao->pasta()->absoluto($edicao->final_path), "$nomeBase.mp4", 'video/mp4', false]];
 
         if (($dados['incluir_capa'] ?? false) && $edicao->capa_path && is_file($edicao->pasta()->absoluto($edicao->capa_path))) {
-            $arquivos[] = [$edicao->pasta()->absoluto($edicao->capa_path), "$nomeBase-capa.jpg", 'image/jpeg', true];
+            $arquivos[] = [$edicao->pasta()->absoluto($edicao->capa_path), "$nomeBase-capa.png", 'image/png', true];
         }
 
         // Upload para o bucket/Drive pode demorar: sem prender conexão do banco.
@@ -399,9 +399,9 @@ class EdicaoController extends Controller
                 copy($origem, $destino);
             }
             $copia->save();
-            $mini = $edicao->pasta()->absoluto("trabalho/mini_{$arq->chave()}.jpg");
+            $mini = $edicao->pasta()->absoluto("trabalho/mini_{$arq->chave()}.png");
             if (is_file($mini)) {
-                @copy($mini, $nova->pasta()->dir('trabalho')."/mini_{$copia->chave()}.jpg");
+                @copy($mini, $nova->pasta()->dir('trabalho')."/mini_{$copia->chave()}.png");
             }
         }
 

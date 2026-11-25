@@ -24,7 +24,7 @@ class MidiaController extends Controller
         $this->authorize('view', $edicao->client);
 
         $relativo = match (true) {
-            $versao !== null => sprintf('renders/%s_v%02d.%s', $tipo, $versao, $tipo === 'capa' ? 'jpg' : 'mp4'),
+            $versao !== null => sprintf('renders/%s_v%02d.%s', $tipo, $versao, $tipo === 'capa' ? 'png' : 'mp4'),
             $tipo === 'previa' => $edicao->previa_path,
             $tipo === 'final' => $edicao->final_path,
             default => $edicao->capa_path,
@@ -44,17 +44,17 @@ class MidiaController extends Controller
 
         return response()->file($caminho, [
             'Cache-Control' => 'private, max-age=86400',
-            'Content-Type' => $tipo === 'capa' ? 'image/jpeg' : 'video/mp4',
+            'Content-Type' => $tipo === 'capa' ? 'image/png' : 'video/mp4',
         ]);
     }
 
     public function miniatura(VideoJobFile $arquivo)
     {
         $this->authorize('view', $arquivo->job->client);
-        $caminho = $arquivo->job->pasta()->absoluto("trabalho/mini_{$arquivo->chave()}.jpg");
+        $caminho = $arquivo->job->pasta()->absoluto("trabalho/mini_{$arquivo->chave()}.png");
         abort_unless(is_file($caminho), 404);
         DB::disconnect();
 
-        return response()->file($caminho, ['Cache-Control' => 'private, max-age=604800', 'Content-Type' => 'image/jpeg']);
+        return response()->file($caminho, ['Cache-Control' => 'private, max-age=604800', 'Content-Type' => 'image/png']);
     }
 }

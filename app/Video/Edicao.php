@@ -115,7 +115,7 @@ class Edicao
         if (! empty($plano['capa'])) {
             $this->progresso(97, 'Gerando a capa');
             try {
-                $capa = sprintf('%s/capa_v%02d.jpg', $this->pasta->dir('renders'), $versao);
+                $capa = sprintf('%s/capa_v%02d.png', $this->pasta->dir('renders'), $versao);
                 $montador->capa($plano['capa'], $capa);
             } catch (\Throwable) {
                 $capa = null;
@@ -325,7 +325,7 @@ class Edicao
         $fontes = [];
         foreach ($job->arquivos()->where('status', 'pronto')->get() as $arq) {
             $chave = $arq->chave();
-            $foto = $this->pasta->absoluto("trabalho/foto_{$chave}.jpg");
+            $foto = $this->pasta->absoluto("trabalho/foto_{$chave}.png");
             $fontes[$chave] = [
                 'original' => $arq->tipo === 'imagem' && is_file($foto) ? $foto : $arq->caminhoAbsoluto(),
                 'proxy' => $arq->tipo === 'imagem' ? null : $this->pasta->absoluto("trabalho/proxy_{$chave}.mp4"),

@@ -199,7 +199,7 @@ class UploadController extends Controller
         abort_unless($edicao->aceitaArquivos(), 422, 'Esta edição já foi enviada.');
 
         @unlink($arquivo->caminhoAbsoluto());
-        @unlink($edicao->pasta()->absoluto("trabalho/mini_{$arquivo->chave()}.jpg"));
+        @unlink($edicao->pasta()->absoluto("trabalho/mini_{$arquivo->chave()}.png"));
         $arquivo->delete();
 
         return response()->json(['ok' => true]);
@@ -227,12 +227,12 @@ class UploadController extends Controller
     /** Miniatura leve para a lista (um quadro a 1 s, ou a própria foto reduzida). */
     private function miniatura(VideoJobFile $arquivo): void
     {
-        $destino = $arquivo->job->pasta()->dir('trabalho').'/mini_'.$arquivo->chave().'.jpg';
+        $destino = $arquivo->job->pasta()->dir('trabalho').'/mini_'.$arquivo->chave().'.png';
 
         try {
             Ferramentas::ffmpeg(array_merge(
                 $arquivo->tipo === 'video' ? ['-ss', Ferramentas::s(min(1.0, (float) $arquivo->duracao / 2))] : [],
-                ['-i', $arquivo->caminhoAbsoluto(), '-frames:v', '1', '-vf', 'scale=360:-2', '-pix_fmt', 'yuvj420p', '-q:v', '5', $destino]
+                ['-i', $arquivo->caminhoAbsoluto(), '-frames:v', '1', '-vf', 'scale=360:-2', $destino]
             ), null, null, null, 60);
         } catch (\Throwable) {
             // Sem miniatura não é erro: a lista mostra um ícone.

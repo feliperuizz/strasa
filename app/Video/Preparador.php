@@ -68,9 +68,9 @@ class Preparador
 
             if ($arq->tipo === 'imagem') {
                 $passo(0.2, "Preparando a foto {$arq->nome_original}");
-                $foto = "$trabalho/foto_{$chave}.jpg";
+                $foto = "$trabalho/foto_{$chave}.png";
                 if (! is_file($foto)) {
-                    Ferramentas::ffmpeg(['-i', $origem, '-frames:v', '1', '-vf', "scale='min(2560,iw)':'min(2560,ih)':force_original_aspect_ratio=decrease", '-pix_fmt', 'yuvj420p', '-q:v', '2', $foto], $trabalho, null, null, 120);
+                    Ferramentas::ffmpeg(['-i', $origem, '-frames:v', '1', '-vf', "scale='min(2560,iw)':'min(2560,ih)':force_original_aspect_ratio=decrease", $foto], $trabalho, null, null, 120);
                 }
                 $item['folhas'] = [$this->folhaDeFoto($arq, $foto, $trabalho)];
                 $inventario[$chave] = $item;
@@ -166,7 +166,7 @@ class Preparador
         $vertical = ($arq->altura ?? 0) >= ($arq->largura ?? 0);
         $mini = $vertical ? 'scale=270:-2' : 'scale=360:-2';
 
-        $existentes = glob("$dir/{$chave}_*.jpg") ?: [];
+        $existentes = glob("$dir/{$chave}_*.png") ?: [];
 
         if (! $existentes) {
             // Rótulo (arquivo + tempo) só se o FFmpeg tiver drawtext; o estático do
@@ -178,10 +178,10 @@ class Preparador
             Ferramentas::ffmpeg([
                 '-i', $proxy, '-an',
                 '-vf', 'fps=1/'.Ferramentas::s($intervalo).",$mini$rotulo,tile=4x3:padding=4:color=0x111111",
-                '-frames:v', (string) $folhas, '-pix_fmt', 'yuvj420p', '-q:v', '4', "folhas/{$chave}_%02d.jpg",
+                '-frames:v', (string) $folhas, "folhas/{$chave}_%02d.png",
             ], $trabalho, null, null, 600);
 
-            $existentes = glob("$dir/{$chave}_*.jpg") ?: [];
+            $existentes = glob("$dir/{$chave}_*.png") ?: [];
         }
 
         sort($existentes);
@@ -200,10 +200,10 @@ class Preparador
     {
         $dir = "$trabalho/folhas";
         File::ensureDirectoryExists($dir, 0775);
-        $saida = "$dir/{$arq->chave()}_01.jpg";
+        $saida = "$dir/{$arq->chave()}_01.png";
 
         if (! is_file($saida)) {
-            Ferramentas::ffmpeg(['-i', $foto, '-frames:v', '1', '-vf', 'scale=720:720:force_original_aspect_ratio=decrease', '-pix_fmt', 'yuvj420p', '-q:v', '4', $saida], $trabalho, null, null, 60);
+            Ferramentas::ffmpeg(['-i', $foto, '-frames:v', '1', '-vf', 'scale=720:720:force_original_aspect_ratio=decrease', $saida], $trabalho, null, null, 60);
         }
 
         return ['imagem' => $saida, 'tempos' => [0]];
