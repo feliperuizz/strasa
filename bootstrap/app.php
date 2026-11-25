@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => \App\Http\Middleware\ShareTenantData::class,
             'portal' => \App\Http\Middleware\EnsurePortalAccess::class,
             'api.chave' => \App\Http\Middleware\AutenticaChaveApi::class,
+            'estudio' => \App\Http\Middleware\EstudioAtivo::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

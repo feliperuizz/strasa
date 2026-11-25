@@ -217,3 +217,51 @@ Route::middleware(['auth', 'tenant'])->group(function () {
     Route::delete('financial/{payment}/recurrence', [FinancialController::class, 'stopRecurrence'])->name('financial.recurrence.stop');
     Route::delete('financial/{payment}', [FinancialController::class, 'destroy'])->name('financial.destroy');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Estúdio de vídeo
+|--------------------------------------------------------------------------
+| O Claude (CLI no servidor) decide a edição e o FFmpeg executa, na fila
+| "video". Guia: leia/estudio-de-video.md
+*/
+Route::middleware(['auth', 'tenant', 'estudio'])->group(function () {
+    Route::get('estudio', [\App\Http\Controllers\Estudio\EstudioController::class, 'index'])->name('estudio.index');
+    Route::post('estudio/diagnostico', [\App\Http\Controllers\Estudio\EstudioController::class, 'diagnostico'])->name('estudio.diagnostico');
+
+    Route::get('clients/{client}/estudio', [\App\Http\Controllers\Estudio\EstudioController::class, 'cliente'])->name('clients.estudio');
+    Route::get('clients/{client}/estudio/identidade', [\App\Http\Controllers\Estudio\PerfilVideoController::class, 'edit'])->name('clients.estudio.perfil');
+    Route::post('clients/{client}/estudio/identidade', [\App\Http\Controllers\Estudio\PerfilVideoController::class, 'update'])->name('clients.estudio.perfil.update');
+    Route::get('clients/{client}/estudio/logo', [\App\Http\Controllers\Estudio\PerfilVideoController::class, 'logo'])->name('clients.estudio.logo');
+    Route::post('clients/{client}/estudio/aprendizados', [\App\Http\Controllers\Estudio\PerfilVideoController::class, 'novoAprendizado'])->name('clients.estudio.aprendizados.store');
+    Route::patch('estudio/aprendizados/{aprendizado}', [\App\Http\Controllers\Estudio\PerfilVideoController::class, 'aprendizado'])->name('estudio.aprendizados.update');
+
+    Route::post('clients/{client}/estudio/edicoes', [\App\Http\Controllers\Estudio\EdicaoController::class, 'store'])->name('estudio.edicoes.store');
+    Route::get('estudio/edicoes/{edicao}', [\App\Http\Controllers\Estudio\EdicaoController::class, 'show'])->name('estudio.edicoes.show');
+    Route::patch('estudio/edicoes/{edicao}', [\App\Http\Controllers\Estudio\EdicaoController::class, 'update'])->name('estudio.edicoes.update');
+    Route::delete('estudio/edicoes/{edicao}', [\App\Http\Controllers\Estudio\EdicaoController::class, 'destroy'])->name('estudio.edicoes.destroy');
+    Route::get('estudio/edicoes/{edicao}/status', [\App\Http\Controllers\Estudio\EdicaoController::class, 'status'])->name('estudio.edicoes.status');
+    Route::post('estudio/edicoes/{edicao}/iniciar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'iniciar'])->name('estudio.edicoes.iniciar');
+    Route::post('estudio/edicoes/{edicao}/ajustar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'ajustar'])->name('estudio.edicoes.ajustar');
+    Route::post('estudio/edicoes/{edicao}/plano', [\App\Http\Controllers\Estudio\EdicaoController::class, 'plano'])->name('estudio.edicoes.plano');
+    Route::post('estudio/edicoes/{edicao}/finalizar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'finalizar'])->name('estudio.edicoes.finalizar');
+    Route::post('estudio/edicoes/{edicao}/enviar-card', [\App\Http\Controllers\Estudio\EdicaoController::class, 'enviarParaCard'])->name('estudio.edicoes.card');
+    Route::post('estudio/edicoes/{edicao}/tentar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'tentarDeNovo'])->name('estudio.edicoes.tentar');
+    Route::post('estudio/edicoes/{edicao}/cancelar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'cancelar'])->name('estudio.edicoes.cancelar');
+    Route::post('estudio/edicoes/{edicao}/duplicar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'duplicar'])->name('estudio.edicoes.duplicar');
+    Route::get('estudio/edicoes/{edicao}/midia/{tipo}/{versao?}', [\App\Http\Controllers\Estudio\MidiaController::class, 'show'])
+        ->whereIn('tipo', ['previa', 'final', 'capa'])->whereNumber('versao')->name('estudio.midia');
+
+    // Upload em pedaços (retomável; cada pedaço abaixo do limite do Cloudflare/PHP).
+    Route::post('estudio/edicoes/{edicao}/arquivos', [\App\Http\Controllers\Estudio\UploadController::class, 'iniciar'])->name('estudio.arquivos.iniciar');
+    Route::post('estudio/arquivos/{arquivo}/pedaco', [\App\Http\Controllers\Estudio\UploadController::class, 'pedaco'])->name('estudio.arquivos.pedaco');
+    Route::post('estudio/arquivos/{arquivo}/concluir', [\App\Http\Controllers\Estudio\UploadController::class, 'concluir'])->name('estudio.arquivos.concluir');
+    Route::patch('estudio/arquivos/{arquivo}', [\App\Http\Controllers\Estudio\UploadController::class, 'atualizar'])->name('estudio.arquivos.update');
+    Route::delete('estudio/arquivos/{arquivo}', [\App\Http\Controllers\Estudio\UploadController::class, 'destroy'])->name('estudio.arquivos.destroy');
+    Route::get('estudio/arquivos/{arquivo}/miniatura', [\App\Http\Controllers\Estudio\MidiaController::class, 'miniatura'])->name('estudio.arquivos.miniatura');
+
+    Route::get('estudio/biblioteca', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'index'])->name('estudio.biblioteca');
+    Route::post('estudio/biblioteca', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'store'])->name('estudio.biblioteca.store');
+    Route::delete('estudio/biblioteca/{asset}', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'destroy'])->name('estudio.biblioteca.destroy');
+    Route::get('estudio/biblioteca/{asset}/ouvir', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'ouvir'])->name('estudio.biblioteca.ouvir');
+});

@@ -27,6 +27,9 @@
         @endforeach
         <a href="{{ route('clients.calendar', $client) }}" class="block rounded px-2 py-1 text-[12px] {{ request()->routeIs('clients.calendar') && (int) request()->route('client')?->id === $client->id ? 'text-brand-400' : 'text-slate-500 hover:text-brand-400' }}">▤ Calendário</a>
         <a href="{{ route('clients.metrics', $client) }}" class="block rounded px-2 py-1 text-[12px] {{ request()->routeIs('clients.metrics') && (int) request()->route('client')?->id === $client->id ? 'text-brand-400' : 'text-slate-500 hover:text-brand-400' }}">◗ Métricas</a>
+        @if(config('video.ativo'))
+            <a href="{{ route('clients.estudio', $client) }}" class="block rounded px-2 py-1 text-[12px] {{ request()->routeIs('clients.estudio*') && (int) request()->route('client')?->id === $client->id ? 'text-brand-400' : 'text-slate-500 hover:text-brand-400' }}">▶ Estúdio</a>
+        @endif
         <a href="{{ route('clients.portal', $client) }}" class="block rounded px-2 py-1 text-[12px] {{ request()->routeIs('clients.portal') && (int) request()->route('client')?->id === $client->id ? 'text-brand-400' : 'text-slate-500 hover:text-brand-400' }}">✓ Aprovação</a>
         @can('create', \App\Models\Project::class)
             <a href="{{ route('projects.create', $client) }}" class="block rounded px-2 py-1 text-[12px] text-slate-500 hover:text-brand-400">＋ Novo projeto</a>

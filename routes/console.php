@@ -41,3 +41,24 @@ Schedule::command('financeiro:recorrencias')->dailyAt('00:10')->timezone('Americ
 // por vez, começando pelas peças que estão com o cliente; quando todas
 // existirem, cada rodada só confere e sai.
 Schedule::command('previas:gerar --limite=40')->everyFiveMinutes()->withoutOverlapping(30);
+
+/*
+|--------------------------------------------------------------------------
+| Estúdio de vídeo
+|--------------------------------------------------------------------------
+| Worker próprio, na conexão "video" (retry_after de 4 h): um render longo
+| não trava convites e avisos da fila padrão, nem é pego duas vezes.
+| runInBackground: o schedule:run do minuto não fica preso esperando o
+| render. withoutOverlapping(150): um worker por vez; a trava expira
+| sozinha se o processo morrer (e o video:vigiar destrava as vagas).
+| --max-jobs=1: o processo sai depois de cada edição e não acumula memória.
+*/
+Schedule::command('queue:work video --queue=video --stop-when-empty --max-jobs=1 --tries=1 --timeout=7000 --memory=1024')
+    ->everyMinute()
+    ->withoutOverlapping(150)
+    ->runInBackground();
+
+Schedule::command('video:vigiar')->everyFiveMinutes();
+
+// Retenção de disco: brutos de edições antigas (o final fica).
+Schedule::command('video:limpar')->dailyAt('03:30')->timezone('America/Sao_Paulo');

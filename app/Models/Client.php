@@ -95,6 +95,22 @@ class Client extends Model
         return $this->hasMany(ClientRevenue::class);
     }
 
+    /** Identidade de vídeo (Estúdio). Use VideoProfile::doCliente() para já vir com os padrões. */
+    public function videoProfile(): HasOne
+    {
+        return $this->hasOne(VideoProfile::class);
+    }
+
+    public function videoJobs(): HasMany
+    {
+        return $this->hasMany(VideoJob::class);
+    }
+
+    public function videoLearnings(): HasMany
+    {
+        return $this->hasMany(VideoLearning::class);
+    }
+
     /* Scopes ------------------------------------------------------------- */
 
     public function scopeActive(Builder $query): Builder

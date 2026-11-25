@@ -6,6 +6,14 @@
     </div>
 @endif
 
+@if(session('erro'))
+    <div x-data="{ show:true }" x-show="show"
+         class="mx-4 mt-3 flex items-center justify-between rounded-lg border border-rose-700/50 bg-rose-900/30 px-4 py-2 text-sm text-rose-300">
+        <span>{{ session('erro') }}</span>
+        <button @click="show=false" class="text-rose-400/70 hover:text-rose-200">✕</button>
+    </div>
+@endif
+
 @if($errors->any())
     <div class="mx-4 mt-3 rounded-lg border border-rose-700/50 bg-rose-900/30 px-4 py-2 text-sm text-rose-300">
         <ul class="list-disc pl-5 space-y-0.5">

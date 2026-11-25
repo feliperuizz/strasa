@@ -44,6 +44,18 @@ return [
             'after_commit' => false,
         ],
 
+        // Estúdio de vídeo: mesma tabela de jobs, mas retry_after de 4 h.
+        // Com os 90 s da conexão "database", um render longo seria pego de
+        // novo por outro worker no meio e processado em dobro.
+        'video' => [
+            'driver' => 'database',
+            'connection' => env('DB_QUEUE_CONNECTION'),
+            'table' => env('DB_QUEUE_TABLE', 'jobs'),
+            'queue' => 'video',
+            'retry_after' => 14400,
+            'after_commit' => true,
+        ],
+
         'beanstalkd' => [
             'driver' => 'beanstalkd',
             'host' => env('BEANSTALKD_QUEUE_HOST', 'localhost'),
