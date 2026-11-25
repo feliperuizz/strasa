@@ -67,7 +67,13 @@ else
     TMP="$(mktemp -d)"
     echo "Baixando o FFmpeg estático ($ARQ, ~80 MB) de johnvansickle.com…"
     curl -fL --retry 3 -o "$TMP/ffmpeg.tar.xz" "https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-$ARQ-static.tar.xz"
-    tar -xJf "$TMP/ffmpeg.tar.xz" -C "$TMP"
+    # Hospedagem sem o programa xz: o Python descompacta (módulo lzma, padrão).
+    if command -v xz >/dev/null 2>&1; then
+        tar -xJf "$TMP/ffmpeg.tar.xz" -C "$TMP"
+    else
+        echo "Sem o xz no servidor: descompactando com o Python…"
+        python3 -c 'import sys, tarfile; tarfile.open(sys.argv[1]).extractall(sys.argv[2])' "$TMP/ffmpeg.tar.xz" "$TMP"
+    fi
     cp "$TMP"/ffmpeg-*-static/ffmpeg "$TMP"/ffmpeg-*-static/ffprobe "$BIN/"
     chmod +x "$BIN/ffmpeg" "$BIN/ffprobe"
     rm -rf "$TMP"
