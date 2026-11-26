@@ -97,6 +97,77 @@ class AttachmentStreamer
     }
 
     /**
+     * Mesmo serviço (Range, conexão do banco solta) para um arquivo qualquer
+     * de um disco — usado pelo Estúdio de vídeo para o final que está no Drive.
+     */
+    public function streamDisco(Request $request, string $disco, string $caminho, int $tamanho, string $mime, string $etag, ?string $baixarComo = null): Response
+    {
+        $headers = ['Cache-Control' => 'private, max-age=86400', 'ETag' => $etag, 'Content-Type' => $mime, 'Accept-Ranges' => 'bytes'];
+
+        if (trim((string) $request->header('If-None-Match')) === $etag) {
+            return response('', 304, $headers);
+        }
+        if ($baixarComo) {
+            $headers['Content-Disposition'] = 'attachment; filename="'.str_replace('"', '', $baixarComo).'"';
+        }
+
+        $faixa = $tamanho > 0 ? $this->faixaPedida($request, $tamanho) : null;
+        if ($faixa === false) {
+            return response('', 416, $headers + ['Content-Range' => "bytes */{$tamanho}"]);
+        }
+
+        $inicio = $faixa['inicio'] ?? 0;
+        $fim = $faixa['fim'] ?? ($tamanho > 0 ? $tamanho - 1 : null);
+
+        $stream = Storage::disk($disco)->readStream($caminho);
+        abort_if($stream === false || $stream === null, 404);
+        if ($inicio > 0) {
+            $meta = stream_get_meta_data($stream);
+            if (empty($meta['seekable']) || fseek($stream, $inicio) !== 0) {
+                for ($resto = $inicio; $resto > 0 && ! feof($stream);) {
+                    $bloco = fread($stream, (int) min(1048576, $resto));
+                    if ($bloco === false || $bloco === '') {
+                        break;
+                    }
+                    $resto -= strlen($bloco);
+                }
+            }
+        }
+
+        if ($faixa !== null) {
+            $headers['Content-Range'] = "bytes {$inicio}-{$fim}/{$tamanho}";
+            $headers['Content-Length'] = (string) ($fim - $inicio + 1);
+            $status = 206;
+        } else {
+            if ($tamanho > 0) {
+                $headers['Content-Length'] = (string) $tamanho;
+            }
+            $status = 200;
+        }
+        $bytes = $fim === null ? null : $fim - $inicio + 1;
+
+        DB::disconnect();
+
+        return response()->stream(function () use ($stream, $bytes) {
+            if ($bytes === null) {
+                fpassthru($stream);
+            } else {
+                for ($resto = $bytes; $resto > 0 && ! feof($stream);) {
+                    $bloco = fread($stream, (int) min(262144, $resto));
+                    if ($bloco === false || $bloco === '') {
+                        break;
+                    }
+                    echo $bloco;
+                    $resto -= strlen($bloco);
+                }
+            }
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+        }, $status, $headers);
+    }
+
+    /**
      * Interpreta o header Range.
      *
      * @return array{inicio:int, fim:int}|null|false  null = sem Range (arquivo

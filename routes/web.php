@@ -248,6 +248,7 @@ Route::middleware(['auth', 'tenant', 'estudio'])->group(function () {
     Route::post('estudio/edicoes/{edicao}/enviar-card', [\App\Http\Controllers\Estudio\EdicaoController::class, 'enviarParaCard'])->name('estudio.edicoes.card');
     Route::post('estudio/edicoes/{edicao}/tentar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'tentarDeNovo'])->name('estudio.edicoes.tentar');
     Route::post('estudio/edicoes/{edicao}/cancelar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'cancelar'])->name('estudio.edicoes.cancelar');
+    Route::post('estudio/edicoes/{edicao}/drive', [\App\Http\Controllers\Estudio\EdicaoController::class, 'drive'])->name('estudio.edicoes.drive');
     Route::post('estudio/edicoes/{edicao}/duplicar', [\App\Http\Controllers\Estudio\EdicaoController::class, 'duplicar'])->name('estudio.edicoes.duplicar');
     Route::get('estudio/edicoes/{edicao}/midia/{tipo}/{versao?}', [\App\Http\Controllers\Estudio\MidiaController::class, 'show'])
         ->whereIn('tipo', ['previa', 'final', 'capa'])->whereNumber('versao')->name('estudio.midia');

@@ -88,6 +88,11 @@ Sem o Claude conectado, a edição **para com erro claro** (a faixa "Motor" fica
 - Transcrição precisa de **Python 3.9+**. Se o servidor só tiver um mais antigo, o instalador avisa; peça ao suporte um `python3.11` e rode de novo. O modelo `small` (~500 MB) baixa na primeira legenda; `VIDEO_WHISPER_MODEL=medium` acerta mais e é ~2x mais lento.
 - Coloque músicas com licença na **Biblioteca** e preencha a **identidade de vídeo** de cada cliente.
 
+### Vídeo final no Google Drive e exclusão
+- Upload, render e ajustes acontecem no servidor (rápido). Quando o **final** fica pronto, o job `ArquivarNoDrive` sobe o MP4 (e a capa) para o Drive dos anexos (`VIDEO_NUVEM_PASTA/Cliente/AAAA-MM-DD título vN.mp4`) e apaga do servidor o final, as prévias antigas e o cache do render. O player e o download passam a buscar do Drive (Range, `AttachmentStreamer::streamDisco`); anexar ao card baixa um temporário. A capa e a prévia atual ficam no servidor; os brutos seguem a retenção (`VIDEO_RETENCAO_DIAS`).
+- Sem `GOOGLE_DRIVE_REFRESH_TOKEN` (ou `VIDEO_NUVEM_DISCO=nenhum`), tudo fica no servidor como antes. Envio que falhar: a tela mostra "Enviar de novo".
+- **Excluir** funciona em qualquer estado (inclusive travada/processando): lixeira no cartão da lista e "Excluir" no cabeçalho; opcionalmente apaga também a cópia do Drive. Pasta que o worker recriar depois vira órfã e o `video:limpar` apaga.
+
 ### Motor de motion (componentes animados)
 Os componentes premium (`janela` de terminal digitando, `contador` gigante com brilho, moldura `rec`, `pilula`, `apps` riscados/com check, `comentario`, `passos`, `cards`, `notificacao`, `grafico`, `comparacao`, `seguir`, `busca`, `marca`) são desenhados por `scripts/video/motion/` (Python + Skia) e entram como um vídeo com transparência sobreposto na montagem (abaixo da legenda).
 - **Por que não HTML/Chrome** (HyperFrames, Remotion — o que os editores virais com Claude usam): a hospedagem compartilhada limita threads/processos por conta e o Chrome abre dezenas. Skia é o motor gráfico do Chrome, num processo só.

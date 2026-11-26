@@ -65,6 +65,18 @@ class VideoLimpar extends Command
             }
         }
 
+        // Pastas órfãs: edição excluída enquanto o worker ainda gravava arquivos.
+        $existentes = VideoJob::withoutGlobalScopes()->pluck('id')->flip();
+        foreach (glob(Armazenamento::raiz().'/company-*/job-*', GLOB_ONLYDIR) ?: [] as $dir) {
+            $id = (int) substr(basename($dir), 4);
+            if (! $existentes->has($id) && filemtime($dir) < now()->subHours(6)->timestamp) {
+                $this->line('Pasta órfã '.basename(dirname($dir)).'/'.basename($dir).': apagada');
+                if (! $simular) {
+                    File::deleteDirectory($dir);
+                }
+            }
+        }
+
         $this->info(($simular ? '[simulação] ' : '').'Liberado: '.round($liberado / 1048576).' MB. Livre agora: '.(Armazenamento::espacoLivreGb() ?? '?').' GB.');
 
         return self::SUCCESS;

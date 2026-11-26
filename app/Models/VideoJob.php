@@ -57,7 +57,8 @@ class VideoJob extends Model
         'company_id', 'client_id', 'created_by', 'titulo', 'estilo', 'formato', 'duracao_alvo',
         'briefing', 'opcoes', 'musica_id', 'status', 'etapa', 'progresso', 'mensagem', 'erro',
         'plano', 'plano_versao', 'previa_versao', 'final_versao', 'previa_path', 'final_path',
-        'capa_path', 'legenda_post', 'feito_por_claude', 'task_id', 'claude_sessao', 'claude_uso',
+        'capa_path', 'nuvem_disco', 'nuvem_final', 'nuvem_capa', 'nuvem_tamanho', 'nuvem_status', 'nuvem_erro', 'nuvem_em',
+        'legenda_post', 'feito_por_claude', 'task_id', 'claude_sessao', 'claude_uso',
         'tentativas', 'sinal_em', 'iniciado_em', 'concluido_em', 'limpo_em',
     ];
 
@@ -72,6 +73,7 @@ class VideoJob extends Model
             'iniciado_em' => 'datetime',
             'concluido_em' => 'datetime',
             'limpo_em' => 'datetime',
+            'nuvem_em' => 'datetime',
         ];
     }
 
@@ -197,5 +199,17 @@ class VideoJob extends Model
         }
 
         $this->forceFill($dados)->saveQuietly();
+    }
+
+    /** O vídeo final já está no Drive (e pode ter saído do servidor). */
+    public function noDrive(): bool
+    {
+        return $this->nuvem_status === 'salvo' && filled($this->nuvem_final);
+    }
+
+    /** Há vídeo final para assistir/baixar (no servidor ou no Drive). */
+    public function temFinal(): bool
+    {
+        return $this->noDrive() || ($this->final_path && is_file($this->pasta()->absoluto($this->final_path)));
     }
 }

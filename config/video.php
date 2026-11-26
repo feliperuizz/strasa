@@ -68,6 +68,18 @@ return [
         'ffmpeg_timeout' => (int) env('VIDEO_FFMPEG_TIMEOUT', 3000),
     ],
 
+    /*
+    | Onde o vídeo final fica guardado de vez. O upload e a edição acontecem no
+    | servidor (rápido); quando o final fica pronto, ele sobe para este disco
+    | (o Google Drive que os anexos já usam) e é apagado do servidor — o player
+    | e o download passam a buscar de lá. Vazio = o Drive, se estiver configurado
+    | (GOOGLE_DRIVE_REFRESH_TOKEN); "nenhum" = fica no servidor.
+    */
+    'nuvem' => [
+        'disco' => env('VIDEO_NUVEM_DISCO'),
+        'pasta' => env('VIDEO_NUVEM_PASTA', 'Estúdio de vídeo'),
+    ],
+
     // Dias até apagar brutos e arquivos de trabalho de edições finalizadas.
     // O vídeo final continua (e, se foi para um card, já está no bucket).
     'retencao_dias' => (int) env('VIDEO_RETENCAO_DIAS', 21),

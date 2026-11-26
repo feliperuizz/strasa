@@ -15,6 +15,7 @@ use App\Video\Armazenamento;
 use App\Video\Claude\ClaudeCli;
 use App\Video\Estilos;
 use App\Video\Narracao;
+use App\Video\Nuvem;
 use App\Video\Plano\Linha;
 use App\Video\Transcricao;
 use Illuminate\Http\File;
@@ -370,7 +371,15 @@ class EdicaoController extends Controller
         $disco = config('filesystems.attachments_disk');
         $pasta = "company-{$task->company_id}/tasks/{$task->id}";
         $nomeBase = Str::slug($edicao->client->name.' '.$edicao->titulo);
-        $arquivos = [[$edicao->pasta()->absoluto($edicao->final_path), "$nomeBase.mp4", 'video/mp4', false]];
+        // Final que já foi para o Drive: baixa um temporário só para anexar.
+        $finalLocal = $edicao->pasta()->absoluto($edicao->final_path);
+        $temporario = null;
+        if (! is_file($finalLocal)) {
+            abort_unless($edicao->noDrive(), 422, 'O vídeo final não está mais disponível. Gere de novo.');
+            DB::disconnect();
+            $finalLocal = $temporario = Nuvem::baixarTemporario($edicao);
+        }
+        $arquivos = [[$finalLocal, "$nomeBase.mp4", 'video/mp4', false]];
 
         if (($dados['incluir_capa'] ?? false) && $edicao->capa_path && is_file($edicao->pasta()->absoluto($edicao->capa_path))) {
             $arquivos[] = [$edicao->pasta()->absoluto($edicao->capa_path), "$nomeBase-capa.png", 'image/png', true];
@@ -389,6 +398,9 @@ class EdicaoController extends Controller
                 'path' => $path, 'original_name' => $nome, 'mime_type' => $mime, 'size' => filesize($origem),
                 'is_image' => $imagem, 'position' => $posicao++,
             ]);
+        }
+        if ($temporario) {
+            @unlink($temporario);
         }
 
         TaskActivity::registrar($task, TaskActivity::TYPE_ATTACHMENT_ADDED, 'anexou o vídeo editado no Estúdio ("'.Str::limit($edicao->titulo, 50).'")', ['edicao' => $edicao->id]);
@@ -478,15 +490,38 @@ class EdicaoController extends Controller
         return array_filter($limpo, fn ($v) => $v !== null);
     }
 
-    public function destroy(VideoJob $edicao): RedirectResponse
+    /**
+     * Exclui a edição em qualquer estado — inclusive travada ou processando
+     * (o worker, ao ver que ela sumiu, para; a pasta que ele recriar a limpeza
+     * de órfãos apaga). A cópia no Drive só sai se a equipe marcar.
+     */
+    public function destroy(Request $request, VideoJob $edicao): RedirectResponse
     {
         $this->authorize('update', $edicao->client);
-        abort_if($edicao->emAndamento(), 422, 'Espere terminar o processamento para excluir.');
 
         $client = $edicao->client;
+        if ($request->boolean('apagar_drive')) {
+            Nuvem::apagar($edicao);
+        }
+        $edicao->forceFill(['status' => VideoJob::CANCELADO])->saveQuietly();
         $edicao->pasta()->apagarTudo();
+        $edicao->eventos()->delete();
+        $edicao->arquivos()->delete();
         $edicao->delete();
 
         return redirect()->route('clients.estudio', $client)->with('status', 'Edição excluída.');
+    }
+
+    /** Envia (de novo) o vídeo final ao Drive — quando o envio automático falhou. */
+    public function drive(VideoJob $edicao): RedirectResponse
+    {
+        $this->authorize('update', $edicao->client);
+        abort_unless(Nuvem::ativo(), 422, 'O Google Drive não está configurado no servidor.');
+        abort_unless($edicao->final_path && is_file($edicao->pasta()->absoluto($edicao->final_path)), 422, 'Não há vídeo final no servidor para enviar.');
+
+        $edicao->forceFill(['nuvem_status' => 'enviando', 'nuvem_erro' => null])->save();
+        \App\Jobs\ArquivarNoDrive::dispatch($edicao->id);
+
+        return back()->with('status', 'Enviando ao Drive…');
     }
 }

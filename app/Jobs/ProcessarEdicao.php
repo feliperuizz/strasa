@@ -6,6 +6,7 @@ use App\Models\VideoJob;
 use App\Video\Claude\LimiteDoClaude;
 use App\Video\Edicao;
 use App\Video\FalhaDeFerramenta;
+use App\Video\Nuvem;
 use App\Video\Plano\PlanoInvalido;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -110,6 +111,12 @@ class ProcessarEdicao implements ShouldQueue
                 'progresso' => 100, 'mensagem' => null, 'etapa' => null,
                 'concluido_em' => $this->acao === 'finalizar' ? now() : $job->concluido_em,
             ])->save();
+
+            // Final pronto: sobe para o Drive e libera o servidor (em segundo plano).
+            if ($this->acao === 'finalizar' && Nuvem::ativo()) {
+                $job->forceFill(['nuvem_status' => 'enviando'])->save();
+                ArquivarNoDrive::dispatch($job->id);
+            }
         } catch (LimiteDoClaude $e) {
             $minutos = (int) config('video.claude.espera_limite_minutos', 30);
             $job->forceFill(['status' => VideoJob::AGUARDANDO_LIMITE, 'mensagem' => "O Claude bateu o limite de uso da assinatura. Tento de novo em {$minutos} min."])->save();
@@ -138,6 +145,11 @@ class ProcessarEdicao implements ShouldQueue
 
     private function falhou(VideoJob $job, string $mensagem): void
     {
+        // Excluída no meio do processamento: não há mais onde registrar.
+        if (! VideoJob::withoutGlobalScopes()->whereKey($job->id)->exists()) {
+            return;
+        }
+
         // Ajuste ou final que falha não perde a prévia que já existia.
         $voltaPara = in_array($this->acao, ['ajustar', 'rerenderizar', 'finalizar'], true) && $job->previa_path ? VideoJob::REVISAO : VideoJob::ERRO;
 

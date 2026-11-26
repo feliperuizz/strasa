@@ -41,8 +41,11 @@
                     <h1 class="truncate text-base font-semibold text-slate-200">{{ $edicao->titulo }}</h1>
                 </div>
             </div>
-            <div class="flex items-center gap-2" id="status-cabecalho">
-                @include('estudio.partials.status', ['edicao' => $edicao])
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2" id="status-cabecalho">
+                    @include('estudio.partials.status', ['edicao' => $edicao])
+                </div>
+                @include('estudio.partials.excluir-edicao', ['edicao' => $edicao])
             </div>
         </div>
     </x-slot>
@@ -254,10 +257,24 @@
                             @if($edicao->previa_versao > 1)
                                 <span class="text-slate-500">versões:</span>
                                 @for($v = $edicao->previa_versao - 1; $v >= max(1, $edicao->previa_versao - 4); $v--)
+                                    @continue(! is_file($edicao->pasta()->absoluto(sprintf('renders/previa_v%02d.mp4', $v))))
                                     <button type="button" @click="$refs.video.src = @js(route('estudio.midia', [$edicao, 'previa', $v])); $refs.video.play()" class="rounded px-1.5 py-0.5 text-slate-400 hover:bg-ink-800 hover:text-slate-200">v{{ $v }}</button>
                                 @endfor
                             @endif
                         </div>
+                        @if($edicao->final_path && $edicao->nuvem_status)
+                            <div class="flex flex-wrap items-center justify-center gap-2 text-[11.5px]">
+                                @if($edicao->noDrive())
+                                    <span class="text-emerald-400">☁ Salvo no Google Drive</span>
+                                    <span class="truncate text-slate-500" title="{{ $edicao->nuvem_final }}">{{ $edicao->nuvem_final }}</span>
+                                @elseif($edicao->nuvem_status === 'enviando')
+                                    <span class="text-slate-400">☁ Enviando ao Google Drive… (depois sai do servidor)</span>
+                                @else
+                                    <span class="text-rose-400" title="{{ $edicao->nuvem_erro }}">☁ Não foi para o Drive (continua no servidor)</span>
+                                    <form method="POST" action="{{ route('estudio.edicoes.drive', $edicao) }}">@csrf<button class="rounded border border-ink-600 px-2 py-0.5 text-slate-300 hover:bg-ink-800">Enviar de novo</button></form>
+                                @endif
+                            </div>
+                        @endif
                     @endif
 
                     @if($edicao->status === 'erro')

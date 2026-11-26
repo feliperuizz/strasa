@@ -1,5 +1,6 @@
 {{-- Uma edição na lista (estúdio do cliente e painel geral). --}}
 @php $info = $edicao->estiloInfo(); @endphp
+<div class="group/cartao relative">
 <a href="{{ route('estudio.edicoes.show', $edicao) }}"
    class="group flex gap-3 rounded-xl border border-ink-600 bg-ink-800/70 p-3 transition hover:border-ink-500 hover:bg-ink-800">
     <div class="relative grid h-[84px] w-[48px] shrink-0 place-items-center overflow-hidden rounded-lg bg-ink-900 ring-1 ring-white/5" style="color: {{ $info['cor'] }}">
@@ -30,3 +31,7 @@
         </p>
     </div>
 </a>
+    <div class="absolute bottom-2 right-2 sm:opacity-0 sm:transition sm:group-hover/cartao:opacity-100 sm:focus-within:opacity-100">
+        @include('estudio.partials.excluir-edicao', ['edicao' => $edicao, 'icone' => true])
+    </div>
+</div>

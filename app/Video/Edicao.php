@@ -123,6 +123,9 @@ class Edicao
         }
 
         $job->forceFill([
+            // Versão nova: a do Drive (se houver) fica lá como histórico; esta sobe de novo.
+            'nuvem_disco' => null, 'nuvem_final' => null, 'nuvem_capa' => null, 'nuvem_tamanho' => null,
+            'nuvem_status' => null, 'nuvem_erro' => null, 'nuvem_em' => null,
             'final_versao' => $versao,
             'final_path' => $this->pasta->relativo($saida),
             'capa_path' => $capa && is_file($capa) ? $this->pasta->relativo($capa) : $job->capa_path,
