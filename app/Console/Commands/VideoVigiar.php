@@ -24,7 +24,9 @@ class VideoVigiar extends Command
 
     public function handle(): int
     {
-        Cache::put('video:agenda:ultimo', now()->toIso8601String(), now()->addDay());
+        // Arquivo, não cache: o deploy roda optimize:clear e apagava a marca (o diagnóstico
+        // acusava "cron nunca rodou" logo depois de todo deploy).
+        @file_put_contents(\App\Video\Armazenamento::raiz().'/.agendador', now()->toIso8601String());
 
         $limite = now()->subMinutes(max(5, (int) config('video.fila.sem_sinal_minutos', 20)));
         $emCurso = VideoJob::withoutGlobalScopes()->whereIn('status', [VideoJob::PROCESSANDO, VideoJob::AJUSTANDO, VideoJob::FINALIZANDO])->get();

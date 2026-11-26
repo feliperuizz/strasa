@@ -166,7 +166,8 @@ class Diagnostico
             $this->item('Fila', 'edições na fila', $presos ? 'aviso' : 'ok', "$pendentes na fila".($presos ? ", $presos reservadas há mais de 3 h" : ''), 'Se ficar parado, confira o cron do schedule:run e o video:vigiar.');
         }
 
-        $ultimo = Cache::get('video:agenda:ultimo');
+        $marca = Armazenamento::raiz().'/.agendador';
+        $ultimo = is_file($marca) ? trim((string) file_get_contents($marca)) : null;
         $rodando = $ultimo && now()->diffInMinutes(\Carbon\Carbon::parse($ultimo)) <= 10;
         $this->item('Fila', 'agendador (cron)', $rodando ? 'ok' : 'erro', $ultimo ? 'último sinal '.\Carbon\Carbon::parse($ultimo)->diffForHumans() : 'nunca rodou',
             'No cPanel > Cron Jobs, a cada minuto: cd /home/USUARIO/public_html/strasa && php artisan schedule:run >> /dev/null 2>&1 — é ele que liga o worker da fila de vídeo.');
