@@ -223,7 +223,8 @@ MOTION_PY=""
 [ -z "$UV" ] && [ -x "$BIN/uv" ] && UV="$BIN/uv"
 criar_venv "$BASE/venv-motion"
 # skia-python novo pede glibc 2.28; em servidor mais antigo o uv/pip cai sozinho na 87.x (glibc 2.17).
-if instalar_pip "$BASE/venv-motion" skia-python numpy; then
+# OpenCV (detector de rosto YuNet). numpy < 2.4: o OpenCV ainda não abre com o 2.4.
+if instalar_pip "$BASE/venv-motion" skia-python "numpy<2.4" opencv-python-headless; then
     if "$BASE/venv-motion/bin/python" -c 'import skia; s = skia.Surface(8, 8); print("skia", skia.__version__)'; then
         MOTION_PY="$BASE/venv-motion/bin/python"
     else
@@ -231,6 +232,11 @@ if instalar_pip "$BASE/venv-motion" skia-python numpy; then
     fi
 else
     vermelho "Falhou ao instalar o skia-python. Os vídeos saem sem os componentes de motion."
+fi
+mkdir -p "$ICONES"
+if [ ! -s "$ICONES/yunet.onnx" ]; then
+    curl -fsSL --retry 3 -o "$ICONES/yunet.onnx" "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx" \
+        && verde "Detector de rosto (YuNet) baixado." || amarelo "Não baixei o detector de rosto (as animações só não desviam do rosto sozinhas)."
 fi
 if [ ! -s "$ICONES/marcas.json" ] || [ ! -d "$ICONES/lucide" ]; then
     echo "Baixando os ícones (Simple Icons CC0 + Lucide ISC, ~15 MB)…"

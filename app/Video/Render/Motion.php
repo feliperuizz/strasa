@@ -22,14 +22,14 @@ class Motion
 {
     public const TIPOS = [
         'janela', 'contador', 'rec', 'pilula', 'apps', 'comentario', 'passos', 'cards',
-        'notificacao', 'grafico', 'comparacao', 'seguir', 'busca', 'marca',
+        'notificacao', 'grafico', 'comparacao', 'seguir', 'busca', 'marca', 'cena',
     ];
 
     /** Duração padrão (s) quando o plano não diz. */
     public const DURACAO = [
         'janela' => 4.5, 'contador' => 2.8, 'rec' => 3.0, 'pilula' => 2.5, 'apps' => 3.2, 'comentario' => 3.5,
         'passos' => 5.0, 'cards' => 4.0, 'notificacao' => 3.0, 'grafico' => 3.5, 'comparacao' => 4.0,
-        'seguir' => 3.2, 'busca' => 3.5, 'marca' => 2.6,
+        'seguir' => 3.2, 'busca' => 3.5, 'marca' => 2.6, 'cena' => 4.0,
     ];
 
     /** Onde cada um fica se o plano não disser (os cartões em cima, longe da legenda). */
@@ -119,6 +119,11 @@ class Motion
             'logo' => $nomeMarca($i['logo'] ?? null), 'site' => $dominio($i['site'] ?? null), 'sigla' => $texto($i['sigla'] ?? '', 4) ?: null,
             'fundo' => $hex($i['fundo'] ?? null), 'cor' => $hex($i['cor'] ?? null),
         ], fn ($v) => $v !== null);
+
+        // Cena livre: composta do zero pelo Claude (validação própria).
+        if ($tipo === 'cena') {
+            return CenaLivre::normalizar($el, $normal, $linha, $texto);
+        }
 
         switch ($tipo) {
             case 'janela':
@@ -274,6 +279,9 @@ class Motion
         $itens = $el['itens'] ?? [];
 
         $lista = match ($el['tipo']) {
+            'cena' => ! empty($el['sons'])
+                ? array_map(fn ($x) => $s($i + $x['em'], $x['som'], $x['forca']), $el['sons'])
+                : [$s($i, ($el['formato'] ?? '') === 'tela_cheia' ? 'whoosh' : 'swoosh', 0.55)],
             'janela' => array_merge([$s($i, 'swoosh', 0.5)], array_map(fn ($l) => $s($l['t'] ?? $i + 0.4, match ($l['tipo']) {
                 'ok' => 'ding', 'comando' => 'clique', default => 'tique',
             }, 0.5), array_filter($el['linhas'], fn ($l) => isset($l['t'])))),
@@ -302,7 +310,8 @@ class Motion
     public static function ocultamLegenda(array $elementos): array
     {
         return array_values(array_map(fn ($e) => [$e['inicio'], $e['inicio'] + $e['duracao']], array_filter($elementos,
-            fn ($e) => ($e['tipo'] === 'contador' && ($e['fundo'] ?? 'escuro') === 'escuro') || $e['tipo'] === 'comentario')));
+            fn ($e) => ($e['tipo'] === 'contador' && ($e['fundo'] ?? 'escuro') === 'escuro') || $e['tipo'] === 'comentario'
+                || ($e['tipo'] === 'cena' && ! empty($e['oculta_legenda'])))));
     }
 
     /* Render -------------------------------------------------------------- */
@@ -312,13 +321,10 @@ class Motion
      *
      * @return string caminho do .mov (QuickTime RLE ARGB, alfa pré-multiplicado)
      */
-    public static function renderizar(array $elementos, array $id, int $largura, int $altura, float $escala, float $total, string $pasta, ?string $logo, array $arquivosDeFonte): string
+    /** O que o motor recebe (render do vídeo e folhas de revisão usam o mesmo). */
+    public static function pedido(array $elementos, array $id, int $largura, int $altura, float $escala, float $total, ?string $logo, array $arquivosDeFonte): array
     {
-        if (! self::disponivel()) {
-            throw new FalhaDeFerramenta('O motor de motion não está instalado neste servidor (rode o instalador do estúdio de novo).');
-        }
-
-        $pedido = [
+        return [
             'largura' => $largura, 'altura' => $altura, 'escala' => round($escala, 4), 'fps' => 30, 'duracao' => round($total, 3),
             'identidade' => ['destaque' => $id['destaque'], 'texto' => $id['texto'], 'primaria' => $id['primaria'], 'fundo' => $id['fundo']],
             'fontes' => self::fontes($id, $arquivosDeFonte),
@@ -328,6 +334,34 @@ class Motion
             'threads' => (int) Ferramentas::threads(),
             'ffmpeg' => Ferramentas::ffmpegBin(),
         ];
+    }
+
+    /** Roda o motor com um pedido (vídeo, quadros ou folhas). */
+    public static function rodarPedido(array $pedido, string $pasta): void
+    {
+        $arquivo = $pasta.'/motion_pedido_'.getmypid().'_'.mt_rand(1000, 9999).'.json';
+        file_put_contents($arquivo, json_encode($pedido, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        try {
+            Ferramentas::rodar([self::python(), '-I', base_path('scripts/video/motion/render.py'), $arquivo], $pasta, 600, null,
+                array_merge(['PYTHONIOENCODING' => 'utf-8'], array_fill_keys(['OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS'], Ferramentas::threads())));
+        } finally {
+            @unlink($arquivo);
+        }
+    }
+
+    /** Detector de rosto (YuNet) disponível: motor de motion + modelo. */
+    public static function rostoDisponivel(): bool
+    {
+        return self::disponivel() && is_file(self::pastaIcones().'/yunet.onnx');
+    }
+
+    public static function renderizar(array $elementos, array $id, int $largura, int $altura, float $escala, float $total, string $pasta, ?string $logo, array $arquivosDeFonte): string
+    {
+        if (! self::disponivel()) {
+            throw new FalhaDeFerramenta('O motor de motion não está instalado neste servidor (rode o instalador do estúdio de novo).');
+        }
+
+        $pedido = self::pedido($elementos, $id, $largura, $altura, $escala, $total, $logo, $arquivosDeFonte);
 
         // Cache por conteúdo + versão do motor: num ajuste que não mexe nos componentes, nada é refeito.
         $versao = implode('|', array_map(fn ($f) => @filemtime($f), glob(base_path('scripts/video/motion/*.py')) ?: []));

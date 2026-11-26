@@ -24,7 +24,7 @@ class Validador
         'sticker', 'tela_cheia', 'flash', 'citacao', 'estrelas',
         // Motor de motion (App\Video\Render\Motion::TIPOS)
         'janela', 'contador', 'rec', 'pilula', 'apps', 'comentario', 'passos', 'cards',
-        'notificacao', 'grafico', 'comparacao', 'seguir', 'busca', 'marca',
+        'notificacao', 'grafico', 'comparacao', 'seguir', 'busca', 'marca', 'cena',
     ];
 
     public const FORMAS = ['seta', 'circulo', 'check', 'x', 'estrela', 'brilho', 'coracao', 'raio', 'balao', 'sublinhado', 'fogo'];

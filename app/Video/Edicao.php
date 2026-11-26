@@ -43,6 +43,7 @@ class Edicao
         $this->progresso(2, 'Preparando o material', 'preparar');
         $inventario = (new Preparador($job))->executar(fn ($f, $msg) => $this->progresso(2 + (int) ($f * 26), $msg));
         $this->avisarMaterial($inventario);
+        $inventario = $this->mapearRostos($inventario);
 
         $palavras = [];
         if ($estilo['fala']) {
@@ -132,6 +133,9 @@ class Edicao
         ])->save();
 
         $job->registrar('versao', "Vídeo final v{$versao} pronto (".Linha::formatar($resultado['duracao']).', '.round(filesize($saida) / 1048576, 1).' MB).', ['final' => $versao]);
+
+        // As cenas que chegaram ao final viram repertório do cliente (família visual nos próximos vídeos).
+        rescue(fn () => Repertorio::guardar($job, $plano), null, false);
     }
 
     /* Etapas ------------------------------------------------------------ */
@@ -252,6 +256,10 @@ class Edicao
             }
         }
 
+        if ($primeira && config('video.claude.revisao_visual', true) && $r['sessao']) {
+            [$plano, $r] = $this->revisaoVisual($contexto, $plano, $r, $inventario);
+        }
+
         $this->salvarPlano($plano, 'claude');
         $job->forceFill(['feito_por_claude' => true, 'claude_sessao' => $r['sessao']])->save();
         $job->registrar('claude', $r['texto'] ?: ($plano['resumo'] ?: 'Plano pronto.'), array_filter([
@@ -286,6 +294,117 @@ class Edicao
             'previa' => $versao,
             'avisos' => $r['avisos'] ?: null,
         ]));
+    }
+
+    /**
+     * O Claude olha o que fez: folhas com entrada/auge/saída de cada animação
+     * sobre o quadro real do vídeo (rosto em verde, zonas do app em vermelho)
+     * e corrige o plano. Se a correção sair inválida, fica o plano anterior.
+     */
+    private function revisaoVisual(Contexto $contexto, array $plano, array $r, array $inventario): array
+    {
+        $job = $this->job;
+        [$id, $fontes, $logo] = $this->identidadeEFontes();
+        $folhas = Revisao::folhas($job, Logos::resolverPlano($plano, (int) $job->company_id, $job->client_id), $contexto->pasta(), $id, $fontes, $logo);
+        if (! $folhas) {
+            return [$plano, $r];
+        }
+
+        $this->progresso(62, 'O Claude está revisando as animações (olhando os quadros)');
+        DB::disconnect();
+        $prompt = "Revisão visual. Renderizei as suas animações sobre o quadro real do vídeo. Abra cada imagem com Read:\n- ".implode("\n- ", $folhas)
+            ."\n\nCada folha mostra a entrada, o auge e a saída. Vermelho = zonas que o app cobre (topo, base e direita); verde = o rosto."
+            ."\nCorrija no plano.json, sem medo de refazer uma cena inteira:\n"
+            ."- texto ilegível, pequeno demais ou cortado; elemento saindo do quadro ou dentro do vermelho;\n"
+            ."- animação cobrindo o rosto (mova, encolha, ou vire tela cheia de propósito);\n"
+            ."- desalinhado, amontoado, duas protagonistas brigando, contraste fraco sobre a imagem;\n"
+            ."- sem graça ou genérica: o conceito tem que nascer desta fala (refaça a cena).\n"
+            ."Se estiver tudo bom, não mexa. Termine com 1 a 3 frases dizendo o que mudou.";
+
+        try {
+            $r2 = ClaudeCli::executar($contexto->pasta(), $prompt, $r['sessao']);
+            $this->registrarUso($r2);
+            $bruto = json_decode((string) @file_get_contents($contexto->pasta().'/plano.json'), true);
+            $novo = is_array($bruto) ? $this->validar($bruto, $inventario) : null;
+        } catch (Claude\LimiteDoClaude $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $novo = null;
+        }
+
+        if (! $novo) {
+            $job->registrar('sistema', 'A revisão visual do Claude não gerou um plano válido; fica o plano anterior.');
+
+            return [$plano, $r];
+        }
+
+        if (($plano['narracao']['ativo'] ?? false) && $job->opcao('legendas', true)) {
+            $novo['legendas']['ativo'] = true;
+        }
+        $r2['texto'] = trim(($r['texto'] ?? '')."\n\nRevisão visual: ".($r2['texto'] ?? ''));
+        $r2['turnos'] = ($r['turnos'] ?? 0) + ($r2['turnos'] ?? 0);
+
+        return [$novo, $r2 + $r];
+    }
+
+    /** Onde está o rosto em cada arquivo de vídeo (YuNet), guardado no inventário. */
+    private function mapearRostos(array $inventario): array
+    {
+        if (! Render\Motion::rostoDisponivel()) {
+            return $inventario;
+        }
+        $mudou = false;
+        foreach ($inventario as $chave => $info) {
+            if (($info['tipo'] ?? '') !== 'video' || isset($info['rosto'])) {
+                continue;
+            }
+            $this->progresso($this->job->progresso, "Encontrando o rosto em {$info['nome']}");
+            DB::disconnect();
+            $mapa = Revisao::mapearRosto($this->pasta, $chave);
+            $inventario[$chave]['rosto'] = $mapa ? Revisao::resumoRosto($mapa) : 'não detectado';
+            $mudou = true;
+        }
+        if ($mudou) {
+            file_put_contents($this->pasta->absoluto('trabalho/inventario.json'), json_encode($inventario, JSON_UNESCAPED_UNICODE));
+        }
+
+        return $inventario;
+    }
+
+    /** Plano sem foco de câmera (o padrão do centro): centraliza no rosto do meio do trecho. */
+    private function focoNoRosto(array $segmentos): array
+    {
+        $mapas = [];
+        foreach ($segmentos as &$s) {
+            if (($s['tipo'] ?? '') !== 'clip' || ($s['camera']['foco'] ?? [0.5, 0.5]) != [0.5, 0.5]) {
+                continue;
+            }
+            $arq = $this->pasta->absoluto("trabalho/rosto_{$s['arquivo']}.json");
+            $mapas[$s['arquivo']] ??= is_file($arq) ? json_decode((string) file_get_contents($arq), true) : null;
+            $r = Revisao::rostoEm($mapas[$s['arquivo']], ((float) $s['inicio'] + (float) $s['fim']) / 2);
+            if ($r) {
+                // Centro do rosto, puxado para os olhos (~42% da caixa do rosto).
+                $s['camera']['foco'] = [round($r[0] + $r[2] / 2, 3), round($r[1] + $r[3] * 0.42, 3)];
+            }
+        }
+        unset($s);
+
+        return $segmentos;
+    }
+
+    /** Identidade (com os ajustes desta edição), fontes e logo: o que o motor precisa. */
+    private function identidadeEFontes(): array
+    {
+        $job = $this->job;
+        $perfil = VideoProfile::doCliente($job->client);
+        $pastaFontes = rtrim(str_replace('\\', '/', (string) config('video.ferramentas.fontes')), '/');
+        $fontes = glob("$pastaFontes/*.ttf") ?: [];
+        if ($custom = $perfil->caminhoFonte()) {
+            $fontes[] = $custom;
+        }
+        $logo = $this->pasta->absoluto('trabalho/logo.png');
+
+        return [Identidade::daEdicao($perfil, (array) $job->opcao('identidade', [])), $fontes, $job->opcao('logo', true) && is_file($logo) ? $logo : null];
     }
 
     /* Peças compartilhadas ---------------------------------------------- */
@@ -323,6 +442,8 @@ class Edicao
         if (! $job->opcao('legendas', true)) {
             $plano['legendas']['ativo'] = false;
         }
+
+        $plano['segmentos'] = $this->focoNoRosto($plano['segmentos']);
 
         // Cortes na batida (montagem sem fala).
         if ($plano['musica']['usar'] && $plano['musica']['sincronizar_cortes'] && ! empty($musica['batidas'])) {

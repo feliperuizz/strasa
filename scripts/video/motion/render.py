@@ -83,6 +83,60 @@ def desenhar(t):
     canvas.restore()
 
 
+def folhas(lista):
+    """
+    Revisão visual para o Claude: cada folha = alguns instantes de uma animação
+    (entrada, auge, saída) sobre o quadro real do vídeo, lado a lado, com as
+    zonas proibidas dos botões do app (vermelho) e o rosto (verde) marcados.
+    """
+    fonte = cena.fontes.fonte("forte", 30)
+    for folha in lista:
+        qs = folha.get("quadros") or []
+        if not qs:
+            continue
+        cw, ch = LW, LH
+        gap, rod = 12, 64
+        s = skia.Surface(len(qs) * cw + (len(qs) - 1) * gap, ch + rod)
+        cv = s.getCanvas()
+        cv.clear(skia.Color(18, 18, 20))
+        for i, q in enumerate(qs):
+            t = float(q["t"])
+            img = skia.Image.open(q["fundo"]) if q.get("fundo") and os.path.isfile(q["fundo"]) else None
+            canvas.clear(skia.Color(30, 30, 34))
+            if img is not None:
+                sc = max(LW / img.width(), LH / img.height())
+                imagem(canvas, img, (LW - img.width() * sc) / 2, (LH - img.height() * sc) / 2, img.width() * sc, img.height() * sc)
+            canvas.save()
+            canvas.scale(k, k)
+            for el in elementos:
+                if el.ativo(t):
+                    try:
+                        el.quadro(canvas, t)
+                    except Exception as e:
+                        avisos.append("%s: %s" % (el.d.get("id", el.d.get("tipo")), e))
+            canvas.restore()
+            # Guias: zonas que o app cobre (8% topo, 20% base, 12% direita) e o rosto.
+            vermelho = skia.Paint(Color=skia.Color(255, 40, 40, 46))
+            canvas.drawRect(skia.Rect.MakeXYWH(0, 0, LW, LH * 0.08), vermelho)
+            canvas.drawRect(skia.Rect.MakeXYWH(0, LH * 0.80, LW, LH * 0.20), vermelho)
+            canvas.drawRect(skia.Rect.MakeXYWH(LW * 0.88, LH * 0.08, LW * 0.12, LH * 0.72), vermelho)
+            if q.get("rosto"):
+                rx, ry, rw, rh = q["rosto"]
+                verde = skia.Paint(AntiAlias=True, Color=skia.Color(60, 230, 120, 220), Style=skia.Paint.kStroke_Style, StrokeWidth=3)
+                canvas.drawRect(skia.Rect.MakeXYWH(rx * LW, ry * LH, rw * LW, rh * LH), verde)
+            snap = surface.makeImageSnapshot()
+            x = i * (cw + gap)
+            cv.drawImage(snap, x, 0)
+            rotulo = "%s  %s  %.1fs" % (folha.get("rotulo", ""), q.get("nome", ""), t)
+            cv.drawString(rotulo, x + 10, ch + 42, fonte, skia.Paint(AntiAlias=True, Color=skia.Color(235, 235, 240)))
+        s.makeImageSnapshot().save(folha["saida"], skia.kPNG)
+
+
+if pedido.get("folhas"):
+    folhas(pedido["folhas"])
+    print(json.dumps({"avisos": avisos}))
+    sys.exit(0)
+
 if pedido.get("quadros"):
     os.makedirs(pedido["pasta_quadros"], exist_ok=True)
     for t in pedido["quadros"]:

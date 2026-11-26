@@ -96,6 +96,22 @@ class Logos
             if (isset($el['itens']) && in_array($el['tipo'], ['apps', 'cards'], true)) {
                 $plano['elementos'][$n]['itens'] = array_map(fn ($i) => is_array($i) ? $resolver($i) : $i, $el['itens']);
             }
+            // Cena livre: camadas "logo" em qualquer nível (grupos dentro de grupos).
+            if ($el['tipo'] === 'cena' && ! empty($el['camadas'])) {
+                $andar = function (array $camadas) use (&$andar, $resolver): array {
+                    return array_map(function ($c) use (&$andar, $resolver) {
+                        if (($c['tipo'] ?? '') === 'logo') {
+                            $c = $resolver($c);
+                        }
+                        if (! empty($c['filhos'])) {
+                            $c['filhos'] = $andar($c['filhos']);
+                        }
+
+                        return $c;
+                    }, $camadas);
+                };
+                $plano['elementos'][$n]['camadas'] = $andar($el['camadas']);
+            }
         }
 
         return $plano;

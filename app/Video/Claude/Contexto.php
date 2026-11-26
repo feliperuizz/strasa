@@ -7,6 +7,7 @@ use App\Models\VideoLearning;
 use App\Models\VideoProfile;
 use App\Video\Estilos;
 use App\Video\Narracao;
+use App\Video\Repertorio;
 use App\Video\Plano\Linha;
 use App\Video\Render\Motion;
 use Illuminate\Support\Facades\File;
@@ -114,6 +115,13 @@ class Contexto
         // Motor de motion: catálogo dos componentes premium + lista de logos/ícones.
         if (Motion::disponivel()) {
             copy(resource_path('video/motion.md'), "$dir/guias/motion.md");
+            // Repertório do cliente: as últimas cenas aprovadas, completas, para manter a família visual.
+            $rep = Repertorio::ler($this->job->client_id);
+            if ($rep) {
+                file_put_contents("$dir/guias/repertorio.json", json_encode(array_slice($rep, -6), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            } else {
+                @unlink("$dir/guias/repertorio.json");
+            }
             if ($indice = Motion::indiceIcones()) {
                 copy($indice, "$dir/guias/icones.txt");
             }
@@ -148,7 +156,7 @@ class Contexto
         $l[] = '## Passo a passo';
         $l[] = '1. Leia `guias/regras.md` (ofício geral), `guias/estilo.md` (este estilo) e `guias/plano.md` (o formato da entrega).';
         if (Motion::disponivel()) {
-            $l[] = '   **Leia também `guias/motion.md`: os componentes premium (janela, contador, apps, passos, cards, comentário…) são o padrão desta edição.** A tela reage à fala: cada componente e cada item entram na palavra-gatilho. Logos e ícones: Grep em `guias/icones.txt`.';
+            $l[] = '   **Leia também `guias/motion.md` inteiro: você é o motion designer. Cada animação é uma CENA LIVRE criada do zero para esta fala (`"tipo": "cena"`), não um template; os componentes prontos são só atalho.** A tela reage à fala: cada camada entra na palavra-gatilho. Gancho com storyboard. Logos e ícones: Grep em `guias/icones.txt`. Depois do plano você recebe as animações renderizadas sobre o vídeo para revisar.';
         }
         $l[] = '2. Leia a identidade, os aprendizados e o briefing abaixo.';
         $l[] = $temTranscricao
@@ -208,6 +216,27 @@ class Contexto
             $l[] = '- **Texto para ouvir, não para ler:** frases curtas, ordem direta, tom da marca, uma ideia por fala. Abra com um gancho e feche com a chamada (a mesma do cartão final). Use só fatos do briefing e da identidade — não invente preço, metragem ou promessa.';
             $l[] = '- Escreva números como se fala quando houver dúvida de leitura ("doze metros quadrados", "três quartos"). Valores em R$ podem ir em algarismos.';
             $l[] = '- Narração e fala gravada não se sobrepõem: em trecho com `audio: true` e alguém falando, não ponha narração.';
+            $l[] = '';
+        }
+
+        $rostos = array_filter(array_map(fn ($i) => $i['rosto'] ?? null, $inventario));
+        if ($rostos) {
+            $l[] = '## Onde está o rosto (detector automático)';
+            $l[] = 'Posição do rosto no quadro de ORIGEM de cada arquivo (0–1; x da esquerda, y de cima), por trecho. Use para não cobrir o rosto com animação e para o `foco` da câmera (segmento sem `foco` já é centralizado no rosto sozinho). Nas folhas de revisão o rosto aparece em verde.';
+            foreach ($rostos as $chave => $resumo) {
+                $l[] = "- {$chave}: {$resumo}";
+            }
+            $l[] = '';
+        }
+
+        $repertorio = Repertorio::ler($this->job->client_id);
+        if ($repertorio && Motion::disponivel()) {
+            $l[] = '## Repertório de motion deste cliente (cenas que foram para vídeos finais)';
+            $l[] = 'Mantenha a FAMÍLIA visual (linguagem, materiais, ritmo) e evolua — não repita o mesmo conceito. As 6 últimas, completas, estão em `guias/repertorio.json` (dá para reaproveitar peças).';
+            foreach (array_slice(array_reverse($repertorio), 0, 15) as $r) {
+                $c = $r['cena'] ?? [];
+                $l[] = sprintf('- %s · %s · %s', $r['quando'] ?? '', $c['formato'] ?? '', mb_substr($c['conceito'] ?? '(sem conceito)', 0, 140));
+            }
             $l[] = '';
         }
 

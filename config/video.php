@@ -104,6 +104,9 @@ return [
         // O motor é o Claude. Ligue só se quiser que, sem Claude, saia uma
         // edição por regras (piloto automático) em vez de erro.
         'piloto_reserva' => (bool) env('VIDEO_PILOTO_RESERVA', false),
+        // Depois do primeiro plano, o Claude olha as animações renderizadas sobre o
+        // quadro real do vídeo e corrige (mais uma rodada da assinatura por edição).
+        'revisao_visual' => (bool) env('VIDEO_CLAUDE_REVISAO', true),
     ],
 
     /*

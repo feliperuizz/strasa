@@ -419,7 +419,7 @@
                                                     @if(in_array($el['tipo'], ['titulo', 'texto', 'palavra', 'etiqueta', 'preco', 'nome', 'local', 'citacao', 'tela_cheia', 'pilula', 'comentario', 'busca', 'seguir', 'notificacao', 'marca'], true))
                                                         <input name="textos[{{ $el['id'] }}]" value="{{ $el['texto'] }}" maxlength="140" class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-slate-200 hover:border-ink-600 focus:border-brand-500 focus:bg-ink-900 focus:outline-none">
                                                     @else
-                                                        <span class="flex-1 truncate border border-transparent px-1.5 py-0.5 text-slate-400">{{ $el['texto'] ?: collect($el['itens'] ?? $el['linhas'] ?? [])->map(fn ($i) => is_array($i) ? ($i['texto'] ?? $i['nome'] ?? $i['rotulo'] ?? '') : $i)->filter()->implode(' · ') }}</span>
+                                                        <span class="flex-1 truncate border border-transparent px-1.5 py-0.5 text-slate-400">{{ $el['texto'] ?: ($el['conceito'] ?? null) ?: collect($el['itens'] ?? $el['linhas'] ?? [])->map(fn ($i) => is_array($i) ? ($i['texto'] ?? $i['nome'] ?? $i['rotulo'] ?? '') : $i)->filter()->implode(' · ') }}</span>
                                                     @endif
                                                 </div>
                                             @endforeach

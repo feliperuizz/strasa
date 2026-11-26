@@ -253,6 +253,41 @@ class EstudioMotorTest extends TestCase
         $this->assertNotEmpty(Motion::sons($porTipo['contador']));
     }
 
+    public function test_cena_livre_limpa_camadas_e_converte_palavra_em_tempo_da_cena(): void
+    {
+        $plano = (new Validador)->normalizar([
+            'segmentos' => [['id' => 's1', 'arquivo' => 'f1', 'inicio' => 10, 'fim' => 20]],
+            'elementos' => [[
+                'tipo' => 'cena', 'em' => ['arquivo' => 'f1', 't' => 12], 'duracao' => 4, 'formato' => 'tela_cheia',
+                'conceito' => 'estrada que se desenha', 'fundo' => ['cores' => ['destaque', '#123456', 'javascript:x']],
+                'camera' => ['zoom' => [9, 1], 'punches' => [['em' => ['arquivo' => 'f1', 't' => 13.5], 'forca' => 0.2]]],
+                'camadas' => [
+                    ['tipo' => 'texto', 'texto' => 'Do clique à venda', 'palavras' => [['arquivo' => 'f1', 't' => 12.5], 1.0], 'cor' => 'red', 'onclick' => 'x', 'fonte' => 'Comic'],
+                    ['tipo' => 'caminho', 'd' => 'M0 0 L10 10 <script>'],
+                    ['tipo' => 'grupo', 'filhos' => [['tipo' => 'icone', 'nome' => 'lucide:rocket'], ['tipo' => 'exec', 'cmd' => 'rm']]],
+                    ['tipo' => 'linha', 'pontos' => [[0, 0], [100, 'x'], [200, 200]], 'entrada' => ['tipo' => 'desenhar', 'em' => ['arquivo' => 'f1', 't' => 14]]],
+                ],
+            ]],
+        ], self::ARQUIVOS);
+
+        $c = $plano['elementos'][0];
+        $this->assertSame('cena', $c['tipo']);
+        $this->assertTrue($c['oculta_legenda'], 'tela cheia esconde a legenda');
+        $this->assertSame(['destaque', '#123456'], $c['fundo']['cores']);
+        $this->assertSame(3.0, $c['camera']['zoom'][0]);
+        $this->assertEqualsWithDelta(1.5, $c['camera']['punches'][0]['em'], 0.001, 'palavra em 13,5 s = 1,5 s depois do início da cena');
+        $texto = $c['camadas'][0];
+        $this->assertSame([0.5, 1.0], $texto['palavras']);
+        $this->assertArrayNotHasKey('cor', $texto, 'cor inválida some');
+        $this->assertArrayNotHasKey('onclick', $texto);
+        $this->assertSame('forte', $texto['fonte']);
+        $this->assertArrayNotHasKey('d', $c['camadas'][1], 'path SVG com lixo é recusado');
+        $this->assertCount(1, $c['camadas'][2]['filhos'], 'tipo desconhecido não entra');
+        $this->assertCount(2, $c['camadas'][3]['pontos']);
+        $this->assertEqualsWithDelta(2.0, $c['camadas'][3]['entrada']['em'], 0.001);
+        $this->assertNotEmpty(Motion::sons($c));
+    }
+
     public function test_validador_guarda_falas_da_narracao_e_descarta_vazias(): void
     {
         $plano = (new Validador)->normalizar([

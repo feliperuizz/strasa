@@ -633,7 +633,10 @@ class Marca(Elemento):
                 escrever(c, self.d["texto"], cx, cy + 240, f, cor(est.texto), "centro", sombra=12)
 
 
+from cena import CenaLivre  # noqa: E402
+
 COMPONENTES = {
+    "cena": CenaLivre,
     "pilula": Pilula, "janela": Janela, "contador": Contador, "rec": Rec, "apps": Apps,
     "comentario": Comentario, "passos": Passos, "cards": Cards, "notificacao": Notificacao,
     "grafico": Grafico, "comparacao": Comparacao, "seguir": Seguir, "busca": Busca, "marca": Marca,
