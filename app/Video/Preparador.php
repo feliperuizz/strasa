@@ -169,11 +169,15 @@ class Preparador
         $existentes = glob("$dir/{$chave}_*.png") ?: [];
 
         if (! $existentes) {
-            // Rótulo (arquivo + tempo) só se o FFmpeg tiver drawtext; o estático do
-            // servidor pode vir sem. Os tempos vão por escrito no contexto de qualquer jeito.
-            $rotulo = is_file("$trabalho/rotulo.ttf") && Ferramentas::temFiltro('drawtext')
-                ? ",drawbox=x=0:y=ih-34:w=iw:h=34:color=black@0.65:t=fill,drawtext=fontfile=rotulo.ttf:fontsize=22:fontcolor=white:x=8:y=h-28:text='{$chave}  %{pts\\:flt}s'"
-                : '';
+            // Rótulo (arquivo + tempo) em cada miniatura. Com drawtext, direto; o FFmpeg
+            // estático do servidor vem sem drawtext, então o rótulo sai como legenda ASS
+            // (libass, que ele tem). Os tempos vão por escrito no contexto de qualquer jeito.
+            $rotulo = '';
+            if (is_file("$trabalho/rotulo.ttf") && Ferramentas::temFiltro('drawtext')) {
+                $rotulo = ",drawbox=x=0:y=ih-34:w=iw:h=34:color=black@0.65:t=fill,drawtext=fontfile=rotulo.ttf:fontsize=22:fontcolor=white:x=8:y=h-28:text='{$chave}  %{pts\\:flt}s'";
+            } elseif (is_file("$trabalho/rotulo.ttf") && Ferramentas::temFiltro('ass')) {
+                $rotulo = ','.$this->rotulosAss($chave, $proxy, $trabalho, $vertical ? 270 : 360, $intervalo, $quadros);
+            }
 
             Ferramentas::ffmpeg([
                 '-i', $proxy, '-an',
@@ -299,6 +303,33 @@ class Preparador
         } catch (\Throwable) {
             $musica->forceFill(['batidas' => []])->save();
         }
+    }
+
+    /**
+     * Rótulos das miniaturas como legenda ASS: cada quadro amostrado (no tempo
+     * i × intervalo, depois do filtro fps) ganha "f3  12.0s" numa tarja embaixo.
+     */
+    private function rotulosAss(string $chave, string $proxy, string $trabalho, int $w, float $intervalo, int $quadros): string
+    {
+        $info = Sondagem::arquivo($proxy);
+        $h = ($info['largura'] ?? 0) > 0 ? (int) (round($w * $info['altura'] / $info['largura'] / 2) * 2) : (int) round($w * 16 / 9);
+        $tempo = fn (float $s) => sprintf('%d:%02d:%05.2f', intdiv((int) $s, 3600), intdiv((int) $s, 60) % 60, fmod($s, 60));
+
+        $l = [
+            '[Script Info]', 'ScriptType: v4.00+', "PlayResX: $w", "PlayResY: $h", 'ScaledBorderAndShadow: yes', '',
+            '[V4+ Styles]',
+            'Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding',
+            // BorderStyle 3 = caixa opaca atrás do texto (a tarja preta).
+            'Style: R,Montserrat,20,&H00FFFFFF,&H00FFFFFF,&H5A000000,&H5A000000,-1,0,0,0,100,100,0,0,3,5,0,1,6,6,5,1', '',
+            '[Events]', 'Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text',
+        ];
+        for ($i = 0; $i < $quadros; $i++) {
+            $t = $i * $intervalo;
+            $l[] = sprintf('Dialogue: 0,%s,%s,R,,0,0,0,,%s  %ss', $tempo(max(0, $t - $intervalo / 2)), $tempo($t + $intervalo / 2), $chave, number_format($t, 1, '.', ''));
+        }
+        file_put_contents("$trabalho/rotulos_{$chave}.ass", implode("\n", $l)."\n");
+
+        return "ass=rotulos_{$chave}.ass:fontsdir=.";
     }
 
     /** Fonte para gravar arquivo e tempo nas miniaturas (relativa, sem caminho com ":" no filtro). */
