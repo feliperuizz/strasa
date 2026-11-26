@@ -105,6 +105,23 @@ Opcional: `estilo` (`karaoke`, `pop`, `caixa`, `simples`) e `posicao` (`baixo`, 
 - `volume`: com fala 0,12–0,25 (abaixa sozinha sob a voz); sem fala 0,7–1,0.
 - `sincronizar_cortes`: em montagem sem fala, ajusta o fim de cada segmento para cair na batida mais próxima.
 
+## narracao (só quando o contexto disser que a narração está LIGADA)
+
+Uma voz gerada lê o seu texto por cima do vídeo. Você escreve as falas; o sistema gera a voz, abaixa a música sob ela e faz a legenda a partir dela.
+
+```json
+{"ativo": true, "velocidade": 1.0, "falas": [
+  {"id": "n01", "em": {"segmento": "s01", "t": 0.2}, "texto": "Já imaginou acordar com essa vista?"},
+  {"id": "n02", "em": {"segmento": "s03", "t": 0.1}, "texto": "São três quartos, uma suíte com closet e varanda gourmet."},
+  {"id": "n03", "em": {"segmento": "fim", "t": 0.2}, "texto": "Agende sua visita ainda hoje!"}
+]}
+```
+- `em`: igual ao dos elementos. Em montagem com narração, prefira `{"segmento": ..., "t": ...}`. `"fim"` é o cartão final.
+- Uma fala nunca começa antes da anterior acabar: se você errar o tempo, o sistema empurra para depois (e avisa). Se passar do fim do vídeo, é cortada.
+- `velocidade`: 0,8–1,3 (padrão 1,0). Prefira cortar texto a acelerar a voz.
+- Calcule: palavras ÷ palavras por segundo (está no contexto) = segundos de fala. Some o respiro entre falas.
+- Nos ajustes, o mapa.txt mostra onde cada fala começou na prévia.
+
 ## cartao_final
 
 ```json

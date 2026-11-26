@@ -14,6 +14,7 @@ use App\Models\VideoProfile;
 use App\Video\Armazenamento;
 use App\Video\Claude\ClaudeCli;
 use App\Video\Estilos;
+use App\Video\Narracao;
 use App\Video\Plano\Linha;
 use App\Video\Transcricao;
 use Illuminate\Http\File;
@@ -93,6 +94,8 @@ class EdicaoController extends Controller
             'opcoes.legendas' => ['sometimes', 'boolean'],
             'opcoes.cartao_final' => ['sometimes', 'boolean'],
             'opcoes.logo' => ['sometimes', 'boolean'],
+            'opcoes.narracao' => ['sometimes', 'boolean'],
+            'voz' => ['sometimes', 'nullable', 'string', 'in:'.implode(',', array_keys(Narracao::vozes()))],
             'identidade' => ['sometimes', 'array'],
             'ordem' => ['sometimes', 'array'],
             'ordem.*' => ['integer'],
@@ -114,6 +117,11 @@ class EdicaoController extends Controller
         if (array_key_exists('identidade', $dados)) {
             $dados['opcoes'] = array_merge($dados['opcoes'] ?? $edicao->opcoes ?? [], ['identidade' => self::limparIdentidade($dados['identidade'])]);
             unset($dados['identidade']);
+        }
+
+        if (array_key_exists('voz', $dados)) {
+            $dados['opcoes'] = array_merge($dados['opcoes'] ?? $edicao->opcoes ?? [], ['voz' => $dados['voz'] ?: null]);
+            unset($dados['voz']);
         }
 
         if (isset($dados['ordem'])) {
@@ -195,6 +203,12 @@ class EdicaoController extends Controller
 
         $dados = $request->validate(['pedido' => ['required', 'string', 'min:3', 'max:3000']]);
 
+        // "Coloca uma narração" depois da prévia: liga a opção para o Claude receber as instruções de narração.
+        if (! $edicao->opcao('narracao', false) && Narracao::disponivel()
+            && preg_match('/narra/iu', $dados['pedido']) && ! preg_match('/\b(tir|remov|sem|apag)\w*\b.{0,25}narra/iu', $dados['pedido'])) {
+            $edicao->forceFill(['opcoes' => array_merge($edicao->opcoes ?? [], ['narracao' => true])])->save();
+        }
+
         $edicao->registrar('pedido', $dados['pedido'], [], $request->user()->id);
         $edicao->forceFill(['status' => VideoJob::AJUSTANDO, 'progresso' => 0, 'mensagem' => 'Na fila para ajuste', 'erro' => null, 'sinal_em' => now()])->save();
         ProcessarEdicao::dispatch($edicao->id, 'ajustar', ['pedido' => $dados['pedido']]);
@@ -224,6 +238,9 @@ class EdicaoController extends Controller
             'cartao_ativo' => ['nullable', 'boolean'],
             'logo' => ['nullable', 'boolean'],
             'identidade' => ['nullable', 'array'],
+            'narracao_ativo' => ['nullable', 'boolean'],
+            'narracao' => ['array'], 'narracao.*' => ['nullable', 'string', 'max:500'],
+            'voz' => ['nullable', 'string', 'in:'.implode(',', array_keys(Narracao::vozes()))],
         ]);
 
         $plano = $edicao->plano;
@@ -261,13 +278,30 @@ class EdicaoController extends Controller
             $plano['cartao_final']['linhas'] = array_values(array_filter(array_map('trim', preg_split('/\r?\n/', (string) $dados['cartao_linhas']))));
         }
 
+        // Narração: texto editado à mão (fala apagada sai do vídeo). Só a fala que mudou é gerada de novo.
+        if (! empty($plano['narracao']['falas'])) {
+            $plano['narracao']['falas'] = array_values(array_filter(array_map(function ($f) use ($dados) {
+                if (array_key_exists($f['id'], $dados['narracao'] ?? [])) {
+                    $f['texto'] = trim((string) $dados['narracao'][$f['id']]);
+                }
+
+                return $f;
+            }, $plano['narracao']['falas']), fn ($f) => $f['texto'] !== ''));
+        }
+
         unset($plano['correcoes_automaticas']);
 
-        // Logo e identidade deste vídeo ficam nas opções da edição (o render lê de lá).
-        $edicao->forceFill(['opcoes' => array_merge($edicao->opcoes ?? [], [
+        // Logo, identidade e narração deste vídeo ficam nas opções da edição (o render lê de lá).
+        $opcoes = [
             'logo' => (bool) ($dados['logo'] ?? false),
             'identidade' => self::limparIdentidade($dados['identidade'] ?? []),
-        ])])->save();
+        ];
+        if (! empty($plano['narracao']['falas'])) {
+            $opcoes['narracao'] = (bool) ($dados['narracao_ativo'] ?? false);
+            $opcoes['voz'] = ($dados['voz'] ?? null) ?: null;
+            $plano['narracao']['ativo'] = $opcoes['narracao'];
+        }
+        $edicao->forceFill(['opcoes' => array_merge($edicao->opcoes ?? [], $opcoes)])->save();
 
         $edicao->registrar('pedido', 'Edição rápida do plano'.($fora ? ' (tirou '.implode(', ', $fora).')' : '').($elFora ? ' (tirou '.implode(', ', $elFora).')' : '').'.', [], $request->user()->id);
         $edicao->forceFill(['status' => VideoJob::AJUSTANDO, 'progresso' => 0, 'mensagem' => 'Na fila', 'erro' => null, 'sinal_em' => now()])->save();

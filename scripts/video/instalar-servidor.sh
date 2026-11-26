@@ -6,7 +6,10 @@
 #
 #     cd ~/public_html/strasa && bash scripts/video/instalar-servidor.sh
 #
-# Opção:   --sem-whisper   não instala a transcrição local (sem legenda automática)
+# Opções:  --sem-whisper     não instala a transcrição local (sem legenda automática)
+#          --sem-voz         não instala a narração (voz gerada)
+#          --com-chatterbox  instala também a voz "Humana+" (mais natural, porém
+#                            pesada: ~4 GB de disco e bem mais lenta no processador)
 #
 # O motor de edição é o Claude (CLI) com a assinatura da agência. A legenda
 # precisa de transcrição, que o Claude não faz (ele não ouve áudio): ela roda
@@ -27,9 +30,13 @@ set -euo pipefail
 
 COM_WHISPER=1
 COM_CLAUDE=1
+COM_VOZ=1
+COM_CHATTERBOX=0
 for arg in "$@"; do
     case "$arg" in
         --sem-whisper) COM_WHISPER=0 ;;
+        --sem-voz) COM_VOZ=0 ;;
+        --com-chatterbox) COM_CHATTERBOX=1 ;;
         *) echo "Opção desconhecida: $arg"; exit 1 ;;
     esac
 done
@@ -48,7 +55,7 @@ passo() { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 
 passo "Sistema"
 echo "Usuário: $(whoami)   Home: $HOME   App: $APP"
-echo "Arquitetura: $(uname -m)   Núcleos: $(nproc 2>/dev/null || echo '?')"
+echo "Arquitetura: $(uname -m)   Núcleos: $(nproc 2>/dev/null || echo '?')   $(ldd --version 2>/dev/null | head -1)"
 if [ -r /proc/meminfo ]; then
     awk '/MemTotal|MemAvailable/ {printf "%s %.1f GB\n", $1, $2/1048576}' /proc/meminfo
 fi
@@ -72,6 +79,7 @@ if [ -z "$PYTHON" ]; then
     PYTHON="$("$UV" python find 3.11)"
 fi
 verde "Python: $("$PYTHON" --version 2>&1) em $PYTHON"
+PYTHON_BASE="$PYTHON"
 
 passo "1. FFmpeg"
 if [ -x "$BIN/ffmpeg" ] && "$BIN/ffmpeg" -hide_banner -filters 2>/dev/null | grep -q ' ass '; then
@@ -151,9 +159,97 @@ else
     fi
 fi
 
+# --- 3b. Narração (voz gerada, opcional) -------------------------------------
+passo "3b. Narração com voz gerada (Kokoro, local e gratuito)"
+VOZES="$BASE/vozes"
+NARRACAO_PY=""
+CHATTERBOX_PY=""
+mkdir -p "$VOZES"
+# Python só da voz: o Kokoro pede numpy 2 e não pode quebrar o faster-whisper.
+criar_venv() {  # $1 = pasta
+    if [ ! -x "$1/bin/python" ]; then
+        if [ -n "$UV" ]; then "$UV" venv --quiet --python "$PYTHON_BASE" "$1"; else "$PYTHON_BASE" -m venv "$1"; fi
+    fi
+    if [ -z "$UV" ]; then
+        "$1/bin/python" -m pip --version >/dev/null 2>&1 || "$1/bin/python" -m ensurepip --upgrade >/dev/null 2>&1 || true
+    fi
+}
+instalar_pip() {  # $1 = pasta do venv, resto = pacotes
+    local venv="$1"; shift
+    if [ -n "$UV" ]; then "$UV" pip install --quiet --python "$venv/bin/python" "$@"; else "$venv/bin/python" -m pip install --quiet "$@"; fi
+}
+baixar() {  # $1 = url, $2 = destino (só se ainda não existe)
+    [ -s "$2" ] && return 0
+    echo "  baixando $(basename "$2")…"
+    curl -fL --retry 3 --progress-bar -o "$2.parcial" "$1" && mv "$2.parcial" "$2"
+}
+if [ "$COM_VOZ" = 0 ]; then
+    amarelo "Pulado (--sem-voz)."
+else
+    [ -z "$UV" ] && [ -x "$BIN/uv" ] && UV="$BIN/uv"
+    criar_venv "$BASE/venv-voz"
+    if instalar_pip "$BASE/venv-voz" kokoro-onnx; then
+        K=https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0
+        baixar "$K/kokoro-v1.0.onnx" "$VOZES/kokoro-v1.0.onnx" && baixar "$K/voices-v1.0.bin" "$VOZES/voices-v1.0.bin" \
+            && NARRACAO_PY="$BASE/venv-voz/bin/python" && verde "Kokoro instalado (vozes Dora, Alex e Santa)." \
+            || vermelho "Falhou ao baixar o modelo de voz. Rode o instalador de novo."
+    else
+        vermelho "Falhou ao instalar o kokoro-onnx. Veja a mensagem acima."
+    fi
+
+    if [ "$COM_CHATTERBOX" = 1 ]; then
+        echo "Instalando o Chatterbox (torch para CPU + ~3 GB de modelo; demora)…"
+        criar_venv "$BASE/venv-chatterbox"
+        if instalar_pip "$BASE/venv-chatterbox" --index-strategy unsafe-best-match --extra-index-url https://download.pytorch.org/whl/cpu chatterbox-tts "setuptools<70" 2>/dev/null \
+            || instalar_pip "$BASE/venv-chatterbox" --extra-index-url https://download.pytorch.org/whl/cpu chatterbox-tts "setuptools<70"; then
+            echo "Baixando o modelo do Chatterbox…"
+            HF_HOME="$VOZES/hf" OMP_NUM_THREADS=2 "$BASE/venv-chatterbox/bin/python" -c 'from huggingface_hub import snapshot_download; snapshot_download("ResembleAI/chatterbox")' \
+                && CHATTERBOX_PY="$BASE/venv-chatterbox/bin/python" && verde "Chatterbox instalado (voz Humana+)." \
+                || vermelho "Falhou ao baixar o modelo do Chatterbox."
+        else
+            vermelho "Falhou ao instalar o Chatterbox. A narração continua com o Kokoro."
+        fi
+    elif [ -x "$BASE/venv-chatterbox/bin/python" ]; then
+        CHATTERBOX_PY="$BASE/venv-chatterbox/bin/python"
+    fi
+fi
+
+# --- 3c. Motor de motion (componentes animados) ------------------------------
+passo "3c. Motor de motion (Skia) e ícones (Simple Icons + Lucide)"
+ICONES="$BASE/icones"
+MOTION_PY=""
+[ -z "$UV" ] && [ -x "$BIN/uv" ] && UV="$BIN/uv"
+criar_venv "$BASE/venv-motion"
+# skia-python novo pede glibc 2.28; em servidor mais antigo o uv/pip cai sozinho na 87.x (glibc 2.17).
+if instalar_pip "$BASE/venv-motion" skia-python numpy; then
+    if "$BASE/venv-motion/bin/python" -c 'import skia; s = skia.Surface(8, 8); print("skia", skia.__version__)'; then
+        MOTION_PY="$BASE/venv-motion/bin/python"
+    else
+        vermelho "O skia-python instalou mas não abriu (biblioteca do sistema faltando?). Veja a mensagem acima."
+    fi
+else
+    vermelho "Falhou ao instalar o skia-python. Os vídeos saem sem os componentes de motion."
+fi
+if [ ! -s "$ICONES/marcas.json" ] || [ ! -d "$ICONES/lucide" ]; then
+    echo "Baixando os ícones (Simple Icons CC0 + Lucide ISC, ~15 MB)…"
+    TMPI="$(mktemp -d)"
+    SI_URL="$("$PYTHON_BASE" -c 'import json,urllib.request; print(json.load(urllib.request.urlopen("https://registry.npmjs.org/simple-icons/latest"))["dist"]["tarball"])')"
+    LU_URL="$("$PYTHON_BASE" -c 'import json,urllib.request; print(json.load(urllib.request.urlopen("https://registry.npmjs.org/lucide-static/latest"))["dist"]["tarball"])')"
+    curl -fsSL --retry 3 -o "$TMPI/si.tgz" "$SI_URL" && curl -fsSL --retry 3 -o "$TMPI/lu.tgz" "$LU_URL" \
+        && mkdir -p "$TMPI/si" "$TMPI/lu" "$ICONES/marcas" "$ICONES/lucide" \
+        && tar -xzf "$TMPI/si.tgz" -C "$TMPI/si" && tar -xzf "$TMPI/lu.tgz" -C "$TMPI/lu" \
+        && cp "$TMPI"/si/package/icons/*.svg "$ICONES/marcas/" && cp "$TMPI"/lu/package/icons/*.svg "$ICONES/lucide/" \
+        && "$PYTHON_BASE" -c 'import json,sys; d=json.load(open(sys.argv[1],encoding="utf-8")); json.dump([{"slug":x["slug"],"hex":x["hex"],"title":x["title"]} for x in d], open(sys.argv[2],"w",encoding="utf-8"))' "$TMPI/si/package/data/simple-icons.json" "$ICONES/marcas.json" \
+        && verde "Ícones: $(ls "$ICONES/marcas" | wc -l) marcas, $(ls "$ICONES/lucide" | wc -l) genéricos." \
+        || vermelho "Falhou ao baixar os ícones. Rode o instalador de novo."
+    rm -rf "$TMPI"
+else
+    verde "Ícones já instalados."
+fi
+
 # --- 4. Rede -----------------------------------------------------------------
 passo "4. Saída para a internet (porta 443)"
-for host in api.anthropic.com claude.ai cdn.jsdelivr.net huggingface.co; do
+for host in api.anthropic.com claude.ai cdn.jsdelivr.net huggingface.co itunes.apple.com en.wikipedia.org; do
     if curl -s -o /dev/null --max-time 8 "https://$host"; then echo "  ✓ $host"; else vermelho "  ✗ $host bloqueado — libere a SAÍDA na porta 443 no firewall (CSF: TCP_OUT)."; fi
 done
 echo "Nenhuma porta de entrada é necessária."
@@ -163,8 +259,13 @@ passo "5. Fontes, efeitos sonoros e diagnóstico"
 cd "$APP"
 export VIDEO_FFMPEG="$BIN/ffmpeg" VIDEO_FFPROBE="$BIN/ffprobe" VIDEO_STORAGE_PATH="$DADOS"
 [ -n "$CLAUDE_BIN" ] && export VIDEO_CLAUDE_BIN="$CLAUDE_BIN"
+export VIDEO_NARRACAO_MODELOS="$VOZES" VIDEO_ICONES_PATH="$ICONES"
+[ -n "$MOTION_PY" ] && export VIDEO_MOTION_PYTHON="$MOTION_PY"
+[ -n "$NARRACAO_PY" ] && export VIDEO_NARRACAO_PYTHON="$NARRACAO_PY"
+[ -n "$CHATTERBOX_PY" ] && export VIDEO_CHATTERBOX_PYTHON="$CHATTERBOX_PY"
 "$PHP" artisan config:clear >/dev/null
 "$PHP" artisan video:instalar || true
+[ -n "$NARRACAO_PY" ] && { echo "Gerando as amostras das vozes…"; "$PHP" artisan video:vozes || true; }
 "$PHP" artisan video:diagnostico || true
 
 # --- 6. .env -----------------------------------------------------------------
@@ -183,6 +284,13 @@ VIDEO_CLAUDE_HOME=$HOME
 VIDEO_TRANSCRICAO=$TRANSCRICAO
 VIDEO_PYTHON=${PYTHON:-python3}
 VIDEO_WHISPER_MODEL=small
+# Narração com voz gerada (local e gratuita)
+VIDEO_NARRACAO_MODELOS=$VOZES
+VIDEO_NARRACAO_PYTHON=${NARRACAO_PY}
+VIDEO_CHATTERBOX_PYTHON=${CHATTERBOX_PY}
+# Motor de motion (componentes animados) e ícones
+VIDEO_MOTION_PYTHON=${MOTION_PY}
+VIDEO_ICONES_PATH=$ICONES
 # VIDEO_CLAUDE_TOKEN é gravado pelo scripts/video/logar-claude.sh
 ENV
 

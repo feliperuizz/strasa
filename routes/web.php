@@ -264,4 +264,9 @@ Route::middleware(['auth', 'tenant', 'estudio'])->group(function () {
     Route::post('estudio/biblioteca', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'store'])->name('estudio.biblioteca.store');
     Route::delete('estudio/biblioteca/{asset}', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'destroy'])->name('estudio.biblioteca.destroy');
     Route::get('estudio/biblioteca/{asset}/ouvir', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'ouvir'])->name('estudio.biblioteca.ouvir');
+    Route::post('estudio/biblioteca/logos', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'logo'])->name('estudio.biblioteca.logo');
+    Route::get('estudio/logos/{chave}', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'logoWeb'])->where('chave', '[a-z0-9]+')->name('estudio.logos.web');
+    Route::delete('estudio/logos/{chave}', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'esquecerLogo'])->where('chave', '[a-z0-9]+')->name('estudio.logos.esquecer');
+    Route::get('estudio/vozes/{voz}/amostra', [\App\Http\Controllers\Estudio\BibliotecaController::class, 'amostraDeVoz'])
+        ->where('voz', '[a-z0-9_]+')->name('estudio.vozes.amostra');
 });

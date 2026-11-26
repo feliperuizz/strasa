@@ -28,8 +28,10 @@ class VideoInstalar extends Command
     /** Pesos baixados por família (as de um peso só ficam só com ele). */
     private const PESOS = [
         'Montserrat' => [400, 700, 800], 'Poppins' => [400, 700, 800], 'Bebas Neue' => [400], 'Anton' => [400],
-        'Inter' => [400, 700, 800], 'Sora' => [400, 700], 'Playfair Display' => [400, 700], 'Oswald' => [400, 700],
+        'Inter' => [400, 600, 700, 800], 'Sora' => [400, 700], 'Playfair Display' => [400, 700], 'Oswald' => [400, 700],
         'Archivo Black' => [400], 'DM Serif Display' => [400],
+        // Só do motor de motion: interface dos cartões (Inter 600) e código (mono).
+        'JetBrains Mono' => [400, 700],
     ];
 
     public function handle(): int
@@ -72,7 +74,7 @@ class VideoInstalar extends Command
 
     private function fontes(): void
     {
-        foreach (VideoProfile::FONTES as $familia) {
+        foreach ([...VideoProfile::FONTES, 'JetBrains Mono'] as $familia) {
             $id = Str::slug($familia);
             $ok = [];
 

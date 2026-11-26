@@ -231,6 +231,12 @@ class Edicao
                 }
 
                 $plano = $this->validar($bruto, $inventario);
+
+                // Narração sem legenda perde quem assiste sem som (a maioria): liga,
+                // a não ser que a equipe tenha desligado a legenda. A aba Plano ainda pode tirar.
+                if ($plano['narracao']['ativo'] && $job->opcao('legendas', true)) {
+                    $plano['legendas']['ativo'] = true;
+                }
                 break;
             } catch (PlanoInvalido $e) {
                 if ($tentativa >= 1 || ! $r['sessao']) {
@@ -296,8 +302,15 @@ class Edicao
             'estilo' => $job->estilo,
             'fala' => $estilo['fala'],
             'tem_musica' => (bool) $musica,
+            'narracao' => $this->comNarracao(),
             'duracao_max' => max(60, $estilo['duracao'][1] * 1.6),
         ]);
+
+        // Narração desligada nesta edição (ou sem voz instalada): as falas ficam
+        // guardadas no plano, mas não vão para o vídeo.
+        if (! $this->comNarracao()) {
+            $plano['narracao']['ativo'] = false;
+        }
 
         if (! $job->opcao('cartao_final', true)) {
             $plano['segmentos'] = array_values(array_filter($plano['segmentos'], fn ($s) => $s['id'] !== 'fim'));
@@ -350,13 +363,49 @@ class Edicao
 
         $musica = $this->musica();
 
+        // Logos dos componentes (apps, cards, notificação, marca): biblioteca → Simple Icons →
+        // App Store → Wikipédia → site. Quem busca é o servidor; o Claude só escreve o nome.
+        if (Render\Motion::disponivel()) {
+            $mensagemAntes = $job->mensagem;
+            $buscou = false;
+            $plano = Logos::resolverPlano($plano, (int) $job->company_id, $job->client_id, function (string $nome) use (&$buscou) {
+                $buscou = true;
+                $this->progresso($this->job->progresso, "Buscando o logo de {$nome}");
+            });
+            if ($buscou) {
+                $this->progresso($job->progresso, $mensagemAntes);
+            }
+        }
+
+        // Voz gerada: só as falas novas ou mudadas são geradas (cache por texto).
+        $narracao = ['falas' => [], 'avisos' => []];
+        if (($plano['narracao']['ativo'] ?? false) && $this->comNarracao()) {
+            DB::disconnect();
+            $mensagemAntes = $job->mensagem;
+            $gerou = false;
+            $narracao = Narracao::preparar($plano, Narracao::vozDaEdicao($job), $this->pasta->dir('renders'), function (int $quantas) use (&$gerou) {
+                $gerou = true;
+                $this->progresso($this->job->progresso, $quantas > 1 ? "Gerando a narração ({$quantas} falas)" : 'Gerando a narração');
+            });
+            if ($gerou) {
+                $this->progresso($job->progresso, $mensagemAntes); // volta para "Renderizando…"
+            }
+        }
+
         return new Montador(
             $plano, $fontes, Identidade::daEdicao($perfil, (array) $job->opcao('identidade', [])), $this->pasta->dir('renders'), $modo,
             $dim['largura'], $dim['altura'], $palavras ?? $this->palavras(),
             $musica ? ['caminho' => $musica['caminho'], 'duracao' => $musica['duracao']] : null,
             // "Sem logo" nesta edição: nem marca d'água nem logo no cartão final.
             $job->opcao('logo', true) && is_file($logo) ? $logo : null, $arquivosDeFonte, $job->estiloInfo()['fala'],
+            $narracao['falas'], $narracao['avisos'],
         );
+    }
+
+    /** Narração ligada nesta edição e com alguma voz instalada no servidor. */
+    public function comNarracao(): bool
+    {
+        return (bool) $this->job->opcao('narracao', false) && Narracao::disponivel();
     }
 
     /** Confere o arquivo gerado antes de entregar (render_conferir.py do pacote). */

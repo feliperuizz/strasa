@@ -88,6 +88,24 @@ Sem o Claude conectado, a edição **para com erro claro** (a faixa "Motor" fica
 - Transcrição precisa de **Python 3.9+**. Se o servidor só tiver um mais antigo, o instalador avisa; peça ao suporte um `python3.11` e rode de novo. O modelo `small` (~500 MB) baixa na primeira legenda; `VIDEO_WHISPER_MODEL=medium` acerta mais e é ~2x mais lento.
 - Coloque músicas com licença na **Biblioteca** e preencha a **identidade de vídeo** de cada cliente.
 
+### Motor de motion (componentes animados)
+Os componentes premium (`janela` de terminal digitando, `contador` gigante com brilho, moldura `rec`, `pilula`, `apps` riscados/com check, `comentario`, `passos`, `cards`, `notificacao`, `grafico`, `comparacao`, `seguir`, `busca`, `marca`) são desenhados por `scripts/video/motion/` (Python + Skia) e entram como um vídeo com transparência sobreposto na montagem (abaixo da legenda).
+- **Por que não HTML/Chrome** (HyperFrames, Remotion — o que os editores virais com Claude usam): a hospedagem compartilhada limita threads/processos por conta e o Chrome abre dezenas. Skia é o motor gráfico do Chrome, num processo só.
+- **Compatibilidade:** skia-python 1xx pede glibc 2.28; em servidor mais antigo o pip/uv instala o 87.x sozinho — o código funciona nos dois (testado). SVG com arco compacto é normalizado (`normalizar_d`).
+- **Logos (`App\Video\Logos`):** o Claude escreve o nome da marca ("CapCut", "Adobe Premiere Pro") e o servidor resolve antes do render: logo enviado na Biblioteca → Simple Icons (CC0, ~3.400, vetor) → App Store (API pública da Apple, ícone oficial 512 px) → Wikipédia (só arquivo "logo/icon") → site (apple-touch-icon, com `site` no plano). Achados ficam em `VIDEO_ICONES_PATH/web` (cache global; busca sem resultado espera 7 dias) e aparecem na Biblioteca, onde dá para esquecer ou trocar. Apps ambíguos (Premiere, Photoshop, After Effects…) buscam pelo nome oficial e exigem o fabricante (`Logos::CONHECIDOS`). Sem nada: bloco com sigla. Ícones genéricos: Lucide (ISC, ~2.400).
+- **O Claude** lê `guias/motion.md` (catálogo, regra de ouro "a tela reage à fala", densidade de 2–4 s, roteiro de referência). Cada item entra na palavra-gatilho (`itens[].em`).
+- **Desempenho:** ~55 ms/quadro em 1080p (sombras/brilhos em cache, alfa pré-multiplicado), ~4x menos na prévia. Cache por conteúdo: ajuste que não mexe nos componentes não refaz o motion.
+- Se o motor falhar ou não estiver instalado, o vídeo sai sem os componentes (com aviso), nunca perde a edição.
+- Testar o visual sem render completo: `render.py` aceita `"quadros": [t…]` + `"pasta_quadros"` (+ `"fundo"`) e salva PNGs.
+
+### Narração com voz gerada
+O Claude escreve o texto (ancorado nos segmentos, ~2,7 palavras/s) e a voz é gerada **no próprio servidor, de graça** por `scripts/video/narrar.py`:
+- **Kokoro** (padrão, Apache-2.0): vozes Dora (feminina), Alex e Santa (masculinas). ~330 MB, gera 10 s de voz em ~3 s com 4 threads. Python próprio em `~/strasa-video/venv-voz` (pede numpy 2; não pode dividir com o faster-whisper).
+- **Chatterbox** (opcional, MIT): voz "Humana+", a mais natural, e aceita clonar uma voz (`vozes/referencias/<id>.wav` + uma entrada em `config/video.php`). Pesado: torch + ~3 GB, ~8x mais lento que o tempo real em CPU. Só com `--com-chatterbox` no instalador.
+- Na tela: "Narração com voz gerada" no briefing (com a voz e o botão Ouvir), voz padrão por cliente na identidade, texto editável na aba Plano (só a fala mudada é gerada de novo) e o pedido "coloca uma narração" no ajuste.
+- Cada fala vira um WAV com cache por texto em `renders/narracao/`. A música abaixa sob a voz (mesmo ducking da fala gravada) e a legenda sai do texto da narração.
+- `php artisan video:vozes` gera as amostras do botão Ouvir; `--testar="texto" --voz=alex` gera um teste avulso.
+
 ## 5. Limitações do servidor — o que pode dar problema e o que foi feito
 
 | Risco | O que acontecia | Proteção no código |
@@ -117,6 +135,7 @@ Sem o Claude conectado, a edição **para com erro claro** (a faixa "Motor" fica
 php artisan video:diagnostico [--teste]   # confere tudo (o --teste renderiza 2 s e chama o Claude)
 php artisan video:instalar [--forcar]     # fontes + efeitos sonoros
 php artisan video:conectar-claude         # testa e grava o token da conta (usado pelo logar-claude.sh)
+php artisan video:vozes [--refazer]       # vozes da narração instaladas + amostras do botão Ouvir
 php artisan video:vigiar                  # agendado: recupera edição interrompida
 php artisan video:limpar [--simular]      # agendado: retenção de disco
 ```

@@ -20,6 +20,7 @@ Alguém falando para o celular. O trabalho é o corte limpo e apertado + legenda
 - `nome` com quem fala no começo (se o briefing disser o nome).
 - 1 `palavra` de ênfase no ápice. Um `sticker` (seta, brilho) de vez em quando para dar vida.
 - No fim, `cartao_final` com a chamada (ou um `titulo` com "Link na bio").
+- Com o motor de motion: quando a fala citar um app/marca, `apps` ou `marca`; quando enumerar, `passos`; quando pedir comentário, `comentario`. Sem encher: este estilo é o corte limpo.
 
 ## Som
 - Música opcional, baixa (0,12–0,2). Sem efeito em todo corte: só nas animações.

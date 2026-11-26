@@ -42,7 +42,8 @@ Adaptado do pacote de skills de edição da agência. Onde o guia do estilo fala
 ## 5. Animações (os `elementos`)
 - **O conteúdo decide a animação.** Para cada ideia, a forma visual que explica melhor aquela ideia. Repertório, não obrigação.
 - **Onde entra:** passo a passo, comparação, antes e depois, números, listas, preço, a frase-chave, nome de quem fala, endereço. **Não entra** para enfeitar fala que se sustenta sozinha.
-- **Ritmo:** depois do gancho, uma animação a cada ~3–5 s, alternando tela cheia, cartão e só ênfase, com um respiro (só o rosto) a cada ~6–10 s.
+- **Componentes premium:** se existir `guias/motion.md`, os componentes de lá (janela, contador, apps, passos, cards, comparação, comentário…) são o padrão; os elementos simples ficam para ênfases rápidas.
+- **Ritmo:** depois do gancho, algo novo na tela a cada ~2–4 s (componente, ênfase, punch ou corte), alternando cartão, tela cheia e só ênfase, com um respiro curto (1–2 s, só o rosto) a cada ~8–10 s.
 - **Palavra-gatilho:** cada animação entra no tempo exato da palavra (âncora `{"arquivo": "f12", "t": <início da palavra>}`). Listas: cada item entra na palavra dele.
 - **Duração:** mínimo ~1,5 s; típico 2–5 s; com texto, segure ~1 s depois da última palavra.
 - **Uma protagonista por vez.** Não empilhe duas animações no mesmo lugar ao mesmo tempo. Se a legenda está embaixo, cartões vão em cima (`topo`).

@@ -173,6 +173,18 @@
                             <label class="inline-flex items-center gap-2"><input type="checkbox" class="rounded border-ink-500 bg-ink-900 text-brand-600" @checked($edicao->opcao('cartao_final', true)) @change="salvar({ opcoes: { cartao_final: $event.target.checked } })"> Cartão final com a chamada</label>
                         </div>
 
+                        <div class="rounded-xl border border-ink-600 bg-ink-900/40 p-3" x-data="{ narrar: @js((bool) $edicao->opcao('narracao', false)) }">
+                            <label class="inline-flex items-center gap-2 text-[13px] text-slate-200">
+                                <input type="checkbox" x-model="narrar" @change="salvar({ opcoes: { narracao: narrar } })" class="rounded border-ink-500 bg-ink-900 text-brand-600">
+                                Narração com voz gerada
+                                <span class="text-[11.5px] text-slate-500">— o Claude escreve o texto e uma voz natural narra o vídeo</span>
+                            </label>
+                            <div x-show="narrar" x-cloak class="mt-2.5 space-y-1.5">
+                                @include('estudio.partials.voz-escolha', ['nome' => null, 'valor' => $edicao->opcao('voz'), 'vazio' => 'Voz do cliente'.(($v = \App\Models\VideoProfile::doCliente($edicao->client)->voz_narracao) ? ' ('.(\App\Video\Narracao::vozes()[$v]['nome'] ?? $v).')' : ''), 'aoMudar' => 'salvar({ voz: voz })'])
+                                <p class="text-[11.5px] text-slate-500">Dica: escreva no briefing o que a narração precisa dizer (preço, diferenciais, chamada). O Claude não inventa informação.</p>
+                            </div>
+                        </div>
+
                         @include('estudio.partials.identidade-edicao', ['modo' => 'autosave'])
                     </div>
 
@@ -323,7 +335,7 @@
                             @csrf
                             @if($edicao->aceitaAjustes() && $claudeAtivo && ! $edicao->limpo_em)
                                 <div class="mb-2 flex flex-wrap gap-1.5">
-                                    @foreach(['em 0:05 tira essa frase', 'música mais baixa', 'legenda maior', 'zoom mais sutil', 'troca o título por…', 'mais rápido no começo'] as $sugestao)
+                                    @foreach(array_merge(['em 0:05 tira essa frase', 'música mais baixa', 'legenda maior', 'zoom mais sutil', 'troca o título por…', 'mais rápido no começo'], \App\Video\Narracao::disponivel() ? [empty($plano['narracao']['falas']) ? 'coloca uma narração' : 'narração mais curta'] : []) as $sugestao)
                                         <button type="button" @click="texto = texto ? texto + '; ' + @js($sugestao) : @js($sugestao); $refs.pedido.focus()" class="rounded-full border border-ink-600 px-2.5 py-0.5 text-[11.5px] text-slate-400 hover:border-brand-500/60 hover:text-slate-200">{{ $sugestao }}</button>
                                     @endforeach
                                 </div>
@@ -387,14 +399,37 @@
                                                     <button type="button" @click.prevent="pular({{ $el['inicio'] ?? 0 }})" class="w-12 shrink-0 text-left font-mono text-[11.5px] text-brand-400 hover:underline">{{ \App\Video\Plano\Linha::formatar((float) ($el['inicio'] ?? 0)) }}</button>
                                                     <span class="rounded bg-ink-700 px-1.5 font-mono text-[10.5px] text-slate-300">{{ $el['id'] }}</span>
                                                     <span class="w-28 shrink-0 truncate text-slate-500">{{ str_replace('_', ' ', $el['tipo']) }}{{ $el['tipo'] === 'sticker' ? ' · '.($el['forma'] ?? '') : '' }}</span>
-                                                    @if(in_array($el['tipo'], ['titulo', 'texto', 'palavra', 'etiqueta', 'preco', 'nome', 'local', 'citacao', 'tela_cheia'], true))
+                                                    @if(in_array($el['tipo'], ['titulo', 'texto', 'palavra', 'etiqueta', 'preco', 'nome', 'local', 'citacao', 'tela_cheia', 'pilula', 'comentario', 'busca', 'seguir', 'notificacao', 'marca'], true))
                                                         <input name="textos[{{ $el['id'] }}]" value="{{ $el['texto'] }}" maxlength="140" class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1.5 py-0.5 text-slate-200 hover:border-ink-600 focus:border-brand-500 focus:bg-ink-900 focus:outline-none">
                                                     @else
-                                                        <span class="flex-1 truncate border border-transparent px-1.5 py-0.5 text-slate-400">{{ $el['texto'] ?: collect($el['itens'] ?? [])->pluck('texto')->implode(' · ') }}</span>
+                                                        <span class="flex-1 truncate border border-transparent px-1.5 py-0.5 text-slate-400">{{ $el['texto'] ?: collect($el['itens'] ?? $el['linhas'] ?? [])->map(fn ($i) => is_array($i) ? ($i['texto'] ?? $i['nome'] ?? $i['rotulo'] ?? '') : $i)->filter()->implode(' · ') }}</span>
                                                     @endif
                                                 </div>
                                             @endforeach
                                         </div>
+                                    </div>
+                                @endif
+
+                                @if(! empty($plano['narracao']['falas']))
+                                    <div class="rounded-xl border border-ink-600 bg-ink-900/40 p-3">
+                                        <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                                            <label class="flex items-center gap-2 text-[12.5px] font-semibold text-slate-300">
+                                                <input type="checkbox" name="narracao_ativo" value="1" @checked($edicao->opcao('narracao', false)) class="rounded border-ink-500 bg-ink-900 text-brand-600"> Narração
+                                                <span class="font-normal text-slate-500">— edite o texto; apague uma fala para tirar</span>
+                                            </label>
+                                            <div class="w-full sm:w-80">
+                                                @include('estudio.partials.voz-escolha', ['nome' => 'voz', 'valor' => $edicao->opcao('voz'), 'vazio' => 'Voz do cliente'])
+                                            </div>
+                                        </div>
+                                        <div class="space-y-1.5">
+                                            @foreach($plano['narracao']['falas'] as $f)
+                                                <div class="flex items-start gap-2.5 text-[12.5px]">
+                                                    <span class="mt-1.5 rounded bg-ink-700 px-1.5 font-mono text-[10.5px] text-slate-300">{{ $f['id'] }}</span>
+                                                    <textarea name="narracao[{{ $f['id'] }}]" rows="2" maxlength="500" class="min-w-0 flex-1 resize-y rounded-lg border border-ink-600 bg-ink-900 px-2.5 py-1.5 text-slate-200 focus:border-brand-500 focus:outline-none">{{ $f['texto'] }}</textarea>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <p class="mt-1.5 text-[11px] text-slate-500">Só as falas que você mudar são geradas de novo. Números e R$ podem ir em algarismos.</p>
                                     </div>
                                 @endif
 

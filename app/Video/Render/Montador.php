@@ -57,7 +57,11 @@ class Montador
         private ?string $logo = null,
         private array $arquivosDeFonte = [],
         private bool $temFala = false,
+        // Voz gerada, já encaixada na linha: [['arquivo','inicio','duracao','palavras'], ...] (App\Video\Narracao)
+        private array $narracao = [],
+        array $avisosNarracao = [],
     ) {
+        $this->avisos = $avisosNarracao;
         $escala = $modo === 'previa' ? (float) config('video.render.previa_escala', 0.5) : 1.0;
         $this->W = (int) (round($larguraFinal * $escala / 2) * 2);
         $this->H = (int) (round($alturaFinal * $escala / 2) * 2);
@@ -82,14 +86,24 @@ class Montador
             $progresso(0.55 * ($n + 1) / count($itens));
         }
 
-        // 2. Legendas e animações
+        // 2. Legendas e animações (ASS) + componentes do motor de motion (Skia)
+        $motion = array_values(array_filter($this->plano['elementos'], fn ($e) => Motion::eh($e['tipo'])));
         $ass = new Ass($this->larguraFinal, $this->alturaFinal);
         $elementos = new Elementos($ass, $this->id);
-        $sons = $elementos->gerar($this->plano['elementos']);
+        $sons = $elementos->gerar(array_values(array_filter($this->plano['elementos'], fn ($e) => ! Motion::eh($e['tipo']))));
+        foreach ($motion as $m) {
+            $sons = array_merge($sons, Motion::sons($m));
+        }
         $grupos = [];
 
-        if ($this->plano['legendas']['ativo'] && $this->palavras) {
-            $grupos = Legendas::gerar($ass, $this->palavrasNaSequencia($linha), $this->id, $this->plano['legendas'], Elementos::ocultamLegenda($this->plano['elementos']));
+        $falado = $this->palavrasNaSequencia($linha);
+        foreach ($this->narracao as $f) {
+            $falado = array_merge($falado, $f['palavras'] ?? []);
+        }
+        usort($falado, fn ($a, $b) => $a['i'] <=> $b['i']);
+
+        if ($this->plano['legendas']['ativo'] && $falado) {
+            $grupos = Legendas::gerar($ass, $falado, $this->id, $this->plano['legendas'], array_merge(Elementos::ocultamLegenda($this->plano['elementos']), Motion::ocultamLegenda($motion)));
         }
 
         $cartao = $this->cartaoFinal($ass, $linha);
@@ -112,10 +126,26 @@ class Montador
             $this->copiarFontes();
         }
 
-        // 3. Montagem (55–100%)
+        // Motion: um vídeo com transparência para todos os componentes (com cache).
+        // Se o motor falhar, o vídeo sai sem eles (com aviso) em vez de perder a edição.
+        $arquivoMotion = null;
+        if ($motion) {
+            if (! Motion::disponivel()) {
+                $this->avisos[] = 'Os componentes de motion ('.implode(', ', array_unique(array_column($motion, 'tipo'))).') ficaram de fora: o motor de motion não está instalado no servidor.';
+            } else {
+                try {
+                    $arquivoMotion = Motion::renderizar($motion, $this->id, $this->larguraFinal, $this->alturaFinal, $this->W / $this->larguraFinal, $linha->total, $this->pasta, $this->logo, $this->arquivosDeFonte);
+                } catch (FalhaDeFerramenta $e) {
+                    $this->avisos[] = 'Os componentes de motion ficaram de fora desta versão: '.mb_substr($e->getMessage(), 0, 300);
+                }
+            }
+            $progresso(0.62);
+        }
+
+        // 3. Montagem (62–100%)
         $this->montar($linha, $arquivos, $saida, $arquivoAss, $this->filtrarSons($sons), $cartao, function (float $f) use ($progresso) {
-            $progresso(0.55 + 0.45 * $f);
-        });
+            $progresso(0.62 + 0.38 * $f);
+        }, $arquivoMotion);
 
         return [
             'duracao' => $linha->total,
@@ -396,7 +426,7 @@ class Montador
 
     /* 2ª passada: montagem ------------------------------------------- */
 
-    private function montar(Linha $linha, array $arquivos, string $saida, ?string $arquivoAss, array $sons, ?array $cartao, callable $progresso): void
+    private function montar(Linha $linha, array $arquivos, string $saida, ?string $arquivoAss, array $sons, ?array $cartao, callable $progresso, ?string $arquivoMotion = null): void
     {
         $W = $this->W;
         $H = $this->H;
@@ -479,6 +509,14 @@ class Montador
             }
         }
 
+        // Motion por cima da imagem e da logo, por baixo da legenda.
+        if ($arquivoMotion) {
+            $args = array_merge($args, ['-i', $arquivoMotion]);
+            $g[] = "{$atual}[$n:v]overlay=0:0:format=auto:alpha=premultiplied:eof_action=pass[vmo]";
+            $atual = '[vmo]';
+            $n++;
+        }
+
         if ($arquivoAss) {
             $g[] = "{$atual}ass=".Ferramentas::escFiltro($arquivoAss).':fontsdir=fontes[vout]';
         } else {
@@ -497,6 +535,18 @@ class Montador
                 $vozes[] = "[vz$i]";
                 $n++;
             }
+        }
+
+        // Narração: entra como voz (a música abaixa sob ela, igual a uma fala gravada).
+        $volNarracao = Ferramentas::s((float) ($this->plano['narracao']['volume'] ?? 1.0));
+        foreach ($this->narracao as $j => $f) {
+            if ($f['inicio'] >= $total || ! is_file($f['arquivo'])) {
+                continue;
+            }
+            $args = array_merge($args, ['-i', $f['arquivo']]);
+            $g[] = sprintf('[%d:a]aresample=48000,aformat=channel_layouts=stereo,volume=%s,adelay=%d:all=1[nr%d]', $n, $volNarracao, (int) round($f['inicio'] * 1000), $j);
+            $vozes[] = "[nr$j]";
+            $n++;
         }
 
         $m = $this->plano['musica'];

@@ -118,6 +118,10 @@
                         <label class="block"><span class="mb-1 block text-xs text-slate-400">Vibe (em poucas palavras)</span><input name="vibe" value="{{ old('vibe', $perfil->vibe) }}" maxlength="160" placeholder="urbana, descontraída, premium sem ser chique" class="{{ $campo }}"></label>
                         <label class="block"><span class="mb-1 block text-xs text-slate-400">Instruções permanentes para o Claude</span>
                             <textarea name="instrucoes" rows="4" maxlength="4000" placeholder="Ex.: Nunca mostrar a fachada antiga. O dono se chama Zé e gosta de ser chamado assim. Evitar gírias. Sempre terminar com o endereço." class="{{ $campo }}">{{ old('instrucoes', $perfil->instrucoes) }}</textarea></label>
+                        <div>
+                            <span class="mb-1 block text-xs text-slate-400">Voz da narração (quando o vídeo pedir narração com voz gerada)</span>
+                            @include('estudio.partials.voz-escolha', ['nome' => 'voz_narracao', 'valor' => old('voz_narracao', $perfil->voz_narracao), 'vazio' => 'Padrão do estúdio'])
+                        </div>
                         <label class="block"><span class="mb-1 block text-xs text-slate-400">Música padrão (para os estilos com música)</span>
                             <select name="musica_padrao_id" class="{{ $campo }}"><option value="">Nenhuma</option>@foreach($musicas as $m)<option value="{{ $m->id }}" @selected(old('musica_padrao_id', $perfil->musica_padrao_id) == $m->id)>{{ $m->nome }}</option>@endforeach</select>
                         </label>

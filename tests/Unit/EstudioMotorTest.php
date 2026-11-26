@@ -4,11 +4,13 @@ namespace Tests\Unit;
 
 use App\Http\Controllers\Estudio\PerfilVideoController;
 use App\Video\Batidas;
+use App\Video\Narracao;
 use App\Video\Plano\Linha;
 use App\Video\Plano\PlanoInvalido;
 use App\Video\Plano\Validador;
 use App\Video\Render\Ass;
 use App\Video\Render\Legendas;
+use App\Video\Render\Motion;
 use App\Video\Transcricao;
 use PHPUnit\Framework\TestCase;
 
@@ -202,5 +204,73 @@ class EstudioMotorTest extends TestCase
         }
 
         $this->assertSame('Sora', PerfilVideoController::familiaDaFonte($fonte));
+    }
+
+    public function test_narracao_le_simbolos_como_se_fala(): void
+    {
+        $this->assertSame('Por 39 reais e 90 centavos, apartamento de 80 metros quadrados com 20 por cento de entrada.',
+            Narracao::textoFalado('Por R$ 39,90, apartamento de 80m² com 20% de entrada. 😍'));
+        $this->assertSame('1200 reais à vista, das 9 às 18 horas, arroba barbeariadoze', Narracao::textoFalado('R$ 1.200 à vista, das 9 às 18h, @barbeariadoze'));
+    }
+
+    public function test_narracao_distribui_palavras_e_pausa_na_pontuacao(): void
+    {
+        $p = Narracao::palavrasNoTempo('Bem-vindo. Três quartos', 10.0, 2.0);
+
+        $this->assertCount(3, $p);
+        $this->assertEqualsWithDelta(10.0, $p[0]['i'], 0.001);
+        $this->assertLessThan($p[1]['i'], $p[0]['f'], 'a pausa do ponto fica entre as palavras');
+        $this->assertEqualsWithDelta(12.0, $p[2]['f'], 0.01);
+    }
+
+    public function test_validador_limpa_componentes_de_motion_e_resolve_cada_item_na_palavra(): void
+    {
+        $plano = (new Validador)->normalizar([
+            'segmentos' => [['id' => 's1', 'arquivo' => 'f1', 'inicio' => 10, 'fim' => 20]],
+            'elementos' => [
+                ['tipo' => 'passos', 'em' => ['arquivo' => 'f1', 't' => 11], 'itens' => [
+                    ['texto' => 'máquina', 'em' => ['arquivo' => 'f1', 't' => 12.5]], 'tesoura', ['texto' => ''],
+                ], 'codigo' => ['/edit-cortes']],
+                ['tipo' => 'apps', 'em' => ['arquivo' => 'f1', 't' => 14], 'acao' => 'explodir', 'itens' => [['logo' => 'Premiere', 'nome' => 'Premiere'], ['logo' => '../../etc/passwd']]],
+                ['tipo' => 'janela', 'em' => ['arquivo' => 'f1', 't' => 10], 'linhas' => [['tipo' => 'comando', 'texto' => 'edita'], ['tipo' => 'xss', 'texto' => 'ok']]],
+                ['tipo' => 'marca', 'em' => ['arquivo' => 'f1', 't' => 16], 'cor' => 'destaque'],
+                ['tipo' => 'contador', 'em' => ['arquivo' => 'f1', 't' => 17], 'ate' => 20, 'sufixo' => '%'],
+            ],
+        ], self::ARQUIVOS);
+
+        $porTipo = collect($plano['elementos'])->keyBy('tipo');
+        $this->assertFalse($porTipo->has('marca'), 'marca sem logo nem sigla sai');
+        $this->assertEqualsWithDelta(2.5, $porTipo['passos']['itens'][0]['t'], 0.001, 'item na palavra, no tempo do vídeo');
+        $this->assertCount(2, $porTipo['passos']['itens']);
+        $this->assertSame('topo', $porTipo['passos']['posicao']);
+        $this->assertSame('nenhum', $porTipo['apps']['acao']);
+        $this->assertSame('Premiere', $porTipo['apps']['itens'][0]['logo'], 'nome da marca como escrito: o servidor acha o logo');
+        $this->assertArrayNotHasKey('logo', $porTipo['apps']['itens'][1], 'slug inválido não passa');
+        $this->assertSame('texto', $porTipo['janela']['linhas'][1]['tipo']);
+        $this->assertEqualsWithDelta(0.35, $porTipo['janela']['linhas'][0]['t'], 0.001, 'linha sem gatilho entra em sequência');
+        $this->assertSame('centro', $porTipo['contador']['posicao']);
+        $this->assertSame(2.8, $porTipo['contador']['duracao']);
+        $this->assertNotEmpty(Motion::sons($porTipo['contador']));
+    }
+
+    public function test_validador_guarda_falas_da_narracao_e_descarta_vazias(): void
+    {
+        $plano = (new Validador)->normalizar([
+            'segmentos' => [['id' => 's1', 'arquivo' => 'f1', 'inicio' => 0, 'fim' => 6]],
+            'narracao' => ['velocidade' => 3, 'falas' => [
+                ['em' => ['segmento' => 's1', 't' => 0.2], 'texto' => 'Olá!'],
+                ['em' => ['segmento' => 's9'], 'texto' => 'Segmento que não existe'],
+                ['texto' => '   '],
+            ]],
+        ], self::ARQUIVOS, ['narracao' => true]);
+
+        $n = $plano['narracao'];
+        $this->assertTrue($n['ativo']);
+        $this->assertSame(1.3, $n['velocidade']);
+        $this->assertCount(2, $n['falas']);
+        $this->assertSame('n02', $n['falas'][1]['id']);
+        $this->assertSame($n['falas'][0]['em'], $n['falas'][1]['em'], 'âncora inválida entra junto da fala anterior');
+        $this->assertTrue($plano['legendas']['ativo'], 'com narração, a legenda liga por padrão');
+        $this->assertSame(0.18, $plano['musica']['volume'], 'música baixa sob a voz');
     }
 }

@@ -6,7 +6,9 @@ use App\Models\VideoJob;
 use App\Models\VideoLearning;
 use App\Models\VideoProfile;
 use App\Video\Estilos;
+use App\Video\Narracao;
 use App\Video\Plano\Linha;
+use App\Video\Render\Motion;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -52,9 +54,8 @@ class Contexto
         $dir = $this->pasta();
         $this->copiarGuias($dir);
 
-        if (! is_file("$dir/contexto.md")) {
-            file_put_contents("$dir/contexto.md", $this->documento($inventario, (bool) $frases, $musica));
-        }
+        // Sempre reescrito: opções podem ter mudado desde a edição (logo, identidade, narração ligada).
+        file_put_contents("$dir/contexto.md", $this->documento($inventario, (bool) $frases, $musica));
         if ($frases && ! is_file("$dir/transcricao.txt")) {
             file_put_contents("$dir/transcricao.txt", $frases);
         }
@@ -65,12 +66,18 @@ class Contexto
         $plano['segmentos'] = array_values(array_filter($plano['segmentos'], fn ($s) => ($s['id'] ?? '') !== 'fim'));
         $plano['aprendizados'] = [];
         foreach ($plano['elementos'] as &$el) {
-            unset($el['inicio']);
+            // Tempos calculados pelo sistema saem: o que vale é a âncora "em".
+            unset($el['inicio'], $el['t_acao']);
+            foreach (['itens', 'linhas'] as $campo) {
+                if (isset($el[$campo]) && is_array($el[$campo])) {
+                    $el[$campo] = array_map(fn ($i) => is_array($i) ? array_diff_key($i, ['t' => 1]) : $i, $el[$campo]);
+                }
+            }
         }
         unset($el);
 
         file_put_contents("$dir/plano.json", json_encode($plano, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        file_put_contents("$dir/mapa.txt", $this->mapa($linha, $palavras));
+        file_put_contents("$dir/mapa.txt", $this->mapa($linha, $palavras, $planoAtual['narracao'] ?? null));
 
         $historico = $this->job->eventos()->whereIn('tipo', ['pedido', 'claude'])->latest('id')->limit(8)->get()->reverse()
             ->map(fn ($e) => ($e->tipo === 'pedido' ? '- Equipe: ' : '- Você: ').str_replace("\n", ' ', mb_substr($e->texto, 0, 400)))
@@ -103,6 +110,17 @@ class Contexto
         copy(resource_path('video/regras.md'), "$dir/guias/regras.md");
         copy(resource_path('video/plano.md'), "$dir/guias/plano.md");
         file_put_contents("$dir/guias/estilo.md", Estilos::guia($this->job->estilo));
+
+        // Motor de motion: catálogo dos componentes premium + lista de logos/ícones.
+        if (Motion::disponivel()) {
+            copy(resource_path('video/motion.md'), "$dir/guias/motion.md");
+            if ($indice = Motion::indiceIcones()) {
+                copy($indice, "$dir/guias/icones.txt");
+            }
+        } else {
+            @unlink("$dir/guias/motion.md");
+            @unlink("$dir/guias/icones.txt");
+        }
     }
 
     private function documento(array $inventario, bool $temTranscricao, ?array $musica): string
@@ -129,6 +147,9 @@ class Contexto
         $l[] = '';
         $l[] = '## Passo a passo';
         $l[] = '1. Leia `guias/regras.md` (ofício geral), `guias/estilo.md` (este estilo) e `guias/plano.md` (o formato da entrega).';
+        if (Motion::disponivel()) {
+            $l[] = '   **Leia também `guias/motion.md`: os componentes premium (janela, contador, apps, passos, cards, comentário…) são o padrão desta edição.** A tela reage à fala: cada componente e cada item entram na palavra-gatilho. Logos e ícones: Grep em `guias/icones.txt`.';
+        }
         $l[] = '2. Leia a identidade, os aprendizados e o briefing abaixo.';
         $l[] = $temTranscricao
             ? '3. Leia `transcricao.txt` inteiro (frases com tempo de origem e o tempo de cada palavra).'
@@ -164,7 +185,8 @@ class Contexto
         $l[] = '';
 
         $l[] = '## Opções desta edição';
-        $l[] = '- Legendas: '.($estilo['legendas'] && $job->opcao('legendas', true) ? 'sim' : 'não');
+        $comNarracao = $job->opcao('narracao', false) && Narracao::disponivel();
+        $l[] = '- Legendas: '.(($estilo['legendas'] || $comNarracao) && $job->opcao('legendas', true) ? 'sim'.($comNarracao ? ' (saem do texto da narração: `"legendas": {"ativo": true}`)' : '') : 'não');
         $l[] = '- Cartão final: '.($job->opcao('cartao_final', true) ? 'sim (use os dados da identidade)' : 'não');
         if ($musica) {
             $l[] = sprintf('- Música: "%s" — %s, %s BPM%s.', $musica['nome'], Linha::formatar($musica['duracao'] ?? 0), $musica['bpm'] ?? '?', $musica['humor'] ? ", {$musica['humor']}" : '');
@@ -176,6 +198,18 @@ class Contexto
             $l[] = '- Música: nenhuma escolhida (use `"musica": {"usar": false}`).';
         }
         $l[] = '';
+
+        if ($job->opcao('narracao', false) && Narracao::disponivel()) {
+            $voz = Narracao::vozes()[Narracao::vozDaEdicao($job)] ?? null;
+            $pps = (float) config('video.narracao.palavras_por_segundo', 2.7);
+            $l[] = '## Narração com voz gerada: LIGADA';
+            $l[] = '- A equipe quer uma voz narrando este vídeo. Você escreve o texto em `narracao.falas` (veja `guias/plano.md`); o sistema gera a voz'.($voz ? " ({$voz['nome']}, voz {$voz['genero']})" : '').', abaixa a música sob ela e faz a legenda a partir dela.';
+            $l[] = sprintf('- **Tempo:** a voz fala ~%s palavras por segundo. Cada fala precisa caber no trecho onde ela entra; o texto todo precisa caber no vídeo (vídeo de 20 s ≈ %d palavras, deixando respiro). Monte os segmentos pensando na narração.', number_format($pps, 1, ',', ''), (int) round(20 * $pps * 0.8));
+            $l[] = '- **Texto para ouvir, não para ler:** frases curtas, ordem direta, tom da marca, uma ideia por fala. Abra com um gancho e feche com a chamada (a mesma do cartão final). Use só fatos do briefing e da identidade — não invente preço, metragem ou promessa.';
+            $l[] = '- Escreva números como se fala quando houver dúvida de leitura ("doze metros quadrados", "três quartos"). Valores em R$ podem ir em algarismos.';
+            $l[] = '- Narração e fala gravada não se sobrepõem: em trecho com `audio: true` e alguém falando, não ponha narração.';
+            $l[] = '';
+        }
 
         $l[] = '## Material (inventário)';
         $l[] = '| chave | arquivo enviado | papel | tipo | duração | orientação | HDR | som | trocas de cena (s) |';
@@ -212,8 +246,14 @@ class Contexto
     }
 
     /** Tempo da prévia ↔ tempo de origem, e as falas já no tempo da prévia. */
-    private function mapa(Linha $linha, array $palavras): string
+    private function mapa(Linha $linha, array $palavras, ?array $narracao = null): string
     {
+        $falasNarracao = [];
+        foreach (($narracao['ativo'] ?? false) ? $narracao['falas'] : [] as $f) {
+            $t = $linha->resolver($f['em'] ?? null);
+            $falasNarracao[] = sprintf('- [%s %s] %s', $f['id'], $t !== null ? Linha::formatar($t) : '?', $f['texto']);
+        }
+
         $l = ['# Mapa da prévia atual', '', '| segmento | na prévia | origem | nota |', '|---|---|---|---|'];
 
         foreach ($linha->itens as $item) {
@@ -240,6 +280,12 @@ class Contexto
             if ($texto) {
                 $l[] = sprintf('- [%s %s] %s', $item['id'], Linha::formatar($item['seq_inicio']), implode(' ', $texto));
             }
+        }
+
+        if ($falasNarracao) {
+            $l[] = '';
+            $l[] = '## Narração (voz gerada) — onde cada fala começa na prévia';
+            $l = array_merge($l, $falasNarracao);
         }
 
         return implode("\n", $l);

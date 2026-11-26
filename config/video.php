@@ -115,6 +115,41 @@ return [
         'timeout' => (int) env('VIDEO_TRANSCRICAO_TIMEOUT', 1800),
     ],
 
+    /*
+    | Narração com voz gerada (o Claude escreve o texto, a voz sai daqui).
+    | Tudo local e gratuito — scripts/video/narrar.py, num Python só dele
+    | (o instalador cria). Motores:
+    |  - kokoro: natural, leve e rápido. É o padrão.
+    |  - chatterbox: mais humano e clona voz, mas pesado (torch + ~3 GB) e
+    |    lento no processador. Opcional: VIDEO_CHATTERBOX_PYTHON.
+    */
+    'narracao' => [
+        'python' => env('VIDEO_NARRACAO_PYTHON'),
+        'chatterbox_python' => env('VIDEO_CHATTERBOX_PYTHON'),
+        'modelos' => env('VIDEO_NARRACAO_MODELOS', storage_path('app/video-vozes')),
+        'voz_padrao' => env('VIDEO_NARRACAO_VOZ', 'dora'),
+        'timeout' => (int) env('VIDEO_NARRACAO_TIMEOUT', 1800),
+        // Palavras por segundo na velocidade 1,0 (medido no Kokoro em pt-BR).
+        // O Claude usa isto para o texto caber no vídeo.
+        'palavras_por_segundo' => 2.7,
+        'vozes' => [
+            'dora' => ['nome' => 'Dora', 'genero' => 'feminina', 'descricao' => 'Feminina, clara e simpática', 'motor' => 'kokoro', 'id' => 'pf_dora'],
+            'alex' => ['nome' => 'Alex', 'genero' => 'masculina', 'descricao' => 'Masculina, jovem e direta', 'motor' => 'kokoro', 'id' => 'pm_alex'],
+            'santa' => ['nome' => 'Santa', 'genero' => 'masculina', 'descricao' => 'Masculina, mais grave e calma', 'motor' => 'kokoro', 'id' => 'pm_santa'],
+            'humana' => ['nome' => 'Humana+', 'genero' => 'feminina', 'descricao' => 'A mais natural, porém demora mais para gerar', 'motor' => 'chatterbox', 'id' => 'padrao'],
+        ],
+    ],
+
+    /*
+    | Motor de motion (scripts/video/motion): componentes animados desenhados
+    | com Skia num Python só dele (o instalador cria). Ícones: Simple Icons
+    | (marcas, CC0) e Lucide (genéricos, ISC), baixados pelo instalador.
+    */
+    'motion' => [
+        'python' => env('VIDEO_MOTION_PYTHON'),
+        'icones' => env('VIDEO_ICONES_PATH', storage_path('app/video-icones')),
+    ],
+
     'render' => [
         'fps' => 30,
         'previa_escala' => 0.5,

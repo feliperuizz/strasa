@@ -2,6 +2,8 @@
 
 namespace App\Video\Plano;
 
+use App\Video\Render\Motion;
+
 /**
  * Confere e normaliza o plano de edição (plano.json) antes do render.
  *
@@ -20,6 +22,9 @@ class Validador
     public const TIPOS_ELEMENTO = [
         'titulo', 'texto', 'palavra', 'lista', 'etiqueta', 'numero', 'preco', 'nome', 'local',
         'sticker', 'tela_cheia', 'flash', 'citacao', 'estrelas',
+        // Motor de motion (App\Video\Render\Motion::TIPOS)
+        'janela', 'contador', 'rec', 'pilula', 'apps', 'comentario', 'passos', 'cards',
+        'notificacao', 'grafico', 'comparacao', 'seguir', 'busca', 'marca',
     ];
 
     public const FORMAS = ['seta', 'circulo', 'check', 'x', 'estrela', 'brilho', 'coracao', 'raio', 'balao', 'sublinhado', 'fogo'];
@@ -87,6 +92,7 @@ class Validador
             'elementos' => $this->elementos($plano['elementos'] ?? [], $linha),
             'legendas' => $this->legendas($plano['legendas'] ?? [], $ctx),
             'musica' => $this->musica($plano['musica'] ?? [], $ctx),
+            'narracao' => $this->narracao($plano['narracao'] ?? null, $linha),
             'cartao_final' => $cartao,
             'capa' => $this->capa($plano['capa'] ?? null, $arquivos),
             'legenda_post' => $this->texto($plano['legenda_post'] ?? '', 2200),
@@ -252,7 +258,7 @@ class Validador
                 continue;
             }
 
-            $duracao = $this->entre((float) ($el['duracao'] ?? ($tipo === 'flash' ? 0.2 : 2.5)), 0.15, 20);
+            $duracao = $this->entre((float) ($el['duracao'] ?? ($tipo === 'flash' ? 0.2 : (Motion::DURACAO[$tipo] ?? 2.5))), 0.15, 20);
             $inicio = $linha->resolver($el['em'] ?? null, $duracao);
 
             if ($inicio === null) {
@@ -278,6 +284,20 @@ class Validador
                 'som' => in_array($el['som'] ?? null, self::SONS, true) ? $el['som'] : null,
                 'tamanho' => in_array($el['tamanho'] ?? null, ['p', 'm', 'g'], true) ? $el['tamanho'] : 'm',
             ];
+
+            // Componentes do motor de motion: cada um tem os próprios campos.
+            if (Motion::eh($tipo)) {
+                unset($normal['cor'], $normal['destaque'], $normal['animacao']);
+                $normal = Motion::normalizar($el, $normal, $linha, fn ($v, $max) => $this->texto($v, $max));
+                if ($normal === null) {
+                    $this->avisos[] = "{$id}: {$tipo} sem o conteúdo que precisa (itens/texto/logo), ignorado.";
+
+                    continue;
+                }
+                $saida[] = $normal;
+
+                continue;
+            }
 
             if ($tipo === 'lista') {
                 $itens = [];
@@ -380,7 +400,7 @@ class Validador
         }
 
         return [
-            'ativo' => (bool) ($bloco['ativo'] ?? ($ctx['fala'] ?? false)),
+            'ativo' => (bool) ($bloco['ativo'] ?? (($ctx['fala'] ?? false) || ($ctx['narracao'] ?? false))),
             'correcoes' => $correcoes,
             'destaques' => array_values(array_filter(array_map(fn ($d) => $this->texto($d, 40), array_slice((array) ($bloco['destaques'] ?? []), 0, 60)))),
             'estilo' => isset($bloco['estilo']) && in_array($bloco['estilo'], ['karaoke', 'pop', 'caixa', 'simples'], true) ? $bloco['estilo'] : null,
@@ -397,10 +417,46 @@ class Validador
         return [
             'usar' => $tem && (bool) ($bloco['usar'] ?? true),
             'inicio' => $this->entre((float) ($bloco['inicio'] ?? 0), 0, 3600),
-            'volume' => $this->entre((float) ($bloco['volume'] ?? (($ctx['fala'] ?? false) ? 0.18 : 0.85)), 0.02, 1.0),
+            'volume' => $this->entre((float) ($bloco['volume'] ?? (($ctx['fala'] ?? false) || ($ctx['narracao'] ?? false) ? 0.18 : 0.85)), 0.02, 1.0),
             'sincronizar_cortes' => (bool) ($bloco['sincronizar_cortes'] ?? ! ($ctx['fala'] ?? false)),
             'fade_in' => $this->entre((float) ($bloco['fade_in'] ?? 0.3), 0, 5),
             'fade_out' => $this->entre((float) ($bloco['fade_out'] ?? 1.2), 0, 8),
+        ];
+    }
+
+    /** Falas da voz gerada. O áudio sai depois (App\Video\Narracao); aqui só texto e âncora. */
+    private function narracao(mixed $bloco, Linha $linha): array
+    {
+        $bloco = is_array($bloco) ? $bloco : [];
+        $falas = [];
+        $ids = [];
+
+        foreach (array_slice((array) ($bloco['falas'] ?? []), 0, 40) as $n => $f) {
+            if (! is_array($f)) {
+                continue;
+            }
+            $id = $this->id($f['id'] ?? null, 'n', $n + 1, $ids);
+            $texto = $this->texto($f['texto'] ?? '', 500);
+
+            if ($texto === '') {
+                continue;
+            }
+
+            $em = $f['em'] ?? null;
+            if ($linha->resolver($em) === null) {
+                // Sem momento válido: entra logo depois da fala anterior.
+                $this->avisos[] = "Narração {$id}: momento inválido ou num trecho cortado; entra depois da fala anterior.";
+                $em = $falas ? end($falas)['em'] : 'inicio';
+            }
+
+            $falas[] = ['id' => $id, 'em' => $em, 'texto' => $texto];
+        }
+
+        return [
+            'ativo' => $falas && (bool) ($bloco['ativo'] ?? true),
+            'velocidade' => $this->entre((float) ($bloco['velocidade'] ?? 1.0), 0.8, 1.3),
+            'volume' => $this->entre((float) ($bloco['volume'] ?? 1.0), 0.3, 1.5),
+            'falas' => $falas,
         ];
     }
 

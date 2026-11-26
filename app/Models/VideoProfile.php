@@ -48,7 +48,7 @@ class VideoProfile extends Model
         'company_id', 'client_id', 'cor_primaria', 'cor_destaque', 'cor_texto', 'cor_fundo',
         'fonte_titulo', 'fonte_texto', 'fonte_path', 'fonte_nome', 'logo_path', 'logo_posicao',
         'logo_tamanho', 'logo_opacidade', 'legenda_estilo', 'legenda_posicao', 'legenda_caixa_alta',
-        'cor_grade', 'cta_texto', 'instagram', 'whatsapp', 'site', 'endereco', 'vibe', 'instrucoes',
+        'cor_grade', 'voz_narracao', 'cta_texto', 'instagram', 'whatsapp', 'site', 'endereco', 'vibe', 'instrucoes',
         'musica_padrao_id',
     ];
 

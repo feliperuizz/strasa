@@ -30,6 +30,8 @@ class Diagnostico
         $this->recursos();
         $this->fila();
         $this->transcricao();
+        $this->narracao();
+        $this->motion();
         $this->claude($testes);
 
         if ($testes) {
@@ -192,6 +194,40 @@ class Diagnostico
             'ffmpeg' => 'Precisa de FFmpeg 8 com --enable-whisper e VIDEO_WHISPER_CPP_MODEL apontando para um ggml-*.bin.',
             default => '',
         });
+    }
+
+    private function motion(): void
+    {
+        $python = Render\Motion::python();
+        $icones = is_dir(Render\Motion::pastaIcones().'/lucide');
+        $ok = Render\Motion::disponivel();
+        $this->item('Motion', 'componentes animados (Skia)', $ok ? 'ok' : 'aviso',
+            $ok ? 'instalado' : (! $python ? 'motor não instalado' : (! $icones ? 'faltam os ícones' : 'falta algo')),
+            $ok ? '' : 'Rode de novo: bash scripts/video/instalar-servidor.sh (cria o venv-motion, baixa os ícones e mostra VIDEO_MOTION_PYTHON / VIDEO_ICONES_PATH para o .env). Sem ele, os vídeos saem só com as animações simples.');
+    }
+
+    private function narracao(): void
+    {
+        foreach (['kokoro' => 'Kokoro (vozes Dora, Alex, Santa)', 'chatterbox' => 'Chatterbox (voz Humana+)'] as $motor => $nome) {
+            $python = Narracao::python($motor);
+
+            if ($motor === 'chatterbox' && ! $python) {
+                $this->item('Narração', $nome, 'ok', 'opcional, não instalado (pesado: ~4 GB; instale só se o servidor aguentar)');
+
+                continue;
+            }
+
+            $pronto = Narracao::motorPronto($motor);
+            $this->item('Narração', $nome, $pronto ? 'ok' : 'aviso', $pronto ? 'instalado' : ($python ? 'falta o modelo de voz' : 'não instalado'),
+                $pronto ? '' : 'Rode de novo: bash scripts/video/instalar-servidor.sh (instala a voz e mostra as linhas do .env).');
+        }
+
+        if (Narracao::disponivel()) {
+            $faltam = array_keys(array_filter(Narracao::disponiveis(), fn ($v, $id) => ! Narracao::amostra($id), ARRAY_FILTER_USE_BOTH));
+            if ($faltam) {
+                $this->item('Narração', 'amostras das vozes', 'aviso', 'faltam: '.implode(', ', $faltam), 'php artisan video:vozes');
+            }
+        }
     }
 
     private function claude(bool $testar): void

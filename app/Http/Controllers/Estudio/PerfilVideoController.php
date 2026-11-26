@@ -9,6 +9,7 @@ use App\Models\VideoLearning;
 use App\Models\VideoProfile;
 use App\Video\Armazenamento;
 use App\Video\Ferramentas;
+use App\Video\Narracao;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,7 @@ class PerfilVideoController extends Controller
             'legenda_posicao' => ['required', 'in:baixo,centro,alto'],
             'legenda_caixa_alta' => ['nullable', 'boolean'],
             'cor_grade' => ['required', Rule::in(array_keys(VideoProfile::GRADES))],
+            'voz_narracao' => ['nullable', Rule::in(array_keys(Narracao::vozes()))],
             'cta_texto' => ['nullable', 'string', 'max:160'],
             'instagram' => ['nullable', 'string', 'max:80'],
             'whatsapp' => ['nullable', 'string', 'max:40'],

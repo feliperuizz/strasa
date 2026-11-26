@@ -8,15 +8,15 @@ A fala com animações em volta: o conteúdo vira imagem. É o estilo que mais d
 
 ## Plano de animação
 1. **Gancho com storyboard (0–5 s):** decida o que aparece em cada segundo. Algo forte já no 1º segundo (título com a promessa do vídeo, número grande, sticker apontando).
-2. **Corpo:** uma animação a cada ~3–5 s, alternando formatos:
+2. **Corpo:** algo novo a cada ~2–4 s. Com o motor de motion (`guias/motion.md`), a base são os componentes premium — `janela`, `apps`, `passos`, `cards`, `comparacao`, `grafico`, `notificacao`, `contador`, `comentario`, `seguir` —, cada item na sua palavra (veja o roteiro de referência lá). Complete com:
    - `tela_cheia` para conceitos, processos e números grandes (1,5–3 s, no máximo 2–3 no vídeo);
    - `lista` quando a pessoa enumera ("são três passos…") — cada item na palavra dele;
    - `titulo`/`etiqueta` em cima (`topo`) para a ideia-chave;
    - `palavra` para a ênfase mais forte (1–2 no vídeo);
    - `sticker` para dar vida: seta apontando, círculo marcando, brilho, check quando algo dá certo, x quando algo está errado;
    - `numero` quando falar número; `preco` quando falar preço.
-3. **Respiro:** a cada ~6–10 s, 2–3 s só com o rosto e a legenda.
-4. **Fechamento:** chamada clara (`cartao_final`, ou `titulo` + sticker seta para baixo "link na bio").
+3. **Respiro:** a cada ~8–10 s, 1–2 s só com o rosto e a legenda (com punch de câmera).
+4. **Fechamento:** chamada clara: `comentario` ("comenta X") ou `seguir` quando a pessoa pedir; senão `cartao_final`.
 
 ## Teste antes de entregar
 - O conceito de cada animação nasce desta fala ou serviria para qualquer vídeo?
