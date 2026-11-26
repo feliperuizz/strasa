@@ -47,6 +47,8 @@ BIN="$BASE/bin"
 DADOS="$BASE/dados"
 PHP="${PHP:-php}"
 mkdir -p "$BIN" "$DADOS"
+# /tmp da hospedagem é noexec (biblioteca .so não carrega de lá): temporário na home.
+mkdir -p "$BASE/tmp" && export TMPDIR="$BASE/tmp"
 
 verde() { printf '\033[32m%s\033[0m\n' "$*"; }
 amarelo() { printf '\033[33m%s\033[0m\n' "$*"; }

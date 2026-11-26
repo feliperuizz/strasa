@@ -225,12 +225,16 @@ class Narracao
         ], JSON_UNESCAPED_UNICODE));
 
         $threads = Ferramentas::threads();
+        // /tmp da hospedagem é noexec: o phonemizer copia a libespeak-ng.so para o
+        // temporário e o carregamento falhava ("failed to map segment"). Temporário na home.
+        $tmp = self::pastaModelos().'/tmp';
+        File::ensureDirectoryExists($tmp, 0775);
 
         try {
             Ferramentas::rodar(
                 [self::python($motor), '-I', base_path('scripts/video/narrar.py'), $pedido, $resultado],
                 $dir, (int) config('video.narracao.timeout', 1800), null,
-                array_merge(['PYTHONIOENCODING' => 'utf-8', 'TOKENIZERS_PARALLELISM' => 'false', 'HF_HOME' => self::pastaModelos().'/hf'], array_fill_keys(
+                array_merge(['PYTHONIOENCODING' => 'utf-8', 'TOKENIZERS_PARALLELISM' => 'false', 'HF_HOME' => self::pastaModelos().'/hf', 'TMPDIR' => $tmp, 'TEMP' => $tmp, 'TMP' => $tmp], array_fill_keys(
                     ['VIDEO_THREADS', 'OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'RAYON_NUM_THREADS', 'NUMEXPR_NUM_THREADS', 'ORT_NUM_THREADS'],
                     $threads
                 ))
