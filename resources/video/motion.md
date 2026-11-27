@@ -20,6 +20,9 @@ Depois do seu plano, o sistema **renderiza cada animação sobre o quadro real d
 - **Fechamento:** uma chamada clara com tempo de leitura.
 
 ## 3. Formato e espaço (vertical 1080×1920)
+
+> **Horizontal (16:9, vlog/YouTube):** o quadro de desenho é **1920×1080** e não existem as zonas dos botões do app — veja "Formato horizontal" no contexto. As regras abaixo de zona valem para o vertical.
+
 - **Tela cheia** (`"formato": "tela_cheia"`): cobre o rosto, a voz segue. Conceitos, processos, números grandes. Fundo próprio (cor/gradiente/grade/brilho). A legenda some sozinha.
 - **Sobreposição** (`"formato": "sobreposicao"`, padrão): fundo transparente, só os elementos, sobre o apresentador. Coisas curtas. **Nunca sobre o rosto** — veja "Onde está o rosto" no contexto: cartão em cima se o rosto está no meio/baixo e vice-versa; elemento lateral no lado oposto ao rosto.
 - **Zonas proibidas:** nada importante nos 8% de cima (y < 155), nos 20% de baixo (y > 1535) e nos 12% da direita (x > 950). A legenda fica embaixo (~y 1250–1450): cartões de sobreposição vão em cima (y ~300–700) a não ser que a legenda esteja desligada.

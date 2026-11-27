@@ -89,6 +89,18 @@ Exemplo:
 ]
 ```
 
+## broll (segunda trilha de vídeo)
+
+Um elemento `broll` cobre a imagem com um trecho de **outro arquivo** por um tempo, enquanto **a voz do segmento de baixo continua** (o clássico "corta para a imagem do que a pessoa está falando").
+
+```json
+{"id": "br01", "tipo": "broll", "em": {"arquivo": "f1", "t": 42.30}, "duracao": 3.5,
+ "arquivo": "f7", "inicio_origem": 12.0, "velocidade": 1.0, "zoom": [1.0, 1.08], "foco": [0.5, 0.45], "transicao": "corte"}
+```
+- `em`: quando entra (palavra-gatilho, como os elementos). `arquivo` + `inicio_origem`: de onde vem a imagem (segundos no arquivo do B-roll). Foto: `inicio_origem` é ignorado.
+- `velocidade` 0,25–4 (câmera lenta/timelapse), `zoom` [de, para] e `foco` como na câmera dos segmentos, `transicao` `corte` ou `fade`.
+- Cubra 2–5 s, com o que está sendo dito; nunca cubra uma reação ou o rosto num momento forte. Animações e legenda ficam por cima do B-roll.
+
 ## legendas
 
 ```json

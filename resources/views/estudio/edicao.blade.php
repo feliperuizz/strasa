@@ -78,10 +78,22 @@
                             <input type="file" multiple class="hidden" accept="video/*,image/*,.mov,.heic,.mts" @change="adicionar($event.target.files); $event.target.value = ''">
                         </label>
 
-                        <ul class="mt-4 space-y-2" x-ref="lista">
-                            <template x-for="a in arquivos" :key="a.chave">
-                                <li class="flex items-center gap-3 rounded-xl border border-ink-600 bg-ink-900/50 p-2.5" :data-id="a.id">
-                                    <span class="cursor-grab select-none px-1 text-slate-600" title="Arraste para mudar a ordem" x-show="a.status === 'pronto'">⋮⋮</span>
+                        <div class="mt-4 flex flex-wrap items-center justify-between gap-2 text-[12px]" x-show="arquivos.length > 1" x-cloak>
+                            <span class="text-slate-400">A ordem é a <b class="text-slate-200">cronologia</b> dos fatos. Arraste ou use as setas.</span>
+                            <span class="flex items-center gap-1.5">
+                                <button type="button" @click="ordenarPor('gravado_em')" class="rounded-lg border border-ink-600 px-2 py-1 text-slate-300 hover:bg-ink-700" title="Usa a data e hora que o celular gravou no arquivo">↧ Pela hora da gravação</button>
+                                <button type="button" @click="ordenarPor('nome')" class="rounded-lg border border-ink-600 px-2 py-1 text-slate-300 hover:bg-ink-700">↧ Pelo nome</button>
+                            </span>
+                        </div>
+
+                        <ul class="mt-2 space-y-2" x-ref="lista">
+                            <template x-for="(a, i) in arquivos" :key="a.chave">
+                                <li class="flex items-center gap-2.5 rounded-xl border border-ink-600 bg-ink-900/50 p-2.5" :data-id="a.id">
+                                    <span class="flex shrink-0 flex-col items-center" x-show="arquivos.length > 1">
+                                        <button type="button" @click="mover(i, i - 1)" :disabled="i === 0" class="px-1 text-[11px] leading-none text-slate-500 hover:text-white disabled:opacity-20" title="Subir">▲</button>
+                                        <span class="cursor-grab select-none py-0.5 text-[12px] font-semibold tabular-nums text-brand-300" title="Arraste para mudar a ordem" x-text="(i + 1) + 'º'"></span>
+                                        <button type="button" @click="mover(i, i + 1)" :disabled="i === arquivos.length - 1" class="px-1 text-[11px] leading-none text-slate-500 hover:text-white disabled:opacity-20" title="Descer">▼</button>
+                                    </span>
                                     <div class="relative h-14 w-10 shrink-0 overflow-hidden rounded-md bg-ink-800">
                                         <template x-if="a.miniatura"><img :src="a.miniatura" class="h-full w-full object-cover" alt=""></template>
                                     </div>
@@ -147,10 +159,18 @@
                             <div>
                                 <label class="mb-1 block text-xs font-medium text-slate-400">Duração desejada</label>
                                 <div class="flex items-center gap-2">
-                                    <input type="number" min="5" max="180" placeholder="{{ $estilo['duracao'][2] }}" value="{{ $edicao->duracao_alvo }}"
-                                           @input.debounce.600ms="salvar({ duracao_alvo: $event.target.value ? parseInt($event.target.value) : null })"
-                                           class="w-24 rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200">
-                                    <span class="text-[12px] text-slate-500">segundos (sugestão {{ $estilo['duracao'][0] }}–{{ $estilo['duracao'][1] }})</span>
+                                    @if(! empty($estilo['longo']))
+                                        {{-- Vídeo longo: em minutos (guarda em segundos). --}}
+                                        <input type="number" min="1" max="15" step="0.5" placeholder="{{ round($estilo['duracao'][2] / 60) }}" value="{{ $edicao->duracao_alvo ? round($edicao->duracao_alvo / 60, 1) : '' }}"
+                                               @input.debounce.600ms="salvar({ duracao_alvo: $event.target.value ? Math.round(parseFloat($event.target.value) * 60) : null })"
+                                               class="w-24 rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200">
+                                        <span class="text-[12px] text-slate-500">minutos (até 15; vazio = o material decide)</span>
+                                    @else
+                                        <input type="number" min="5" max="180" placeholder="{{ $estilo['duracao'][2] }}" value="{{ $edicao->duracao_alvo }}"
+                                               @input.debounce.600ms="salvar({ duracao_alvo: $event.target.value ? parseInt($event.target.value) : null })"
+                                               class="w-24 rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-slate-200">
+                                        <span class="text-[12px] text-slate-500">segundos (sugestão {{ $estilo['duracao'][0] }}–{{ $estilo['duracao'][1] }})</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -591,13 +611,52 @@
 
             init() {
                 window.addEventListener('beforeunload', (e) => { if (this.enviando) { e.preventDefault(); e.returnValue = ''; } });
-                this.$nextTick(() => {
-                    if (typeof Sortable === 'undefined') return;
-                    Sortable.create(this.$refs.lista, { handle: '.cursor-grab', animation: 150, onEnd: () => {
-                        const ids = [...this.$refs.lista.querySelectorAll('li[data-id]')].map(li => parseInt(li.dataset.id)).filter(Boolean);
-                        this.salvar({ ordem: ids });
-                    }});
+                // O SortableJS vem de CDN com "defer" e pode chegar depois do Alpine: espera por ele.
+                const ligar = (tentativas) => {
+                    if (typeof Sortable === 'undefined') {
+                        if (tentativas > 0) setTimeout(() => ligar(tentativas - 1), 250);
+                        return;
+                    }
+                    Sortable.create(this.$refs.lista, {
+                        handle: '.cursor-grab', draggable: 'li', animation: 150,
+                        onEnd: (evt) => {
+                            const de = evt.oldDraggableIndex, para = evt.newDraggableIndex;
+                            if (de === para || de === undefined) return;
+                            // Devolve o item ao lugar no DOM e deixa o Alpine redesenhar pela lista (senão os dois brigam).
+                            const lis = [...evt.from.querySelectorAll(':scope > li')].filter(li => li !== evt.item);
+                            evt.from.insertBefore(evt.item, lis[de] || null);
+                            this.mover(de, para);
+                        },
+                    });
+                };
+                this.$nextTick(() => ligar(40));
+            },
+
+            mover(de, para) {
+                if (para < 0 || para >= this.arquivos.length || de === para) return;
+                const [item] = this.arquivos.splice(de, 1);
+                this.arquivos.splice(para, 0, item);
+                this.salvarOrdem();
+            },
+
+            ordenarPor(campo) {
+                const nome = (a) => (a.nome || '').toString();
+                this.arquivos.sort((a, b) => {
+                    if (campo === 'gravado_em') {
+                        if (a.gravado_em && b.gravado_em) return a.gravado_em < b.gravado_em ? -1 : (a.gravado_em > b.gravado_em ? 1 : 0);
+                        if (a.gravado_em || b.gravado_em) return a.gravado_em ? -1 : 1;
+                    }
+                    return nome(a).localeCompare(nome(b), 'pt-BR', { numeric: true, sensitivity: 'base' });
                 });
+                if (campo === 'gravado_em' && !this.arquivos.some(a => a.gravado_em)) {
+                    this.salvo = 'Os arquivos não têm hora de gravação: ordenei pelo nome.';
+                }
+                this.salvarOrdem();
+            },
+
+            salvarOrdem() {
+                const ids = this.arquivos.map(a => a.id).filter(Boolean);
+                if (ids.length) this.salvar({ ordem: ids });
             },
 
             resumo() {

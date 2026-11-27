@@ -115,11 +115,12 @@ def folhas(lista):
                     except Exception as e:
                         avisos.append("%s: %s" % (el.d.get("id", el.d.get("tipo")), e))
             canvas.restore()
-            # Guias: zonas que o app cobre (8% topo, 20% base, 12% direita) e o rosto.
-            vermelho = skia.Paint(Color=skia.Color(255, 40, 40, 46))
-            canvas.drawRect(skia.Rect.MakeXYWH(0, 0, LW, LH * 0.08), vermelho)
-            canvas.drawRect(skia.Rect.MakeXYWH(0, LH * 0.80, LW, LH * 0.20), vermelho)
-            canvas.drawRect(skia.Rect.MakeXYWH(LW * 0.88, LH * 0.08, LW * 0.12, LH * 0.72), vermelho)
+            # Guias: zonas que o app cobre (8% topo, 20% base, 12% direita; só no vertical) e o rosto.
+            if pedido.get("zonas", True):
+                vermelho = skia.Paint(Color=skia.Color(255, 40, 40, 46))
+                canvas.drawRect(skia.Rect.MakeXYWH(0, 0, LW, LH * 0.08), vermelho)
+                canvas.drawRect(skia.Rect.MakeXYWH(0, LH * 0.80, LW, LH * 0.20), vermelho)
+                canvas.drawRect(skia.Rect.MakeXYWH(LW * 0.88, LH * 0.08, LW * 0.12, LH * 0.72), vermelho)
             if q.get("rosto"):
                 rx, ry, rw, rh = q["rosto"]
                 verde = skia.Paint(AntiAlias=True, Color=skia.Color(60, 230, 120, 220), Style=skia.Paint.kStroke_Style, StrokeWidth=3)
@@ -145,30 +146,49 @@ if pedido.get("quadros"):
     print(json.dumps({"avisos": avisos}))
     sys.exit(0)
 
-total = int(round(float(pedido["duracao"]) * FPS))
-cmd = [
-    pedido.get("ffmpeg") or "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-    "-filter_threads", T,
-    "-f", "rawvideo", "-pix_fmt", "rgba", "-s", "%dx%d" % (LW, LH), "-r", str(FPS), "-i", "-",
-    "-c:v", "qtrle", "-pix_fmt", "argb", "-threads", T, pedido["saida"],
-]
-ff = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-vazio = bytes(LW * LH * 4)
-try:
-    for f in range(total):
-        t = f / float(FPS)
-        if not any(el.ativo(t) for el in elementos):
-            ff.stdin.write(vazio)
-            continue
-        desenhar(t)
-        surface.readPixels(INFO, buf)
-        ff.stdin.write(buf.tobytes())
-        if f % 30 == 0:
-            print("progresso %.3f" % (f / float(total)), flush=True)
-    ff.stdin.close()
-except BrokenPipeError:
-    pass
-erro = ff.stderr.read().decode("utf-8", "replace")
-if ff.wait() != 0:
-    sys.exit("ffmpeg falhou ao gravar o motion: " + erro[-800:])
-print(json.dumps({"avisos": avisos}))
+# Pedaços: só os trechos com animação viram vídeo (um vlog de 15 min com 30
+# animações não desenha 27 mil quadros vazios). Elementos a menos de 0,5 s um
+# do outro ficam no mesmo pedaço. A montagem sobrepõe cada um no seu tempo.
+intervalos = sorted((max(0.0, el.inicio), min(float(pedido["duracao"]), el.fim)) for el in elementos)
+pedacos = []
+for a, b in intervalos:
+    if b <= a:
+        continue
+    if pedacos and a - pedacos[-1][1] < 0.5:
+        pedacos[-1][1] = max(pedacos[-1][1], b)
+    else:
+        pedacos.append([a, b])
+
+base = pedido["saida"]
+raiz, ext = os.path.splitext(base)
+quadros_total = sum(int(round((b - a) * FPS)) + 1 for a, b in pedacos) or 1
+feitos = 0
+saida_pedacos = []
+for np_, (a, b) in enumerate(pedacos):
+    f0 = int(a * FPS)
+    f1 = int(round(b * FPS)) + 1
+    arquivo = "%s_p%02d%s" % (raiz, np_, ext)
+    cmd = [
+        pedido.get("ffmpeg") or "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
+        "-filter_threads", T,
+        "-f", "rawvideo", "-pix_fmt", "rgba", "-s", "%dx%d" % (LW, LH), "-r", str(FPS), "-i", "-",
+        "-c:v", "qtrle", "-pix_fmt", "argb", "-threads", T, arquivo,
+    ]
+    ff = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    try:
+        for f in range(f0, f1):
+            desenhar(f / float(FPS))
+            surface.readPixels(INFO, buf)
+            ff.stdin.write(buf.tobytes())
+            feitos += 1
+            if feitos % 30 == 0:
+                print("progresso %.3f" % (feitos / float(quadros_total)), flush=True)
+        ff.stdin.close()
+    except BrokenPipeError:
+        pass
+    erro = ff.stderr.read().decode("utf-8", "replace")
+    if ff.wait() != 0:
+        sys.exit("ffmpeg falhou ao gravar o motion: " + erro[-800:])
+    saida_pedacos.append({"arquivo": arquivo, "inicio": round(f0 / float(FPS), 4)})
+
+print(json.dumps({"avisos": avisos, "pedacos": saida_pedacos}))

@@ -240,6 +240,27 @@ class Contexto
             $l[] = '';
         }
 
+        // Ordem e cronologia: a ordem que a equipe deu aos arquivos (arrastando na tela).
+        $ordem = $job->arquivos()->where('status', 'pronto')->get();
+        if ($ordem->count() > 1) {
+            $l[] = '## Ordem e cronologia dos arquivos (definida pela equipe)';
+            $l[] = ! empty($estilo['longo'])
+                ? '**Siga esta ordem: é a cronologia dos fatos.** Dentro de um mesmo momento, escolha takes e use B-roll de arquivos vizinhos à vontade; não misture momentos distantes (só o teaser do gancho pode adiantar o melhor do vídeo).'
+                : 'É a ordem dos fatos/das partes. Use como referência: você pode trazer uma frase forte para o gancho ou escolher outro take, mas a história segue essa sequência.';
+            foreach ($ordem->values() as $k => $a) {
+                $quando = $a->sondagem['gravado_em'] ?? null;
+                $l[] = sprintf('%d. %s — "%s"%s', $k + 1, $a->chave(), str_replace('"', "'", $a->nome_original),
+                    $quando ? ' · gravado em '.\Carbon\Carbon::parse($quando)->timezone('America/Sao_Paulo')->format('d/m H:i:s') : '');
+            }
+            $l[] = '';
+        }
+
+        if ($dim['largura'] > $dim['altura']) {
+            $l[] = '## Formato horizontal';
+            $l[] = '- Quadro de desenho das cenas: **1920 × '.(int) round(1920 * $dim['altura'] / $dim['largura']).' px** (x de 0 a 1920, y de 0 a '.(int) round(1920 * $dim['altura'] / $dim['largura']).'). Não há botões de app cobrindo: deixe só ~5% de margem nas bordas. Legenda embaixo (~85% da altura): cartões em cima ou nas laterais, longe do rosto.';
+            $l[] = '';
+        }
+
         $l[] = '## Material (inventário)';
         $l[] = '| chave | arquivo enviado | papel | tipo | duração | orientação | HDR | som | trocas de cena (s) |';
         $l[] = '|---|---|---|---|---|---|---|---|---|';

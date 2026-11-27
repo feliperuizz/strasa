@@ -16,12 +16,14 @@ Menu: **Estúdio de vídeo** (painel geral) e, na barra lateral, **▶ Estúdio*
 | **Antes e depois** | Transformação com revelação na batida | arquivos marcados "antes"/"depois" (+ processo) |
 | **Oferta / vitrine** | Produto/serviço, preço de/por, urgência, chamada | fotos ou clipes + preços no briefing |
 | **Depoimento de cliente** | Prova social: cortes limpos, nome, citação, estrelas | vídeo do cliente falando |
+| **Vlog** | Vídeo longo (3–15 min, horizontal 16:9) contando um dia/evento/bastidor **na ordem em que aconteceu**: teaser no gancho, capítulos, B-roll cobrindo a fala, montagens aceleradas, música e animações nos momentos-chave | até 150 arquivos / 90 min de bruto, na ordem dos fatos |
 
 O guia de ofício de cada estilo (o que o Claude lê) fica em `resources/video/estilos/*.md`; as regras gerais em `resources/video/regras.md` — adaptados do pacote de skills de edição. **Para mudar o gosto da agência, edite esses arquivos.**
 
 ## 2. Fluxo
 
 1. **Rascunho** — envia os arquivos (upload em pedaços de 8 MB, retomável), escreve o briefing, escolhe música/formato/duração. Tudo salva sozinho.
+   - **Ordem dos arquivos = cronologia dos fatos** (vale para todo estilo): arraste pelo número (1º, 2º…), use as setas ▲▼ ou "Pela hora da gravação" (data/hora que o celular grava no arquivo, lida pelo ffprobe em `sondagem.gravado_em`) / "Pelo nome". O Claude recebe a lista na ordem, com a hora de gravação; no vlog ela é obrigatória (só o teaser do gancho pode adiantar algo), nos outros estilos é referência.
 2. **Editar com o Claude** — vai para a fila. Etapas: preparar (proxies leves, HDR→SDR, folhas de quadros, cenas, silêncios) → transcrever → Claude decide (escreve `plano.json`) → prévia em meia resolução.
 3. **Revisão** — assiste à prévia e:
    - pede ajuste por texto na **Conversa** ("em 0:12 tira essa frase", "mo04 mais lento", "música mais baixa"); ou
@@ -98,6 +100,14 @@ Sem o Claude conectado, a edição **para com erro claro** (a faixa "Motor" fica
 - **Revisão visual** (`App\Video\Revisao`, `VIDEO_CLAUDE_REVISAO=true`): depois do primeiro plano, o motor desenha entrada/auge/saída de cada animação sobre o quadro real do vídeo (rosto em verde, zonas do app em vermelho) em `claude/revisao/*.png`; o Claude abre, corrige o plano.json e só então sai a prévia. Plano inválido na revisão → fica o anterior. Custa mais uma rodada da assinatura.
 - **Rosto** (YuNet/OpenCV no venv-motion, `icones/yunet.onnx`): mapeado nos proxies a 2 qps (`trabalho/rosto_fN.json`), resumido no contexto, marcado nas folhas, e segmento sem `foco` é centralizado no rosto.
 - **Repertório por cliente** (`App\Video\Repertorio`, `VIDEO_STORAGE_PATH/repertorio/client-N.json`): as cenas de cada vídeo final entram na memória do cliente; o contexto lista os conceitos e manda as 6 últimas completas em `guias/repertorio.json` (família visual, sem repetir).
+
+### Vídeo longo (vlog, até 15 min)
+- Estilo com `'longo' => true` em `Estilos.php`: limites próprios (`VIDEO_MAX_MINUTOS_LONGO`=90 de bruto, 150 arquivos), Claude com mais turnos e tempo (`max_turnos_longo`, `timeout_longo`), folhas de quadros proporcionais à duração de cada arquivo, duração em minutos na tela (máx. 900 s). Guia do Claude: `resources/video/estilos/vlog.md`.
+- **B-roll** (`"tipo": "broll"` em `elementos`): um trecho de outro arquivo cobre a imagem enquanto a voz do segmento continua (zoom, foco, velocidade, corte ou fade). Preparado como um segmento comum e sobreposto na montagem.
+- **Montagem em blocos** (mais de 40 segmentos): blocos de até 30 segmentos, divididos em cortes secos, viram mp4+wav com cache próprio e são juntados com `concat -c copy`; a montagem final só aplica legenda, motion, B-roll, música e loudness sobre essa base. Um ajuste que mexe em um trecho refaz só o bloco dele.
+- **Motion em pedaços:** `render.py` só desenha os trechos com animação (elementos a menos de 0,5 s ficam juntos) e cada pedaço entra com `-itsoffset` — um vlog de 15 min não desenha 27 mil quadros vazios.
+- **Sinal de vida:** `Ferramentas::$batimento` atualiza `sinal_em` a cada 60 s enquanto qualquer processo roda (transcrever 15 min, Claude planejando), para o `video:vigiar` não marcar como travada. Worker com `--timeout=13200`, job com 13.000 s.
+- **Windows (teste local):** a linha de comando é cortada em 8.191 caracteres — a montagem usa caminhos relativos à pasta do render (`Montador::rel`).
 
 ### Motor de motion (componentes animados)
 Os componentes premium (`janela` de terminal digitando, `contador` gigante com brilho, moldura `rec`, `pilula`, `apps` riscados/com check, `comentario`, `passos`, `cards`, `notificacao`, `grafico`, `comparacao`, `seguir`, `busca`, `marca`) são desenhados por `scripts/video/motion/` (Python + Skia) e entram como um vídeo com transparência sobreposto na montagem (abaixo da legenda).

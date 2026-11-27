@@ -86,11 +86,31 @@ class Montador
             $progresso(0.55 * ($n + 1) / count($itens));
         }
 
+        // B-roll: imagem de outro arquivo por cima, a voz do segmento de baixo continua.
+        $broll = [];
+        foreach (array_values(array_filter($this->plano['elementos'], fn ($e) => $e['tipo'] === 'broll')) as $b) {
+            $fonte = $this->fontes[$b['arquivo']] ?? null;
+            if (! $fonte) {
+                continue;
+            }
+            $item = [
+                'id' => $b['id'], 'tipo' => $fonte['tipo'] === 'imagem' ? 'foto' : 'clip', 'arquivo' => $b['arquivo'],
+                'inicio' => $b['inicio_origem'], 'fim' => $b['inicio_origem'] + $b['duracao'] * $b['velocidade'],
+                'duracao' => $b['duracao'], 'dur' => $b['duracao'], 'velocidade' => $b['velocidade'], 'audio' => false,
+                'camera' => ['zoom' => $b['zoom'], 'foco' => $b['foco'], 'punches' => []],
+            ];
+            try {
+                $broll[] = ['video' => $this->segmento($item, fn () => null)['video'], 'inicio' => $b['inicio'], 'dur' => $b['duracao'], 'fade' => $b['transicao'] === 'fade'];
+            } catch (FalhaDeFerramenta $e) {
+                $this->avisos[] = "B-roll {$b['id']} ficou de fora: ".mb_substr($e->getMessage(), 0, 160);
+            }
+        }
+
         // 2. Legendas e animações (ASS) + componentes do motor de motion (Skia)
         $motion = array_values(array_filter($this->plano['elementos'], fn ($e) => Motion::eh($e['tipo'])));
         $ass = new Ass($this->larguraFinal, $this->alturaFinal);
         $elementos = new Elementos($ass, $this->id);
-        $sons = $elementos->gerar(array_values(array_filter($this->plano['elementos'], fn ($e) => ! Motion::eh($e['tipo']))));
+        $sons = $elementos->gerar(array_values(array_filter($this->plano['elementos'], fn ($e) => ! Motion::eh($e['tipo']) && $e['tipo'] !== 'broll')));
         foreach ($motion as $m) {
             $sons = array_merge($sons, Motion::sons($m));
         }
@@ -128,13 +148,14 @@ class Montador
 
         // Motion: um vídeo com transparência para todos os componentes (com cache).
         // Se o motor falhar, o vídeo sai sem eles (com aviso) em vez de perder a edição.
-        $arquivoMotion = null;
+        $pedacosMotion = [];
         if ($motion) {
             if (! Motion::disponivel()) {
                 $this->avisos[] = 'Os componentes de motion ('.implode(', ', array_unique(array_column($motion, 'tipo'))).') ficaram de fora: o motor de motion não está instalado no servidor.';
             } else {
                 try {
-                    $arquivoMotion = Motion::renderizar($motion, $this->id, $this->larguraFinal, $this->alturaFinal, $this->W / $this->larguraFinal, $linha->total, $this->pasta, $this->logo, $this->arquivosDeFonte);
+                    $pedacosMotion = Motion::renderizar($motion, $this->id, $this->larguraFinal, $this->alturaFinal, $this->W / $this->larguraFinal, $linha->total, $this->pasta, $this->logo, $this->arquivosDeFonte,
+                        fn (float $f) => $progresso(0.55 + 0.07 * $f));
                 } catch (FalhaDeFerramenta $e) {
                     $this->avisos[] = 'Os componentes de motion ficaram de fora desta versão: '.mb_substr($e->getMessage(), 0, 300);
                 }
@@ -145,7 +166,7 @@ class Montador
         // 3. Montagem (62–100%)
         $this->montar($linha, $arquivos, $saida, $arquivoAss, $this->filtrarSons($sons), $cartao, function (float $f) use ($progresso) {
             $progresso(0.62 + 0.38 * $f);
-        }, $arquivoMotion);
+        }, $pedacosMotion, $broll);
 
         return [
             'duracao' => $linha->total,
@@ -426,36 +447,33 @@ class Montador
 
     /* 2ª passada: montagem ------------------------------------------- */
 
-    private function montar(Linha $linha, array $arquivos, string $saida, ?string $arquivoAss, array $sons, ?array $cartao, callable $progresso, ?string $arquivoMotion = null): void
+    /**
+     * Grafo do vídeo dos segmentos (cortes e transições) → rótulo $saidaRot.
+     * Usado na montagem direta (vídeo curto) e em cada bloco do vídeo longo.
+     */
+    private function grafoVideo(array $itens, array $arquivos, array &$args, array &$g, int &$n, string $saidaRot): void
     {
-        $W = $this->W;
-        $H = $this->H;
-        $total = $linha->total;
-        $args = [];
-        $g = [];
-        $n = 0;
-
-        // Vídeo: um input por segmento.
+        $itens = array_values($itens);
         $rotulos = [];
-        foreach ($linha->itens as $i => $item) {
-            $args = array_merge($args, ['-i', $arquivos[$i]['video']]);
+        foreach ($itens as $i => $item) {
+            $args = array_merge($args, ['-i', $this->rel($arquivos[$item['_n']]['video'])]);
             // xfade exige base de tempo e taxa idênticas nas duas pontas (inclusive na saída do concat).
-            $g[] = "[$n:v]fps=30,settb=AVTB,setsar=1,format=yuv420p[n$i]";
-            $rotulos[$i] = "[n$i]";
+            $g[] = "[$n:v]fps=30,settb=AVTB,setsar=1,format=yuv420p[n{$n}]";
+            $rotulos[$i] = "[n{$n}]";
             $n++;
         }
 
-        $todosCorte = collect($linha->itens)->every(fn ($it, $i) => $i === 0 || $it['trans'] === 'corte');
+        $todosCorte = collect($itens)->every(fn ($it, $i) => $i === 0 || $it['trans'] === 'corte');
 
         if (count($rotulos) === 1) {
-            $g[] = $rotulos[0].'null[vb]';
+            $g[] = $rotulos[0].'null'.$saidaRot;
         } elseif ($todosCorte) {
-            $g[] = implode('', $rotulos).'concat=n='.count($rotulos).':v=1:a=0[vb]';
+            $g[] = implode('', $rotulos).'concat=n='.count($rotulos).':v=1:a=0'.$saidaRot;
         } else {
             $acumulado = $rotulos[0];
-            $durAcumulada = $linha->itens[0]['dur'];
-            foreach (array_slice($linha->itens, 1, null, true) as $i => $item) {
-                $rot = $i === count($linha->itens) - 1 ? '[vb]' : "[x$i]";
+            $durAcumulada = $itens[0]['dur'];
+            foreach (array_slice($itens, 1, null, true) as $i => $item) {
+                $rot = $i === count($itens) - 1 ? $saidaRot : "[x{$n}_{$i}]";
                 if ($item['trans'] === 'corte') {
                     $g[] = "{$acumulado}{$rotulos[$i]}concat=n=2:v=1:a=0,settb=AVTB$rot";
                     $durAcumulada += $item['dur'];
@@ -468,8 +486,148 @@ class Montador
                 $acumulado = $rot;
             }
         }
+    }
+
+    /**
+     * Vídeo longo (vlog): em vez de abrir 150+ arquivos numa montagem só, monta
+     * blocos de até 30 segmentos (cada um com vídeo e voz próprios, em cache) e
+     * junta os blocos sem recodificar. Os blocos só se dividem em corte seco,
+     * então as durações somam exatas. Ajuste refaz só o bloco que mudou.
+     *
+     * @return array [base.mp4, voz.wav|null]
+     */
+    /** Caminho relativo à pasta do render: comando bem menor (o Windows corta a linha em 8.191 caracteres). */
+    private function rel(string $caminho): string
+    {
+        $base = rtrim(str_replace('\\', '/', $this->pasta), '/').'/';
+        $c = str_replace('\\', '/', $caminho);
+
+        return str_starts_with($c, $base) ? substr($c, strlen($base)) : $c;
+    }
+
+    private function preMontar(Linha $linha, array $arquivos, callable $progresso): array
+    {
+        $itens = $linha->itens;
+        foreach ($itens as $k => &$it) {
+            $it['_n'] = $k;
+        }
+        unset($it);
+
+        $blocos = [[]];
+        foreach ($itens as $it) {
+            $atual = count($blocos) - 1;
+            if (count($blocos[$atual]) >= 30 && $it['trans'] === 'corte') {
+                $blocos[] = [];
+                $atual++;
+            }
+            $blocos[$atual][] = $it;
+        }
+
+        $cache = $this->pasta.'/cache';
+        $crf = $this->modo === 'previa' ? '20' : '15';
+        $listaV = [];
+        $listaA = [];
+        foreach ($blocos as $b => $bloco) {
+            $ini = $bloco[0]['seq_inicio'];
+            $dur = end($bloco)['seq_fim'] - $ini;
+            $chave = md5(json_encode(['bloco', 2, $this->modo, $this->W, $this->H, $crf, array_map(fn ($it) => [$arquivos[$it['_n']], $it['dur'], $it['trans'], $it['trans_dur'] ?? 0, round($it['seq_inicio'] - $ini, 3)], $bloco)]));
+            $video = "$cache/bloco_$chave.mp4";
+            $audio = "$cache/bloco_$chave.wav";
+
+            if (! is_file($video) || ! is_file($audio)) {
+                $args = [];
+                $g = [];
+                $n = 0;
+                $primeiro = $bloco;
+                $primeiro[0]['trans'] = 'corte';
+                $this->grafoVideo($primeiro, $arquivos, $args, $g, $n, '[vb]');
+                $vozes = [];
+                foreach ($bloco as $it) {
+                    if ($arquivos[$it['_n']]['audio']) {
+                        $args = array_merge($args, ['-i', $this->rel($arquivos[$it['_n']]['audio'])]);
+                        $g[] = sprintf('[%d:a]adelay=%d:all=1[vz%d]', $n, (int) round(($it['seq_inicio'] - $ini) * 1000), $n);
+                        $vozes[] = "[vz{$n}]";
+                        $n++;
+                    }
+                }
+                $d = Ferramentas::s($dur);
+                $g[] = $vozes
+                    ? implode('', $vozes).(count($vozes) > 1 ? 'amix=inputs='.count($vozes).':normalize=0:dropout_transition=0,' : 'anull,')."aresample=48000,aformat=channel_layouts=stereo,apad=whole_dur=$d,atrim=end={$d}[aout]"
+                    : "anullsrc=r=48000:cl=stereo,atrim=end={$d}[aout]";
+                $grafo = "$cache/bloco_$chave.txt";
+                file_put_contents($grafo, implode(";\n", $g));
+                Ferramentas::ffmpeg([
+                    ...$args, ...Ferramentas::argGrafo($grafo),
+                    '-map', '[vb]', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', $crf, '-pix_fmt', 'yuv420p', '-r', '30',
+                    '-video_track_timescale', '15360', '-an', '-t', $d, $video.'.parcial.mp4',
+                    '-map', '[aout]', '-c:a', 'pcm_s16le', '-ar', '48000', '-t', $d, $audio.'.parcial.wav',
+                ], $this->pasta, $dur, fn ($f) => $progresso(($b + $f) / count($blocos)));
+                @unlink($grafo);
+                rename($video.'.parcial.mp4', $video);
+                rename($audio.'.parcial.wav', $audio);
+            }
+            $listaV[] = "file '".str_replace("'", "'\\''", $video)."'";
+            $listaA[] = "file '".str_replace("'", "'\\''", $audio)."'";
+            $progresso(($b + 1) / count($blocos));
+        }
+
+        $base = "$cache/base_".md5(implode('|', $listaV)).'.mp4';
+        $voz = "$cache/voz_".md5(implode('|', $listaA)).'.wav';
+        if (! is_file($base)) {
+            file_put_contents("$cache/blocos_v.txt", implode("\n", $listaV));
+            Ferramentas::ffmpeg(['-f', 'concat', '-safe', '0', '-i', 'cache/blocos_v.txt', '-c', 'copy', $base], $this->pasta, null, null);
+        }
+        if (! is_file($voz)) {
+            file_put_contents("$cache/blocos_a.txt", implode("\n", $listaA));
+            Ferramentas::ffmpeg(['-f', 'concat', '-safe', '0', '-i', 'cache/blocos_a.txt', '-c', 'copy', $voz], $this->pasta, null, null);
+        }
+
+        return [$base, $voz];
+    }
+
+    private function montar(Linha $linha, array $arquivos, string $saida, ?string $arquivoAss, array $sons, ?array $cartao, callable $progresso, array $pedacosMotion = [], array $broll = []): void
+    {
+        $W = $this->W;
+        $H = $this->H;
+        $total = $linha->total;
+        $args = [];
+        $g = [];
+        $n = 0;
+
+        // Vídeo longo: base pré-montada em blocos (um input de vídeo e um de voz).
+        $longo = count($linha->itens) > 40;
+        $vozBase = null;
+        if ($longo) {
+            [$base, $vozBase] = $this->preMontar($linha, $arquivos, fn ($f) => $progresso(0.45 * $f));
+            $args = ['-i', $base];
+            $g[] = '[0:v]fps=30,settb=AVTB,setsar=1,format=yuv420p[vb]';
+            $n = 1;
+            $progresso = fn ($f) => $progresso(0.45 + 0.55 * $f);
+        } else {
+            $itens = $linha->itens;
+            foreach ($itens as $k => &$it) {
+                $it['_n'] = $k;
+            }
+            unset($it);
+            $this->grafoVideo($itens, $arquivos, $args, $g, $n, '[vb]');
+        }
 
         $atual = '[vb]';
+
+        // B-roll por cima dos segmentos (a voz de baixo continua).
+        foreach ($broll as $k => $b) {
+            $args = array_merge($args, ['-itsoffset', Ferramentas::s($b['inicio']), '-i', $this->rel($b['video'])]);
+            $ini = Ferramentas::s($b['inicio']);
+            $fim = Ferramentas::s($b['inicio'] + $b['dur']);
+            $cadeia = "[$n:v]fps=30,setsar=1,format=yuva420p";
+            if ($b['fade']) {
+                $cadeia .= ",fade=t=in:st=$ini:d=0.25:alpha=1,fade=t=out:st=".Ferramentas::s(max(0, $b['inicio'] + $b['dur'] - 0.25)).':d=0.25:alpha=1';
+            }
+            $g[] = "{$cadeia}[br{$k}]";
+            $g[] = "{$atual}[br{$k}]overlay=0:0:eof_action=pass:enable='between(t,$ini,$fim)'[vbr{$k}]";
+            $atual = "[vbr{$k}]";
+            $n++;
+        }
 
         // Logo: marca d'água durante o vídeo + grande no cartão final.
         $posLogo = $this->id['logo_posicao'];
@@ -509,11 +667,11 @@ class Montador
             }
         }
 
-        // Motion por cima da imagem e da logo, por baixo da legenda.
-        if ($arquivoMotion) {
-            $args = array_merge($args, ['-i', $arquivoMotion]);
-            $g[] = "{$atual}[$n:v]overlay=0:0:format=auto:alpha=premultiplied:eof_action=pass[vmo]";
-            $atual = '[vmo]';
+        // Motion por cima da imagem e da logo, por baixo da legenda: cada pedaço no seu tempo.
+        foreach ($pedacosMotion as $k => $p) {
+            $args = array_merge($args, ['-itsoffset', Ferramentas::s($p['inicio']), '-i', $this->rel($p['arquivo'])]);
+            $g[] = "{$atual}[$n:v]overlay=0:0:format=auto:alpha=premultiplied:eof_action=pass[vmo{$k}]";
+            $atual = "[vmo{$k}]";
             $n++;
         }
 
@@ -527,9 +685,16 @@ class Montador
         $mix = [];
         $vozes = [];
 
-        foreach ($linha->itens as $i => $item) {
+        if ($vozBase) {
+            $args = array_merge($args, ['-i', $vozBase]);
+            $g[] = "[$n:a]anull[vzbase]";
+            $vozes[] = '[vzbase]';
+            $n++;
+        }
+
+        foreach ($longo ? [] : $linha->itens as $i => $item) {
             if ($arquivos[$i]['audio']) {
-                $args = array_merge($args, ['-i', $arquivos[$i]['audio']]);
+                $args = array_merge($args, ['-i', $this->rel($arquivos[$i]['audio'])]);
                 $ms = (int) round($item['seq_inicio'] * 1000);
                 $g[] = "[$n:a]adelay=$ms:all=1[vz$i]";
                 $vozes[] = "[vz$i]";

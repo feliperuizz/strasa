@@ -542,8 +542,10 @@ class Elemento:
 
 class Cena:
     def __init__(self, pedido):
-        self.W = 1080
-        self.H = int(round(1080 * pedido["altura"] / pedido["largura"]))
+        # Quadro de desenho: 1080 de largura no vertical/quadrado; 1920 no horizontal
+        # (as coordenadas do plano são px do vídeo final em 1080p, nos dois casos).
+        self.W = 1920 if pedido["largura"] > pedido["altura"] else 1080
+        self.H = int(round(self.W * pedido["altura"] / pedido["largura"]))
         self.est = Estilo(pedido.get("identidade", {}))
         self.fontes = Fontes(pedido.get("fontes", {}))
         self.icones = Icones(pedido.get("icones"), self.fontes)

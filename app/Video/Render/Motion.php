@@ -355,7 +355,13 @@ class Motion
         return self::disponivel() && is_file(self::pastaIcones().'/yunet.onnx');
     }
 
-    public static function renderizar(array $elementos, array $id, int $largura, int $altura, float $escala, float $total, string $pasta, ?string $logo, array $arquivosDeFonte): string
+    /**
+     * Gera os vídeos com transparência das animações (com cache): um por
+     * "pedaço" de tempo com animação — o resto do vídeo não é desenhado.
+     *
+     * @return array [['arquivo' => .mov, 'inicio' => s], ...] (QuickTime RLE ARGB, alfa pré-multiplicado)
+     */
+    public static function renderizar(array $elementos, array $id, int $largura, int $altura, float $escala, float $total, string $pasta, ?string $logo, array $arquivosDeFonte, ?callable $progresso = null): array
     {
         if (! self::disponivel()) {
             throw new FalhaDeFerramenta('O motor de motion não está instalado neste servidor (rode o instalador do estúdio de novo).');
@@ -363,36 +369,46 @@ class Motion
 
         $pedido = self::pedido($elementos, $id, $largura, $altura, $escala, $total, $logo, $arquivosDeFonte);
 
-        // Cache por conteúdo + versão do motor: num ajuste que não mexe nos componentes, nada é refeito.
+        // Cache por conteúdo + versão do motor: num ajuste que não mexe nas animações, nada é refeito.
         $versao = implode('|', array_map(fn ($f) => @filemtime($f), glob(base_path('scripts/video/motion/*.py')) ?: []));
         $chave = md5(json_encode([$pedido, $versao]));
         File::ensureDirectoryExists("$pasta/cache", 0775);
-        $saida = "$pasta/cache/motion_$chave.mov";
+        $manifesto = "$pasta/cache/motion_$chave.json";
 
-        if (is_file($saida) && filesize($saida) > 1000) {
-            return $saida;
+        if (is_file($manifesto)) {
+            $pedacos = json_decode((string) file_get_contents($manifesto), true) ?: [];
+            if ($pedacos && collect($pedacos)->every(fn ($p) => is_file($p['arquivo']))) {
+                return $pedacos;
+            }
         }
 
-        $pedido['saida'] = $saida.'.parcial.mov';
-        $arquivoPedido = "$pasta/cache/motion_$chave.json";
+        $pedido['saida'] = "$pasta/cache/motion_$chave.mov";
+        $arquivoPedido = "$pasta/cache/motion_{$chave}_pedido.json";
         file_put_contents($arquivoPedido, json_encode($pedido, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         try {
-            Ferramentas::rodar(
+            [$stdout] = Ferramentas::rodar(
                 [self::python(), '-I', base_path('scripts/video/motion/render.py'), $arquivoPedido],
-                $pasta, (int) config('video.limites.ffmpeg_timeout', 3000), null,
+                $pasta, (int) config('video.limites.ffmpeg_timeout', 9000),
+                $progresso ? function ($buffer) use ($progresso) {
+                    if (preg_match_all('/progresso ([\d.]+)/', $buffer, $m)) {
+                        $progresso((float) end($m[1]));
+                    }
+                } : null,
                 array_merge(['PYTHONIOENCODING' => 'utf-8'], array_fill_keys(['OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS', 'MKL_NUM_THREADS'], Ferramentas::threads()))
             );
         } finally {
             @unlink($arquivoPedido);
         }
 
-        if (! is_file($pedido['saida'])) {
-            throw new FalhaDeFerramenta('O motor de motion terminou sem gerar o vídeo.');
+        $ultima = collect(preg_split('/\R/', trim($stdout)))->last();
+        $pedacos = (json_decode((string) $ultima, true)['pedacos'] ?? null);
+        if (! is_array($pedacos) || ! collect($pedacos)->every(fn ($p) => is_file($p['arquivo'] ?? ''))) {
+            throw new FalhaDeFerramenta('O motor de motion terminou sem gerar os vídeos.');
         }
-        rename($pedido['saida'], $saida);
+        file_put_contents($manifesto, json_encode($pedacos, JSON_UNESCAPED_SLASHES));
 
-        return $saida;
+        return $pedacos;
     }
 
     /**

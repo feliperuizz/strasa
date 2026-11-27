@@ -25,6 +25,8 @@ class Validador
         // Motor de motion (App\Video\Render\Motion::TIPOS)
         'janela', 'contador', 'rec', 'pilula', 'apps', 'comentario', 'passos', 'cards',
         'notificacao', 'grafico', 'comparacao', 'seguir', 'busca', 'marca', 'cena',
+        // Segunda trilha de vídeo: imagem de outro arquivo por cima (a voz de baixo continua).
+        'broll',
     ];
 
     public const FORMAS = ['seta', 'circulo', 'check', 'x', 'estrela', 'brilho', 'coracao', 'raio', 'balao', 'sublinhado', 'fogo'];
@@ -39,6 +41,8 @@ class Validador
 
     private array $erros = [];
 
+    private array $arquivos = [];
+
     /**
      * @param  array  $arquivos  chave (f12) => [tipo, duracao, tem_audio, papel, largura, altura]
      * @param  array  $ctx  estilo, duracao_max, tem_musica, fala
@@ -46,6 +50,7 @@ class Validador
     public function normalizar(array $plano, array $arquivos, array $ctx = []): array
     {
         $this->avisos = [];
+        $this->arquivos = $arquivos;
         $this->erros = [];
         $duracaoMax = (float) ($ctx['duracao_max'] ?? 180);
 
@@ -285,6 +290,15 @@ class Validador
                 'tamanho' => in_array($el['tamanho'] ?? null, ['p', 'm', 'g'], true) ? $el['tamanho'] : 'm',
             ];
 
+            if ($tipo === 'broll') {
+                $b = $this->broll($el, $normal);
+                if ($b) {
+                    $saida[] = $b;
+                }
+
+                continue;
+            }
+
             // Componentes do motor de motion: cada um tem os próprios campos.
             if (Motion::eh($tipo)) {
                 unset($normal['cor'], $normal['destaque'], $normal['animacao']);
@@ -356,6 +370,35 @@ class Validador
         usort($saida, fn ($a, $b) => $a['inicio'] <=> $b['inicio']);
 
         return $saida;
+    }
+
+    /** B-roll: trecho de outro arquivo cobrindo a imagem por um tempo. */
+    private function broll(array $el, array $normal): ?array
+    {
+        $chave = (string) ($el['arquivo'] ?? '');
+        $info = $this->arquivos[$chave] ?? null;
+        if (! $info || $info['tipo'] === 'audio') {
+            $this->avisos[] = "{$normal['id']}: B-roll com arquivo \"{$chave}\" que não existe, ignorado.";
+
+            return null;
+        }
+        $vel = $this->entre((float) ($el['velocidade'] ?? 1.0), 0.25, 4.0);
+        $dur = $this->entre(min((float) ($el['duracao'] ?? $normal['duracao']), (float) $normal['duracao']), 0.4, 20);
+        $ini = 0.0;
+        if ($info['tipo'] === 'video') {
+            $max = max(0.0, (float) $info['duracao'] - 0.3);
+            $ini = $this->entre((float) ($el['inicio_origem'] ?? 0), 0, $max);
+            $dur = min($dur, max(0.4, ((float) $info['duracao'] - $ini) / $vel));
+        }
+        $zoom = is_array($el['zoom'] ?? null) ? array_values($el['zoom']) : [1.0, 1.06];
+        $foco = is_array($el['foco'] ?? null) ? array_values($el['foco']) : [0.5, 0.5];
+
+        return array_merge($normal, [
+            'arquivo' => $chave, 'inicio_origem' => round($ini, 3), 'duracao' => round($dur, 3), 'velocidade' => $vel,
+            'zoom' => [$this->entre((float) ($zoom[0] ?? 1), 1, 1.8), $this->entre((float) ($zoom[1] ?? $zoom[0] ?? 1.06), 1, 1.8)],
+            'foco' => [$this->entre((float) ($foco[0] ?? 0.5), 0, 1), $this->entre((float) ($foco[1] ?? 0.5), 0, 1)],
+            'transicao' => ($el['transicao'] ?? 'corte') === 'fade' ? 'fade' : 'corte',
+        ]);
     }
 
     private function posicao(mixed $posicao, string $tipo): string

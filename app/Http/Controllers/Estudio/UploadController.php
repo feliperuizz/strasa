@@ -50,7 +50,8 @@ class UploadController extends Controller
         abort_if($dados['tamanho'] > $limiteArquivo, 422, 'Arquivo maior que '.config('video.limites.arquivo_mb').' MB.');
 
         $atuais = $edicao->arquivos()->get();
-        abort_if($atuais->count() >= (int) config('video.limites.arquivos_por_edicao'), 422, 'Limite de '.config('video.limites.arquivos_por_edicao').' arquivos por edição.');
+        $maxArquivos = (int) config(! empty($edicao->estiloInfo()['longo']) ? 'video.limites.arquivos_por_edicao_longo' : 'video.limites.arquivos_por_edicao');
+        abort_if($atuais->count() >= $maxArquivos, 422, "Limite de {$maxArquivos} arquivos por edição.");
         abort_if($atuais->sum('tamanho') + $dados['tamanho'] > (int) config('video.limites.edicao_mb') * 1048576, 422, 'Esta edição passaria de '.config('video.limites.edicao_mb').' MB somando todos os arquivos.');
 
         $livre = Armazenamento::espacoLivreGb();
@@ -156,11 +157,12 @@ class UploadController extends Controller
         }
 
         $minutos = ($edicao->arquivos()->where('status', 'pronto')->sum('duracao') + $info['duracao']) / 60;
-        if ($minutos > (int) config('video.limites.brutos_minutos')) {
+        $maxMinutos = (int) config(! empty($edicao->estiloInfo()['longo']) ? 'video.limites.brutos_minutos_longo' : 'video.limites.brutos_minutos');
+        if ($minutos > $maxMinutos) {
             $arquivo->forceFill(['status' => 'erro'])->save();
             @unlink($caminho);
 
-            return response()->json(['message' => 'Passou de '.config('video.limites.brutos_minutos').' minutos de material nesta edição. Envie só os trechos que interessam.'], 422);
+            return response()->json(['message' => "Passou de {$maxMinutos} minutos de material nesta edição. Envie só os trechos que interessam."], 422);
         }
 
         $arquivo->forceFill([
@@ -219,6 +221,8 @@ class UploadController extends Controller
             'hdr' => $a->hdr,
             'tem_audio' => $a->tem_audio,
             'miniatura' => $a->status === 'pronto' ? route('estudio.arquivos.miniatura', $a).'?v='.$a->updated_at?->timestamp : null,
+            // Hora da gravação (metadados do celular): "ordenar pela hora" e a cronologia do vlog.
+            'gravado_em' => $a->sondagem['gravado_em'] ?? null,
             'url_papel' => route('estudio.arquivos.update', $a),
             'url_remover' => route('estudio.arquivos.destroy', $a),
         ];

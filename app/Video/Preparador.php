@@ -89,7 +89,9 @@ class Preparador
                 $item['cenas'] = $this->cenas($proxy, "$trabalho/cenas_{$chave}.txt");
 
                 $passo(0.75, "Montando a folha de quadros de {$arq->nome_original}");
-                $item['folhas'] = $this->folhas($arq, $proxy, $trabalho, $limiteFolhas);
+                // Vlog: arquivo longo ganha mais folhas (uma a cada ~2 min, até 4) para o Claude achar os momentos.
+                $porArquivo = ! empty($estilo['longo']) ? max(1, min(4, (int) ceil((float) $arq->duracao / 120))) : $limiteFolhas;
+                $item['folhas'] = $this->folhas($arq, $proxy, $trabalho, $porArquivo);
             }
 
             if ($arq->tem_audio) {

@@ -60,7 +60,7 @@ Schedule::command('previas:gerar --limite=40')->everyFiveMinutes()->withoutOverl
 */
 Schedule::command('video:vigiar')->everyFiveMinutes();
 
-Schedule::command('queue:work video --queue=video --stop-when-empty --max-jobs=1 --timeout=7000 --memory=1024')
+Schedule::command('queue:work video --queue=video --stop-when-empty --max-jobs=1 --timeout=13200 --memory=1024')
     ->everyMinute()
     ->runInBackground();
 

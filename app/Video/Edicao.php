@@ -225,7 +225,7 @@ class Edicao
     {
         $job = $this->job;
         DB::disconnect();
-        $r = ClaudeCli::executar($contexto->pasta(), $prompt);
+        $r = ClaudeCli::executar($contexto->pasta(), $prompt, null, $this->longo());
         $this->registrarUso($r);
 
         for ($tentativa = 0; ; $tentativa++) {
@@ -251,7 +251,7 @@ class Edicao
                 }
                 $this->progresso($primeira ? 60 : 40, 'O Claude está corrigindo o plano');
                 DB::disconnect();
-                $r = ClaudeCli::executar($contexto->pasta(), "O sistema recusou o plano.json com estes problemas:\n- ".implode("\n- ", $e->problemas)."\nCorrija o plano.json e termine dizendo o que mudou.", $r['sessao']);
+                $r = ClaudeCli::executar($contexto->pasta(), "O sistema recusou o plano.json com estes problemas:\n- ".implode("\n- ", $e->problemas)."\nCorrija o plano.json e termine dizendo o que mudou.", $r['sessao'], $this->longo());
                 $this->registrarUso($r);
             }
         }
@@ -322,7 +322,7 @@ class Edicao
             ."Se estiver tudo bom, não mexa. Termine com 1 a 3 frases dizendo o que mudou.";
 
         try {
-            $r2 = ClaudeCli::executar($contexto->pasta(), $prompt, $r['sessao']);
+            $r2 = ClaudeCli::executar($contexto->pasta(), $prompt, $r['sessao'], $this->longo());
             $this->registrarUso($r2);
             $bruto = json_decode((string) @file_get_contents($contexto->pasta().'/plano.json'), true);
             $novo = is_array($bruto) ? $this->validar($bruto, $inventario) : null;
@@ -524,6 +524,12 @@ class Edicao
             $job->opcao('logo', true) && is_file($logo) ? $logo : null, $arquivosDeFonte, $job->estiloInfo()['fala'],
             $narracao['falas'], $narracao['avisos'],
         );
+    }
+
+    /** Estilo de vídeo longo (vlog): limites, prazos e montagem por blocos. */
+    public function longo(): bool
+    {
+        return ! empty($this->job->estiloInfo()['longo']);
     }
 
     /** Narração ligada nesta edição e com alguma voz instalada no servidor. */

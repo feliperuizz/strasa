@@ -60,7 +60,7 @@ TXT;
      *
      * @throws LimiteDoClaude quando a assinatura bateu no limite de uso
      */
-    public static function executar(string $cwd, string $prompt, ?string $retomarSessao = null): array
+    public static function executar(string $cwd, string $prompt, ?string $retomarSessao = null, bool $longo = false): array
     {
         $bin = self::binario();
 
@@ -73,7 +73,7 @@ TXT;
         $cmd = [
             $bin, '-p', $prompt,
             '--output-format', 'json',
-            '--max-turns', (string) max(5, (int) config('video.claude.max_turnos', 40)),
+            '--max-turns', (string) max(5, (int) config($longo ? 'video.claude.max_turnos_longo' : 'video.claude.max_turnos', 40)),
             '--permission-mode', 'acceptEdits',
             '--allowedTools', 'Read,Write,Edit,Glob,Grep',
             '--disallowedTools', 'Bash,WebFetch,WebSearch,Task,NotebookEdit',
@@ -106,7 +106,7 @@ TXT;
         }
 
         try {
-            [$stdout, $stderr] = Ferramentas::rodar($cmd, $cwd, (int) config('video.claude.timeout', 1200), null, $env, false);
+            [$stdout, $stderr] = Ferramentas::rodar($cmd, $cwd, (int) config($longo ? 'video.claude.timeout_longo' : 'video.claude.timeout', 1200), null, $env, false);
         } catch (FalhaDeFerramenta $e) {
             self::reconhecerFalha($e->getMessage().' '.$e->detalhe);
             throw $e;

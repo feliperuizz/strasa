@@ -67,6 +67,23 @@ class Ferramentas
         return $prefixo;
     }
 
+    /** Chamado no máximo a cada 60 s enquanto um processo roda (o job marca "sinal de vida"). */
+    public static $batimento = null;
+
+    private static int $ultimoBatimento = 0;
+
+    private static function bater(): void
+    {
+        if (self::$batimento && time() - self::$ultimoBatimento >= 60) {
+            self::$ultimoBatimento = time();
+            try {
+                (self::$batimento)();
+            } catch (\Throwable) {
+                // sinal de vida nunca derruba o processo
+            }
+        }
+    }
+
     /**
      * Roda um comando. $aoSair recebe cada pedaço de stdout (progresso).
      * Devolve [stdout, stderr]. Lança FalhaDeFerramenta se sair com erro.
@@ -84,7 +101,7 @@ class Ferramentas
         $stderr = '';
 
         try {
-            $processo->run(function ($tipo, $buffer) use (&$stdout, &$stderr, $aoSair) {
+            $processo->start(function ($tipo, $buffer) use (&$stdout, &$stderr, $aoSair) {
                 if ($tipo === Process::OUT) {
                     if ($aoSair) {
                         $aoSair($buffer);
@@ -95,6 +112,14 @@ class Ferramentas
                     $stderr = substr($stderr.$buffer, -20000);
                 }
             });
+            // Laço próprio (em vez de run): dá sinal de vida mesmo quando o processo
+            // fica calado por muito tempo (transcrever 15 min, Claude planejando um vlog).
+            while ($processo->isRunning()) {
+                $processo->checkTimeout();
+                self::bater();
+                usleep(250000);
+            }
+            $processo->wait();
         } catch (\Symfony\Component\Process\Exception\ProcessTimedOutException) {
             throw new FalhaDeFerramenta(basename($comando[0]).' passou do tempo limite ('.$timeout.' s) e foi interrompido.');
         }

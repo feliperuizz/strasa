@@ -44,7 +44,8 @@ class ProcessarEdicao implements ShouldQueue
 
     public int $maxExceptions = 1;
 
-    public int $timeout = 7000;
+    // Vlog de 15 min: transcrever + Claude + render final pode passar de 2 h (retry_after da fila "video" é 4 h).
+    public int $timeout = 13000;
 
     public bool $failOnTimeout = true;
 
@@ -68,7 +69,7 @@ class ProcessarEdicao implements ShouldQueue
             return;
         }
 
-        $travaEdicao = Cache::lock("video:edicao:{$job->id}", 7200);
+        $travaEdicao = Cache::lock("video:edicao:{$job->id}", 14400);
         if (! $travaEdicao->get()) {
             $this->release(60);
 
@@ -94,6 +95,9 @@ class ProcessarEdicao implements ShouldQueue
             'status' => $statusEmCurso, 'erro' => null, 'sinal_em' => now(),
             'iniciado_em' => $job->iniciado_em ?? now(), 'tentativas' => $job->tentativas + 1,
         ])->save();
+
+        // Sinal de vida enquanto processos longos rodam (o video:vigiar não confunde com travado).
+        \App\Video\Ferramentas::$batimento = fn () => VideoJob::withoutGlobalScopes()->whereKey($job->id)->update(['sinal_em' => now()]);
 
         try {
             $edicao = new Edicao($job);
@@ -128,6 +132,7 @@ class ProcessarEdicao implements ShouldQueue
             Log::error('Estúdio de vídeo: falha inesperada', ['edicao' => $job->id, 'acao' => $this->acao, 'erro' => $e->getMessage(), 'arquivo' => $e->getFile().':'.$e->getLine()]);
             $this->falhou($job, 'Erro inesperado: '.$e->getMessage());
         } finally {
+            \App\Video\Ferramentas::$batimento = null;
             optional($vaga)->release();
             $travaEdicao->release();
         }
@@ -169,7 +174,7 @@ class ProcessarEdicao implements ShouldQueue
         $vagas = max(1, (int) config('video.fila.simultaneas', 1));
 
         for ($i = 1; $i <= $vagas; $i++) {
-            $trava = Cache::lock("video:vaga:$i", 7200);
+            $trava = Cache::lock("video:vaga:$i", 14400);
             if ($trava->get()) {
                 return $trava;
             }

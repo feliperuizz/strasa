@@ -66,7 +66,21 @@ class Sondagem
             'tem_audio' => $audio !== null && ! $ehImagem,
             'codec' => $codec,
             'vfr' => self::vfr($video),
+            'gravado_em' => self::gravadoEm($probe, $video),
         ];
+    }
+
+    /** Data e hora da gravação (iPhone grava a hora local; outros, creation_time em UTC). */
+    private static function gravadoEm(array $probe, array $video): ?string
+    {
+        $tags = array_change_key_case((array) ($probe['format']['tags'] ?? []));
+        $valor = $tags['com.apple.quicktime.creationdate'] ?? $tags['creation_time'] ?? ($video['tags']['creation_time'] ?? null);
+
+        try {
+            return $valor ? \Carbon\Carbon::parse($valor)->toIso8601String() : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private static function rotacao(array $video): int

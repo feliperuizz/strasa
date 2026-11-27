@@ -20,6 +20,9 @@
         @case('depoimento')
             <path d="M21 12a8 8 0 01-11.6 7.1L4 20.5l1.4-4.8A8 8 0 1121 12z"/><path d="M12 8.2l1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z"/>
             @break
+        @case('vlog')
+            <rect x="2.5" y="6" width="13" height="11" rx="2"/><path d="M15.5 10.5l5-3v9l-5-3"/><circle cx="6.5" cy="9.5" r="1"/><path d="M4 21h9"/>
+            @break
         @default
             <path d="M15 10l4.5-2.3A1 1 0 0121 8.6v6.8a1 1 0 01-1.5.9L15 14"/><rect x="3" y="6" width="12" height="12" rx="2"/>
     @endswitch

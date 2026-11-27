@@ -121,6 +121,28 @@ final class Estilos
                 'Coloque o nome e a profissão do cliente no briefing.',
             ],
         ],
+        'vlog' => [
+            'nome' => 'Vlog',
+            'resumo' => 'Vídeo longo (3 a 15 min) contando um dia, um evento ou um bastidor na ordem em que aconteceu: cortes de ritmo, capítulos, B-roll, música e animações nos momentos-chave.',
+            'exemplo' => 'Um dia na barbearia, do abrir a porta ao último cliente; uma viagem; um evento.',
+            'icone' => 'vlog',
+            'cor' => '#fb923c',
+            'fala' => true,
+            'musica' => 'opcional',
+            'legendas' => true,
+            'papeis' => ['bruto'],
+            'duracao' => [120, 900, 480],
+            'transicao' => 'corte',
+            // Vídeo longo: limites e prazos maiores (material, Claude, render).
+            'longo' => true,
+            'formato' => '16:9',
+            'dicas_gravacao' => [
+                'Grave em ordem e envie na ordem (ou use "ordenar pela hora da gravação"): o vlog segue a cronologia.',
+                'Misture: você falando para a câmera + imagens do lugar e das pessoas (B-roll) para cobrir a fala.',
+                'Narre na hora ("agora a gente chegou…", "olha isso"): o corte usa essas falas como costura.',
+                'Pode mandar muito material (até 90 min): o Claude escolhe os melhores momentos.',
+            ],
+        ],
     ];
 
     public static function todos(): array

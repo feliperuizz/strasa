@@ -91,6 +91,8 @@ class Revisao
         $pasta = $job->pasta();
         $linha = new Linha($plano['segmentos']);
         $dim = $job->dimensoes();
+        $vertical = $dim['altura'] > $dim['largura'];
+        $larguraFolha = $dim['largura'] > $dim['altura'] ? 960 : 540;
         $arquivos = [];
         foreach ($job->arquivos()->where('status', 'pronto')->get() as $a) {
             $arquivos[$a->chave()] = $a;
@@ -124,7 +126,7 @@ class Revisao
                     [$filtro, $mapear] = self::recorte((int) $arq->largura, (int) $arq->altura, $dim['largura'] / $dim['altura'], $seg['camera']['foco'] ?? [0.5, 0.5]);
                     if (is_file($fonte)) {
                         try {
-                            Ferramentas::ffmpeg(array_merge($tFonte !== null ? ['-ss', Ferramentas::s($tFonte)] : [], ['-i', $fonte, '-frames:v', '1', '-vf', "$filtro,scale=540:-2", $png]), $dir, null, null, 60);
+                            Ferramentas::ffmpeg(array_merge($tFonte !== null ? ['-ss', Ferramentas::s($tFonte)] : [], ['-i', $fonte, '-frames:v', '1', '-vf', "$filtro,scale={$larguraFolha}:-2", $png]), $dir, null, null, 60);
                             $q['fundo'] = $png;
                         } catch (\Throwable) {
                         }
@@ -139,8 +141,9 @@ class Revisao
             $folhas[] = ['saida' => $saida, 'rotulo' => $el['id'].' '.$el['tipo'], 'quadros' => $quadros];
         }
 
-        $pedido = Motion::pedido($motion, $id, $dim['largura'], $dim['altura'], 540 / $dim['largura'], $linha->total, $logo, $arquivosDeFonte);
+        $pedido = Motion::pedido($motion, $id, $dim['largura'], $dim['altura'], $larguraFolha / $dim['largura'], $linha->total, $logo, $arquivosDeFonte);
         $pedido['folhas'] = $folhas;
+        $pedido['zonas'] = $vertical; // zonas dos botões do app: só Reels/Stories
         try {
             Motion::rodarPedido($pedido, $dir);
         } catch (\Throwable $e) {

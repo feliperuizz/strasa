@@ -59,13 +59,16 @@ return [
         'arquivos_por_edicao' => (int) env('VIDEO_MAX_ARQUIVOS', 40),
         // Duração somada dos brutos (min). Transcrição e análise crescem com isso.
         'brutos_minutos' => (int) env('VIDEO_MAX_MINUTOS', 20),
+        // Estilos longos (vlog): mais material e mais arquivos por edição.
+        'brutos_minutos_longo' => (int) env('VIDEO_MAX_MINUTOS_LONGO', 90),
+        'arquivos_por_edicao_longo' => (int) env('VIDEO_MAX_ARQUIVOS_LONGO', 150),
         // Pedaço do upload. Abaixo do limite de 100 MB do Cloudflare e de
         // qualquer post_max_size razoável; um pedaço que falha é reenviado.
         'pedaco_mb' => (int) env('VIDEO_PEDACO_MB', 8),
         // Abaixo disto de disco livre, não aceita edição nova.
         'disco_minimo_gb' => (float) env('VIDEO_DISCO_MINIMO_GB', 5),
         // Tempo máximo de cada processo do FFmpeg (s).
-        'ffmpeg_timeout' => (int) env('VIDEO_FFMPEG_TIMEOUT', 3000),
+        'ffmpeg_timeout' => (int) env('VIDEO_FFMPEG_TIMEOUT', 9000),
     ],
 
     /*
@@ -97,6 +100,9 @@ return [
         'modelo' => env('VIDEO_CLAUDE_MODEL'),
         'max_turnos' => (int) env('VIDEO_CLAUDE_MAX_TURNS', 40),
         'timeout' => (int) env('VIDEO_CLAUDE_TIMEOUT', 1200),
+        // Vídeo longo (vlog): ler 15+ min de transcrição e muitas folhas pede mais turnos e tempo.
+        'max_turnos_longo' => (int) env('VIDEO_CLAUDE_MAX_TURNS_LONGO', 150),
+        'timeout_longo' => (int) env('VIDEO_CLAUDE_TIMEOUT_LONGO', 3600),
         // HOME do usuário dono do login do Claude (cron do cPanel às vezes vem sem HOME).
         'home' => env('VIDEO_CLAUDE_HOME', env('HOME')),
         // Quando a assinatura bate no limite de uso, tenta de novo depois disto.
